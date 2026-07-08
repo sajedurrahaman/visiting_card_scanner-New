@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/home/domain/model/recent_card_item.dart';
 import 'package:visiting_card/features/home/presentation/view_model/home_view_model.dart';
 
@@ -53,17 +54,17 @@ class RecentCardMenuViewModel extends ChangeNotifier {
     if (newName == null || newName.isEmpty || newName == item.name) return;
 
     context.read<HomeViewModel>().renameRecentCard(item.id, newName);
-    _showMessage(context, 'Renamed to $newName');
+    ui.AppToast.success(context, 'Renamed to $newName');
   }
 
   void download(BuildContext context, RecentCardItem item) {
     // TODO: Integrate file download when storage layer is ready.
-    _showMessage(context, 'Downloading ${item.name}...');
+    ui.AppToast.success(context, 'Downloading ${item.name}...');
   }
 
   void share(BuildContext context, RecentCardItem item) {
     // TODO: Integrate share sheet when file path is available.
-    _showMessage(context, 'Sharing ${item.name}...');
+    ui.AppToast.success(context, 'Sharing ${item.name}...');
   }
 
   Future<void> delete(BuildContext context, RecentCardItem item) async {
@@ -92,12 +93,6 @@ class RecentCardMenuViewModel extends ChangeNotifier {
     if (shouldDelete != true) return;
 
     context.read<HomeViewModel>().deleteRecentCard(item.id);
-    _showMessage(context, '${item.name} deleted');
-  }
-
-  void _showMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    ui.AppToast.success(context, '${item.name} deleted');
   }
 }

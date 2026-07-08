@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/app/routes/route_names.dart';
+import 'package:visiting_card/features/home/presentation/view/widgets/home_screen_visiting_card_bottom_sheet.dart';
 import 'package:visiting_card/features/home/presentation/view/widgets/recent_card_tile.dart';
 import 'package:visiting_card/features/home/presentation/view_model/home_view_model.dart';
 
@@ -54,7 +55,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         _ScanAction(
                           icon: ui.AppAssets.homeVisitingCard,
                           label: 'Visiting Card',
-                          onTap: viewModel.onVisitingCardTap,
+                          onTap: () =>
+                              HomeScreenVisitingCardBottomSheet.show(context),
                         ),
                         _ScanAction(
                           icon: ui.AppAssets.homeQrCode,
@@ -96,8 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             SizedBox(height: 12.h),
                             Expanded(
                               child: ListView.builder(
-                                clipBehavior: Clip.none,
-                                padding: EdgeInsets.only(bottom: 120.h),
+                                padding: EdgeInsets.fromLTRB(6.w, 8.h, 6.w, 120.h),
                                 itemCount: viewModel.recentCards.length,
                                 itemBuilder: (context, index) {
                                   final item = viewModel.recentCards[index];
