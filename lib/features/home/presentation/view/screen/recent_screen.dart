@@ -44,8 +44,7 @@ class RecentScreen extends StatelessWidget {
               ),
               Expanded(
                 child: ListView.builder(
-                  clipBehavior: Clip.none,
-                  padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 24.h),
+                  padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 24.h),
                   itemCount: viewModel.recentCards.length,
                   itemBuilder: (context, index) {
                     final item = viewModel.recentCards[index];
