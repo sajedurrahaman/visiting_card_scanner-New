@@ -9,9 +9,15 @@ class RecentCardTile extends StatelessWidget {
   const RecentCardTile({
     super.key,
     required this.item,
+    this.isSelectionMode = false,
+    this.isSelected = false,
+    this.selectionTrailing,
   });
 
   final RecentCardItem item;
+  final bool isSelectionMode;
+  final bool isSelected;
+  final Widget? selectionTrailing;
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +26,9 @@ class RecentCardTile extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 16.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isSelectionMode && isSelected
+            ? ui.Colors.cardBgColor
+            : Colors.white,
         borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
@@ -71,7 +79,10 @@ class RecentCardTile extends StatelessWidget {
               ],
             ),
           ),
-          PopupMenuButton<RecentCardMenuAction>(
+          if (isSelectionMode)
+            selectionTrailing ?? const SizedBox.shrink()
+          else
+            PopupMenuButton<RecentCardMenuAction>(
             padding: EdgeInsets.zero,
             color: Colors.white,
             elevation: 8,

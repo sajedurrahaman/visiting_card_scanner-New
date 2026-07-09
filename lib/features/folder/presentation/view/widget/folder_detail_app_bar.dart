@@ -10,14 +10,12 @@ class FolderDetailAppBar extends StatelessWidget {
     required this.onBack,
     required this.onCreateFolder,
     required this.onToggleSelection,
-    this.isSelectionMode = false,
   });
 
   final String title;
   final VoidCallback onBack;
   final VoidCallback onCreateFolder;
   final VoidCallback onToggleSelection;
-  final bool isSelectionMode;
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +49,6 @@ class FolderDetailAppBar extends StatelessWidget {
               _ActionIconButton(
                 asset: ui.AppAssets.folderSelectIcon,
                 onTap: onToggleSelection,
-                isActive: isSelectionMode,
               ),
             ],
           ),
@@ -65,12 +62,10 @@ class _ActionIconButton extends StatelessWidget {
   const _ActionIconButton({
     required this.asset,
     required this.onTap,
-    this.isActive = false,
   });
 
   final String asset;
   final VoidCallback onTap;
-  final bool isActive;
 
   @override
   Widget build(BuildContext context) {
@@ -85,12 +80,6 @@ class _ActionIconButton extends StatelessWidget {
             asset,
             width: 24.w,
             height: 24.w,
-            colorFilter: isActive
-                ? const ColorFilter.mode(
-                    Color(0xFF05B560),
-                    BlendMode.srcIn,
-                  )
-                : null,
           ),
         ),
       ),

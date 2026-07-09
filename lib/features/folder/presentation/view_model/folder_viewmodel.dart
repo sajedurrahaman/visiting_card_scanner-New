@@ -11,6 +11,12 @@ class FolderViewModel extends ChangeNotifier {
   static const visitingCardFolderId = 'visiting_card';
   static const qrCodeFolderId = 'qr_code';
   static const barcodeFolderId = 'barcode';
+  static const moveRootsBrowseId = '__move_roots__';
+
+  bool isRootFolder(String folderId) =>
+      folderId == visitingCardFolderId ||
+      folderId == qrCodeFolderId ||
+      folderId == barcodeFolderId;
 
   final List<FolderItemData> folders = const [
     FolderItemData(id: visitingCardFolderId, label: 'Visiting Card'),
@@ -20,6 +26,7 @@ class FolderViewModel extends ChangeNotifier {
 
   final Map<String, List<SubFolderItem>> _subFolders = {};
   final Map<String, List<RecentCardItem>> _cards = {};
+  final Map<String, String> _parentIds = {};
   final Map<String, bool> _selectionModes = {};
   final Map<String, Set<String>> _selectedItemIds = {};
 
@@ -37,6 +44,161 @@ class FolderViewModel extends ChangeNotifier {
 
   bool isItemSelected(String folderId, String itemId) =>
       _selectedItemIds[folderId]?.contains(itemId) ?? false;
+
+  int selectedCount(String folderId) =>
+      _selectedItemIds[folderId]?.length ?? 0;
+
+  bool hasSelectedFolders(String folderId) {
+    final folderIds = subFoldersFor(folderId).map((item) => item.id).toSet();
+    return _selectedItemIds[folderId]?.any(folderIds.contains) ?? false;
+  }
+
+  bool hasSelectedFiles(String folderId) {
+    final fileIds = cardsFor(folderId).map((item) => item.id).toSet();
+    return _selectedItemIds[folderId]?.any(fileIds.contains) ?? false;
+  }
+
+  bool isAllSelected(String folderId) {
+    final totalItems =
+        subFoldersFor(folderId).length + cardsFor(folderId).length;
+    if (totalItems == 0) {
+      return false;
+    }
+    return selectedCount(folderId) == totalItems;
+  }
+
+  bool canMoveSelection(String folderId) {
+    return hasSelectedFiles(folderId) && !hasSelectedFolders(folderId);
+  }
+
+  bool canShareSelection(String folderId) => canMoveSelection(folderId);
+
+  bool canDeleteSelection(String folderId) => selectedCount(folderId) > 0;
+
+  void exitSelectionMode(String folderId) {
+    _selectionModes[folderId] = false;
+    _selectedItemIds[folderId]?.clear();
+    notifyListeners();
+  }
+
+  void selectAll(String folderId) {
+    if (!isSelectionMode(folderId)) {
+      return;
+    }
+    final allIds = {
+      ...subFoldersFor(folderId).map((item) => item.id),
+      ...cardsFor(folderId).map((item) => item.id),
+    };
+    _selectedItemIds[folderId] = allIds;
+    notifyListeners();
+  }
+
+  void deselectAll(String folderId) {
+    _selectedItemIds[folderId]?.clear();
+    notifyListeners();
+  }
+
+  void toggleSelectAll(String folderId) {
+    if (isAllSelected(folderId)) {
+      deselectAll(folderId);
+    } else {
+      selectAll(folderId);
+    }
+  }
+
+  void deleteSelectedItems(String folderId) {
+    final selectedIds = _selectedItemIds[folderId];
+    if (selectedIds == null || selectedIds.isEmpty) {
+      return;
+    }
+
+    _subFolders[folderId]?.removeWhere(
+      (item) => selectedIds.contains(item.id),
+    );
+    _cards[folderId]?.removeWhere(
+      (item) => selectedIds.contains(item.id),
+    );
+
+    for (final id in List<String>.from(selectedIds)) {
+      _subFolders.remove(id);
+      _cards.remove(id);
+      _parentIds.remove(id);
+      _selectionModes.remove(id);
+      _selectedItemIds.remove(id);
+    }
+
+    selectedIds.clear();
+    notifyListeners();
+  }
+
+  String? parentIdFor(String folderId) => _parentIds[folderId];
+
+  String rootFolderIdFor(String folderId) {
+    var current = folderId;
+    while (_parentIds.containsKey(current)) {
+      current = _parentIds[current]!;
+    }
+    return current;
+  }
+
+  String folderNameFor(String folderId) {
+    for (final folder in folders) {
+      if (folder.id == folderId) {
+        return folder.label;
+      }
+    }
+
+    for (final entry in _subFolders.entries) {
+      for (final subFolder in entry.value) {
+        if (subFolder.id == folderId) {
+          return subFolder.name;
+        }
+      }
+    }
+
+    return 'Folder';
+  }
+
+  bool moveSelectedItemsTo({
+    required String sourceFolderId,
+    required String destinationFolderId,
+  }) {
+    if (sourceFolderId == destinationFolderId) {
+      return false;
+    }
+
+    final selectedIds = _selectedItemIds[sourceFolderId];
+    if (selectedIds == null || selectedIds.isEmpty) {
+      return false;
+    }
+
+    final fileIds = cardsFor(sourceFolderId).map((item) => item.id).toSet();
+    final movingIds = selectedIds.where(fileIds.contains).toSet();
+    if (movingIds.isEmpty) {
+      return false;
+    }
+
+    final sourceCards =
+        List<RecentCardItem>.from(_cards[sourceFolderId] ?? const []);
+    final movingCards = sourceCards
+        .where((card) => movingIds.contains(card.id))
+        .toList(growable: false);
+    sourceCards.removeWhere((card) => movingIds.contains(card.id));
+    _cards[sourceFolderId] = sourceCards;
+
+    final destinationCards =
+        List<RecentCardItem>.from(_cards[destinationFolderId] ?? const []);
+    destinationCards.insertAll(0, movingCards);
+    _cards[destinationFolderId] = destinationCards;
+
+    selectedIds.removeAll(movingIds);
+    exitSelectionMode(sourceFolderId);
+    return true;
+  }
+
+  void shareSelectedItems(String folderId) {
+    // TODO: Integrate share sheet when file paths are available.
+  }
 
   void onFolderTap(int index) {
     if (_selectedIndex == index) {
@@ -76,6 +238,56 @@ class FolderViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void renameSubFolder({
+    required String parentFolderId,
+    required String subFolderId,
+    required String newName,
+  }) {
+    final trimmedName = newName.trim();
+    if (trimmedName.isEmpty) {
+      return;
+    }
+
+    final subFolders = _subFolders[parentFolderId];
+    if (subFolders == null) {
+      return;
+    }
+
+    final index = subFolders.indexWhere((item) => item.id == subFolderId);
+    if (index == -1) {
+      return;
+    }
+
+    subFolders[index] = subFolders[index].copyWith(name: trimmedName);
+    notifyListeners();
+  }
+
+  void deleteSubFolder({
+    required String parentFolderId,
+    required String subFolderId,
+  }) {
+    _subFolders[parentFolderId]?.removeWhere(
+      (item) => item.id == subFolderId,
+    );
+    _removeSubFolderTree(subFolderId);
+    notifyListeners();
+  }
+
+  void _removeSubFolderTree(String folderId) {
+    final nestedSubFolders = List<SubFolderItem>.from(
+      _subFolders[folderId] ?? const [],
+    );
+    for (final nested in nestedSubFolders) {
+      _removeSubFolderTree(nested.id);
+    }
+
+    _subFolders.remove(folderId);
+    _cards.remove(folderId);
+    _parentIds.remove(folderId);
+    _selectionModes.remove(folderId);
+    _selectedItemIds.remove(folderId);
+  }
+
   void createSubFolder(String folderId, String name) {
     final trimmedName = name.trim();
     if (trimmedName.isEmpty) {
@@ -94,23 +306,54 @@ class FolderViewModel extends ChangeNotifier {
     );
     _subFolders[subFolderId] = [];
     _cards[subFolderId] = [];
+    _parentIds[subFolderId] = folderId;
     notifyListeners();
   }
 
-  void _initDemoData() {
-    _cards[visitingCardFolderId] = _demoVisitingCards;
-    _cards[qrCodeFolderId] = _demoQrCodeCards;
-    _cards[barcodeFolderId] = _demoBarcodeCards;
+  void _registerSubFolder({
+    required String parentId,
+    required SubFolderItem item,
+  }) {
+    final subFolders = _subFolders.putIfAbsent(parentId, () => []);
+    if (subFolders.any((folder) => folder.id == item.id)) {
+      return;
+    }
+    subFolders.add(item);
+    _subFolders[item.id] = _subFolders[item.id] ?? [];
+    _cards[item.id] = _cards[item.id] ?? [];
+    _parentIds[item.id] = parentId;
+  }
 
-    _subFolders[visitingCardFolderId] = [
-      const SubFolderItem(
+  void _initDemoData() {
+    _cards[visitingCardFolderId] = List.of(_demoVisitingCards);
+    _cards[qrCodeFolderId] = List.of(_demoQrCodeCards);
+    _cards[barcodeFolderId] = List.of(_demoBarcodeCards);
+
+    _registerSubFolder(
+      parentId: visitingCardFolderId,
+      item: const SubFolderItem(
         id: 'sub_demo_1',
         name: 'New Folder',
         dateTime: '08-18-2025',
       ),
-    ];
-    _subFolders['sub_demo_1'] = [];
-    _cards['sub_demo_1'] = _demoSubFolderCards;
+    );
+    _registerSubFolder(
+      parentId: visitingCardFolderId,
+      item: const SubFolderItem(
+        id: 'sub_demo_2',
+        name: 'Nahid',
+        dateTime: '08-18-2025',
+      ),
+    );
+    _registerSubFolder(
+      parentId: visitingCardFolderId,
+      item: const SubFolderItem(
+        id: 'sub_demo_3',
+        name: 'Hasib',
+        dateTime: '08-18-2025',
+      ),
+    );
+    _cards['sub_demo_1'] = List.of(_demoSubFolderCards);
   }
 
   String _formatDate(DateTime date) {

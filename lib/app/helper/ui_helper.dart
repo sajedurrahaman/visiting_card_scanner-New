@@ -30,10 +30,16 @@ class AppAssets {
   static const privacyIcon = 'assets/icons/privacy_policy.svg';
   static const termsIcon = 'assets/icons/terms_icon.svg';
 
-
+  // folder
   static const folderIcon = 'assets/icons/folder_icon.svg';
   static const createFolderIcon = 'assets/icons/create_folder.svg';
   static const folderSelectIcon = 'assets/icons/file_select.svg';
+  static const moveIcon = 'assets/icons/move.svg';
+  static const selectShareIcon = 'assets/icons/select_share.svg';
+  static const delectIcon = 'assets/icons/delete.svg';
+  static const moveSelectIcon = 'assets/icons/select_move.svg';
+  static const deleteSelectIcon = 'assets/icons/select_delete.svg';
+
 
 }
 
@@ -164,5 +170,361 @@ class AppToast {
     _timer = null;
     _overlayEntry?.remove();
     _overlayEntry = null;
+  }
+}
+
+class AppDialogs {
+  AppDialogs._();
+
+  static Future<bool> showDeleteDialog(
+    BuildContext context, {
+    String title = 'Delete Item',
+    String message = 'Are you sure you want to delete the selected items?',
+    String cancelText = 'Cancel',
+    String confirmText = 'Ok',
+  }) async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierColor: const Color(0xFF123E38).withValues(alpha: 0.28),
+      builder: (dialogContext) => Dialog(
+        backgroundColor: const Color(0xFFFFFFFF),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.r),
+          side: BorderSide(
+            color: const Color(0xFFD8E6FF),
+            width: 2.w,
+          ),
+        ),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(24.w, 18.h, 24.w, 22.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.mainText(
+                  color: const Color(0xFF1A1A1A),
+                ).copyWith(
+                  fontSize: 28.sp,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0,
+                ),
+              ),
+              SizedBox(height: 26.h),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.helperText(
+                  color: const Color(0xFF575757),
+                ).copyWith(
+                  fontSize: 17.sp,
+                  height: 1.55,
+                  letterSpacing: 0,
+                ),
+              ),
+              SizedBox(height: 30.h),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(dialogContext, false),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF1A1A1A),
+                        side: const BorderSide(color: Color(0xFF1A1A1A)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        padding: EdgeInsets.symmetric(vertical: 10.h),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      child: Text(
+                        cancelText,
+                        style: AppTextStyles.helperText(
+                          color: const Color(0xFF1A1A1A),
+                        ).copyWith(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 16.w),
+                  Expanded(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8.r),
+                        gradient: const LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [
+                            Color(0xFF3DCB6A),
+                            Color(0xFF0B5D2A),
+                          ],
+                        ),
+                      ),
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(dialogContext, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0x00000000),
+                          foregroundColor: const Color(0xFFFFFFFF),
+                          shadowColor: const Color(0x00000000),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                        padding: EdgeInsets.symmetric(vertical: 10.h),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                        ),
+                        child: Text(
+                          confirmText,
+                          style: AppTextStyles.helperText(
+                            color: const Color(0xFFFFFFFF),
+                          ).copyWith(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    return result ?? false;
+  }
+
+  static Future<String?> showRenameDialog(
+    BuildContext context, {
+    String title = 'Rename File',
+    String? initialValue,
+    String hintText = 'Office Document',
+    String cancelText = 'Cancel',
+    String confirmText = 'Save',
+  }) {
+    return showDialog<String>(
+      context: context,
+      barrierColor: const Color(0xFF123E38).withValues(alpha: 0.28),
+      builder: (_) => _RenameDialog(
+        title: title,
+        initialValue: initialValue,
+        hintText: hintText,
+        cancelText: cancelText,
+        confirmText: confirmText,
+      ),
+    );
+  }
+
+  static Widget _dialogActionButtons({
+    required BuildContext dialogContext,
+    required String cancelText,
+    required String confirmText,
+    required VoidCallback onConfirm,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF1A1A1A),
+              side: const BorderSide(color: Color(0xFF1A1A1A)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              padding: EdgeInsets.symmetric(vertical: 10.h),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            ),
+            child: Text(
+              cancelText,
+              style: AppTextStyles.helperText(
+                color: const Color(0xFF1A1A1A),
+              ).copyWith(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+        ),
+        SizedBox(width: 16.w),
+        Expanded(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8.r),
+              gradient: const LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  Color(0xFF3DCB6A),
+                  Color(0xFF0B5D2A),
+                ],
+              ),
+            ),
+            child: ElevatedButton(
+              onPressed: onConfirm,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0x00000000),
+                foregroundColor: const Color(0xFFFFFFFF),
+                shadowColor: const Color(0x00000000),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                padding: EdgeInsets.symmetric(vertical: 10.h),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+              ),
+              child: Text(
+                confirmText,
+                style: AppTextStyles.helperText(
+                  color: const Color(0xFFFFFFFF),
+                ).copyWith(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RenameDialog extends StatefulWidget {
+  const _RenameDialog({
+    required this.title,
+    this.initialValue,
+    required this.hintText,
+    required this.cancelText,
+    required this.confirmText,
+  });
+
+  final String title;
+  final String? initialValue;
+  final String hintText;
+  final String cancelText;
+  final String confirmText;
+
+  @override
+  State<_RenameDialog> createState() => _RenameDialogState();
+}
+
+class _RenameDialogState extends State<_RenameDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialValue);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final name = _controller.text.trim();
+    if (name.isEmpty) {
+      return;
+    }
+    Navigator.pop(context, name);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: const Color(0xFFFFFFFF),
+      insetPadding: EdgeInsets.symmetric(horizontal: 28.w),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20.r),
+        side: BorderSide(
+          color: const Color(0xFFD8E6FF),
+          width: 2.w,
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(24.w, 18.h, 24.w, 22.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              widget.title,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.mainText(
+                color: const Color(0xFF1A1A1A),
+              ).copyWith(
+                fontSize: 28.sp,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0,
+              ),
+            ),
+            SizedBox(height: 24.h),
+            TextField(
+              controller: _controller,
+              autofocus: true,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _submit(),
+              style: AppTextStyles.helperText(
+                color: const Color(0xFF1A1A1A),
+              ).copyWith(
+                fontSize: 16.sp,
+                letterSpacing: 0,
+              ),
+              decoration: InputDecoration(
+                hintText: widget.hintText,
+                hintStyle: AppTextStyles.helperText(
+                  color: const Color(0xFFB0B0B0),
+                ).copyWith(
+                  fontSize: 16.sp,
+                  letterSpacing: 0,
+                ),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16.w,
+                  vertical: 8.h,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10.r),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF05B560),
+                    width: 1,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10.r),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF05B560),
+                    width: 1,
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: 24.h),
+            AppDialogs._dialogActionButtons(
+              dialogContext: context,
+              cancelText: widget.cancelText,
+              confirmText: widget.confirmText,
+              onConfirm: _submit,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

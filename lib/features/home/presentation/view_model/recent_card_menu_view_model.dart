@@ -25,29 +25,9 @@ class RecentCardMenuViewModel extends ChangeNotifier {
   }
 
   Future<void> rename(BuildContext context, RecentCardItem item) async {
-    final controller = TextEditingController(text: item.name);
-    final newName = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Rename'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Enter new name',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+    final newName = await ui.AppDialogs.showRenameDialog(
+      context,
+      initialValue: item.name,
     );
 
     if (!context.mounted) return;
@@ -68,25 +48,10 @@ class RecentCardMenuViewModel extends ChangeNotifier {
   }
 
   Future<void> delete(BuildContext context, RecentCardItem item) async {
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete'),
-        content: Text('Are you sure you want to delete "${item.name}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.red),
-            ),
-          ),
-        ],
-      ),
+    final shouldDelete = await ui.AppDialogs.showDeleteDialog(
+      context,
+      message: 'Are you sure you want to delete "${item.name}"?',
+      confirmText: 'Ok',
     );
 
     if (!context.mounted) return;

@@ -84,13 +84,15 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
                       foregroundColor: const Color(0xFF1A1A1A),
                       side: const BorderSide(color: Color(0xFF1A1A1A)),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10.r),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
-                      padding: EdgeInsets.symmetric(vertical: 8.h),
+                      padding: EdgeInsets.symmetric(vertical: 6.h),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
                     ),
                     child: Text(
                       'Cancel',
-                      style: ui.AppTextStyles.helperText(
+                      style: ui.AppTextStyles.iconUnderText(
                         color: const Color(0xFF1A1A1A),
                       ).copyWith(fontWeight: FontWeight.w600),
                     ),
@@ -100,10 +102,10 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
                 Expanded(
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10.r),
+                      borderRadius: BorderRadius.circular(8.r),
                       gradient: const LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
                         colors: [
                           Color(0xFF05B560),
                           Color(0xFF074D2B),
@@ -117,13 +119,15 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
                         shadowColor: Colors.transparent,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.r),
+                          borderRadius: BorderRadius.circular(8.r),
                         ),
                         padding: EdgeInsets.symmetric(vertical: 6.h),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
                       ),
                       child: Text(
                         'Create',
-                        style: ui.AppTextStyles.helperText(
+                        style: ui.AppTextStyles.iconUnderText(
                           color: Colors.white,
                         ).copyWith(fontWeight: FontWeight.w600),
                       ),
