@@ -3,8 +3,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
+import 'package:visiting_card/features/folder/presentation/view/screen/folder_screen.dart';
 import 'package:visiting_card/features/home/presentation/view/screen/home_screen.dart';
 import 'package:visiting_card/features/parent/presentation/view/widgets/parent_bottom_nav_bar.dart';
+import 'package:visiting_card/features/settings/presentation/view/screen/settings_screen.dart';
 import 'package:visiting_card/features/parent/presentation/view_model/parent_view_model.dart';
 
 class ParentScreen extends StatelessWidget {
@@ -34,8 +36,8 @@ class ParentScreen extends StatelessWidget {
           children: const [
             HomeScreen(),
             _PlaceholderTab(title: 'Template'),
-            _PlaceholderTab(title: 'Folder'),
-            _PlaceholderTab(title: 'Settings'),
+            FolderScreen(),
+            SettingsScreen(),
           ],
         ),
       ),

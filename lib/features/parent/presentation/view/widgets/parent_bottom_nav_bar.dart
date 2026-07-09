@@ -3,10 +3,20 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
+import 'package:visiting_card/features/folder/presentation/view_model/folder_viewmodel.dart';
 import 'package:visiting_card/features/parent/presentation/view_model/parent_view_model.dart';
 
 class ParentBottomNavBar extends StatelessWidget {
   const ParentBottomNavBar({super.key});
+
+  static const _folderTabIndex = 2;
+
+  void _changeTab(BuildContext context, ParentViewModel viewModel, int index) {
+    if (viewModel.currentIndex == _folderTabIndex && index != _folderTabIndex) {
+      context.read<FolderViewModel>().clearSelection();
+    }
+    viewModel.changeIndex(index);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,14 +38,14 @@ class ParentBottomNavBar extends StatelessWidget {
             icon: ui.AppAssets.parentNavLogoOne,
             selectedIcon: ui.AppAssets.parentNavLogoOneSelect,
             isSelected: currentIndex == 0,
-            onTap: () => viewModel.changeIndex(0),
+            onTap: () => _changeTab(context, viewModel, 0),
           ),
           _ParentNavItem(
             label: 'Template',
             icon: ui.AppAssets.parentNavLogoTwo,
             selectedIcon: ui.AppAssets.parentNavLogoTwoSelect,
             isSelected: currentIndex == 1,
-            onTap: () => viewModel.changeIndex(1),
+            onTap: () => _changeTab(context, viewModel, 1),
           ),
           SizedBox(width: 64.w),
           _ParentNavItem(
@@ -43,14 +53,14 @@ class ParentBottomNavBar extends StatelessWidget {
             icon: ui.AppAssets.parentNavLogoThree,
             selectedIcon: ui.AppAssets.parentNavLogoThreeSelect,
             isSelected: currentIndex == 2,
-            onTap: () => viewModel.changeIndex(2),
+            onTap: () => _changeTab(context, viewModel, 2),
           ),
           _ParentNavItem(
             label: 'Settings',
             icon: ui.AppAssets.parentNavLogoFour,
             selectedIcon: ui.AppAssets.parentNavLogoFourSelect,
             isSelected: currentIndex == 3,
-            onTap: () => viewModel.changeIndex(3),
+            onTap: () => _changeTab(context, viewModel, 3),
           ),
         ],
       ),
@@ -89,13 +99,13 @@ class _ParentNavItem extends StatelessWidget {
           children: [
             SvgPicture.asset(
               isSelected ? selectedIcon : icon,
-              width: 24.w,
-              height: 24.w,
+              width: 20.w,
+              height: 20.w,
             ),
             SizedBox(height: 4.h),
             Text(
               label,
-              style: ui.AppTextStyles.iconUnderText(color: textColor),
+              style: ui.AppTextStyles.iconUnderText(color: textColor).copyWith(fontSize: 11.sp),
             ),
           ],
         ),

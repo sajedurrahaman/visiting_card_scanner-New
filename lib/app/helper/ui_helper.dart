@@ -22,6 +22,19 @@ class AppAssets {
   static const homeScreenRecentEmpty = 'assets/images/no_card_found.png';
   static const useTemplate = 'assets/icons/use_template.svg';
   static const scanWithCamera = 'assets/icons/scan_with_camera.svg';
+
+  // settings
+  static const shareIcon = 'assets/icons/share_icon.svg';
+  static const ratingIcon = 'assets/icons/rate_us_icon.svg';
+  static const contactIcon = 'assets/icons/contacts_us.svg';
+  static const privacyIcon = 'assets/icons/privacy_policy.svg';
+  static const termsIcon = 'assets/icons/terms_icon.svg';
+
+
+  static const folderIcon = 'assets/icons/folder_icon.svg';
+  static const createFolderIcon = 'assets/icons/create_folder.svg';
+  static const folderSelectIcon = 'assets/icons/file_select.svg';
+
 }
 
 class AppFonts {
@@ -48,7 +61,7 @@ class AppTextStyles {
         fontSize: 14.sp,
         fontWeight: FontWeight.w400,
         color: color ?? const Color(0xFF6B6B6B),
-    letterSpacing: 1.0.sp,
+        letterSpacing: 1.0.sp,
       );
 
   static TextStyle iconUnderText({Color? color}) => TextStyle(
@@ -75,6 +88,7 @@ class Colors{
   static const parentIconSelectTextColor = Color(0xFF05B560);
   static const parentIconTextColor = Color(0xFFFFFFFF);
   static const toastSuccessColor = Color(0xFF05B560);
+  static const cardBgColor = Color(0xFFF3FFF9);
 }
 
 class AppToast {
