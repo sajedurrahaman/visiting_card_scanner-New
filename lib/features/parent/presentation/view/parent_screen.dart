@@ -7,6 +7,7 @@ import 'package:visiting_card/features/folder/presentation/view/screen/folder_sc
 import 'package:visiting_card/features/home/presentation/view/screen/home_screen.dart';
 import 'package:visiting_card/features/parent/presentation/view/widgets/parent_bottom_nav_bar.dart';
 import 'package:visiting_card/features/settings/presentation/view/screen/settings_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/template_screen.dart';
 import 'package:visiting_card/features/parent/presentation/view_model/parent_view_model.dart';
 
 class ParentScreen extends StatelessWidget {
@@ -35,7 +36,7 @@ class ParentScreen extends StatelessWidget {
           index: currentIndex,
           children: const [
             HomeScreen(),
-            _PlaceholderTab(title: 'Template'),
+            TemplateScreen(),
             FolderScreen(),
             SettingsScreen(),
           ],
