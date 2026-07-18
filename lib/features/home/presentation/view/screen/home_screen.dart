@@ -4,6 +4,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/app/routes/route_names.dart';
+import 'package:visiting_card/features/home/presentation/view/widgets/home_screen_barcode_bottom_sheet.dart';
+import 'package:visiting_card/features/home/presentation/view/widgets/home_screen_qrcode_bottom_sheet.dart';
 import 'package:visiting_card/features/home/presentation/view/widgets/home_screen_visiting_card_bottom_sheet.dart';
 import 'package:visiting_card/features/home/presentation/view/widgets/recent_card_tile.dart';
 import 'package:visiting_card/features/home/presentation/view_model/home_view_model.dart';
@@ -61,12 +63,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         _ScanAction(
                           icon: ui.AppAssets.homeQrCode,
                           label: 'QR Code',
-                          onTap: viewModel.onQrCodeTap,
+                          onTap: () =>
+                              HomeScreenQrcodeBottomSheet.show(context),
                         ),
                         _ScanAction(
                           icon: ui.AppAssets.homeBarCode,
                           label: 'Barcode',
-                          onTap: viewModel.onBarcodeTap,
+                          onTap: () =>
+                              HomeScreenBarcodeBottomSheet.show(context),
                         ),
                       ],
                     ),

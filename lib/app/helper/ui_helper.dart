@@ -21,6 +21,8 @@ class AppAssets {
   static const homeBarCode = 'assets/icons/bar_code.svg';
   static const homeScreenRecentEmpty = 'assets/images/no_card_found.png';
   static const useTemplate = 'assets/icons/use_template.svg';
+  static const useQrCodeTemplate = 'assets/icons/qrcode_template.svg';
+  static const useBarCodeTemplate = 'assets/icons/barcode_template.svg';
   static const scanWithCamera = 'assets/icons/scan_with_camera.svg';
 
   // settings
