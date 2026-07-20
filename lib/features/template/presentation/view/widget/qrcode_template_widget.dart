@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/qrcode_category_chip.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/qrcode_template_tile.dart';
+import 'package:visiting_card/features/template/presentation/view/widget/qrcode_type_select_showdialog.dart';
 import 'package:visiting_card/features/template/presentation/view_model/qrcode_template_viewmodel.dart';
 
 class QrcodeTemplateWidget extends StatelessWidget {
@@ -52,7 +53,10 @@ class QrcodeTemplateWidget extends StatelessWidget {
               final item = templates[index];
               return QrcodeTemplateTile(
                 item: item,
-                onTap: () => viewModel.selectTemplate(item.id),
+                onTap: () {
+                  viewModel.selectTemplate(item.id);
+                  QrcodeTypeSelectDialog.show(context);
+                },
               );
             },
           ),

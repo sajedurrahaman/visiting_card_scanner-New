@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/barcode_template_tile.dart';
+import 'package:visiting_card/features/template/presentation/view/widget/barcode_type_select_showdialog.dart';
 import 'package:visiting_card/features/template/presentation/view_model/barcode_template_viewmodel.dart';
 
 class BarcodeTemplateWidget extends StatelessWidget {
@@ -25,7 +26,10 @@ class BarcodeTemplateWidget extends StatelessWidget {
         final item = templates[index];
         return BarcodeTemplateTile(
           item: item,
-          onTap: () => viewModel.selectTemplate(item.id),
+          onTap: () {
+            viewModel.selectTemplate(item.id);
+            BarcodeTypeSelectDialog.show(context);
+          },
         );
       },
     );

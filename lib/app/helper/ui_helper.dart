@@ -134,6 +134,48 @@ class AppAssets {
    static const barCodeFiveThumbnail = 'assets/barcode/barcode_5.png';
    static const barCodeSixThumbnail = 'assets/barcode/barcode_6.png';
 
+   // qr code dialog icon
+   static const qrDialogWifi = 'assets/qrcode/wifi 2.svg';
+   static const qrDialogX = 'assets/qrcode/x.svg';
+   static const qrDialogWhatsapp = 'assets/qrcode/whatsapp.svg';
+   static const qrDialogViber = 'assets/qrcode/viber.svg';
+   static const qrDialogWebsite = 'assets/qrcode/Website.svg';
+   static const qrDialogText = 'assets/qrcode/text.svg';
+   static const qrDialogSpotify = 'assets/qrcode/spotify.svg';
+   static const qrDialogSms = 'assets/qrcode/sms.svg';
+   static const qrDialogContacts = 'assets/qrcode/contacts.svg';
+   static const qrDialogEmail = 'assets/qrcode/email.svg';
+   static const qrDialogFacebook = 'assets/qrcode/facebook.svg';
+   static const qrDialogInstagram = 'assets/qrcode/instagram.svg';
+   static const qrDialogLocation = 'assets/qrcode/location.svg';
+   static const qrDialogPhone = 'assets/qrcode/phone.svg';
+   static const qrDialogProduct = 'assets/qrcode/product.svg';
+
+   static const qrDialogMainLogo = 'assets/qrcode/qrcode_dialog_image.png';
+
+
+  // bar code dialog icon
+  static const barGeneralTypes = 'assets/barcode/general_types.svg';
+  static const barIsbn = 'assets/barcode/isbn.svg';
+  static const barItf = 'assets/barcode/itf.svg';
+  static const barItf14 = 'assets/barcode/itf_14.svg';
+  static const barMsi = 'assets/barcode/msi.svg';
+  static const barPdf417 = 'assets/barcode/pdf_417.svg';
+  static const barUpcA = 'assets/barcode/upc_a.svg';
+  static const barUpcE = 'assets/barcode/upc_e.svg';
+  static const barEan13 = 'assets/barcode/ean_13.svg';
+  static const barEan8 = 'assets/barcode/ean_8.svg';
+  static const barDataMatrix = 'assets/barcode/data_matrix.svg';
+  static const barCode128 = 'assets/barcode/code_128.svg';
+  static const barCode93 = 'assets/barcode/code_93.svg';
+  static const barCode39 = 'assets/barcode/code_39.svg';
+  static const barCodaBar = 'assets/barcode/codabar.svg';
+
+
+
+  static const barDialogMainLogo = 'assets/barcode/barcode_dialog_image.png';
+
+
 
 }
 
