@@ -70,6 +70,70 @@ class AppAssets {
   static const inactiveRightSideArrow = 'assets/icons/inactive_right_side_arrow.svg';
   static const activeRightSideArrow = 'assets/icons/active_right_side_arrow.svg';
 
+  // qrcode
+   static const qrCodeTrendingIcon = 'assets/qrcode/trending.svg';
+   static const qrCodeNewIcon = 'assets/qrcode/new.svg';
+   static const qrCodeWifiIcon = 'assets/qrcode/wifi.svg';
+   static const qrCodeEventIcon = 'assets/qrcode/event.svg';
+   static const qrCodeSocialIcon = 'assets/qrcode/social.svg';
+   static const qrCodeLoveIcon = 'assets/qrcode/love.svg';
+
+   // trending
+   static const qrCodeTrendingOneThumbnail = 'assets/qrcode/qr_code_1.png';
+   static const qrCodeTrendingTwoThumbnail = 'assets/qrcode/qr_code_2.png';
+   static const qrCodeTrendingThreeThumbnail = 'assets/qrcode/qr_code_3.png';
+   static const qrCodeTrendingFourThumbnail = 'assets/qrcode/qr_code_4.png';
+   static const qrCodeTrendingFiveThumbnail = 'assets/qrcode/qr_code_5.png';
+   static const qrCodeTrendingSixThumbnail = 'assets/qrcode/qr_code_6.png';
+
+   // new
+   static const qrCodeNewOneThumbnail = 'assets/qrcode/qr_code_7.png';
+   static const qrCodeNewTwoThumbnail = 'assets/qrcode/qr_code_8.png';
+   static const qrCodeNewThreeThumbnail = 'assets/qrcode/qr_code_9.png';
+   static const qrCodeNewFourThumbnail = 'assets/qrcode/qr_code_10.png';
+   static const qrCodeNewFiveThumbnail = 'assets/qrcode/qr_code_11.png';
+   static const qrCodeNewSixThumbnail = 'assets/qrcode/qr_code_12.png';
+
+   // social
+   static const qrCodeSocialOneThumbnail = 'assets/qrcode/qr_code_13.png';
+   static const qrCodeSocialTwoThumbnail = 'assets/qrcode/qr_code_14.png';
+   static const qrCodeSocialThreeThumbnail = 'assets/qrcode/qr_code_15.png';
+   static const qrCodeSocialFourThumbnail = 'assets/qrcode/qr_code_16.png';
+   static const qrCodeSocialFiveThumbnail = 'assets/qrcode/qr_code_17.png';
+   static const qrCodeSocialSixThumbnail = 'assets/qrcode/qr_code_18.png';
+
+   // wifi
+   static const qrCodeWifiOneThumbnail = 'assets/qrcode/qr_code_19.png';
+   static const qrCodeWifiTwoThumbnail = 'assets/qrcode/qr_code_20.png';
+   static const qrCodeWifiThreeThumbnail = 'assets/qrcode/qr_code_21.png';
+   static const qrCodeWifiFourThumbnail = 'assets/qrcode/qr_code_22.png';
+   static const qrCodeWifiFiveThumbnail = 'assets/qrcode/qr_code_23.png';
+   static const qrCodeWifiSixThumbnail = 'assets/qrcode/qr_code_24.png';
+
+   // event
+   static const qrCodeEventOneThumbnail = 'assets/qrcode/qr_code_25.png';
+   static const qrCodeEventTwoThumbnail = 'assets/qrcode/qr_code_26.png';
+   static const qrCodeEventThreeThumbnail = 'assets/qrcode/qr_code_27.png';
+   static const qrCodeEventFourThumbnail = 'assets/qrcode/qr_code_28.png';
+   static const qrCodeEventFiveThumbnail = 'assets/qrcode/qr_code_29.png';
+   static const qrCodeEventSixThumbnail = 'assets/qrcode/qr_code_30.png';
+
+   // love
+   static const qrCodeLoveOneThumbnail = 'assets/qrcode/qr_code_31.png';
+   static const qrCodeLoveTwoThumbnail = 'assets/qrcode/qr_code_32.png';
+   static const qrCodeLoveThreeThumbnail = 'assets/qrcode/qr_code_33.png';
+   static const qrCodeLoveFourThumbnail = 'assets/qrcode/qr_code_34.png';
+   static const qrCodeLoveFiveThumbnail = 'assets/qrcode/qr_code_35.png';
+   static const qrCodeLoveSixThumbnail = 'assets/qrcode/qr_code_36.png';
+
+   // barcode
+   static const barCodeOneThumbnail = 'assets/barcode/barcode_1.png';
+   static const barCodeTwoThumbnail = 'assets/barcode/barcode_2.png';
+   static const barCodeThreeThumbnail = 'assets/barcode/barcode_3.png';
+   static const barCodeFourThumbnail = 'assets/barcode/barcode_4.png';
+   static const barCodeFiveThumbnail = 'assets/barcode/barcode_5.png';
+   static const barCodeSixThumbnail = 'assets/barcode/barcode_6.png';
+
 
 }
 

@@ -28,7 +28,7 @@ class TemplateScreen extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
+            padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 8.h),
             child: TemplateTypeSelector(
               selectedIndex: viewModel.selectedIndex,
               onChanged: viewModel.changeTab,

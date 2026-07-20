@@ -68,6 +68,8 @@ flutter:
      - assets/images/visiting_card_template/vertical/
      - assets/images/visiting_card_template_without_data/horizontal/
      - assets/images/visiting_card_template_without_data/vertical/
+     - assets/qrcode/
+     - assets/barcode/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
