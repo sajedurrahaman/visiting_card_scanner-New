@@ -42,6 +42,34 @@ class AppAssets {
   static const moveSelectIcon = 'assets/icons/select_move.svg';
   static const deleteSelectIcon = 'assets/icons/select_delete.svg';
 
+  // visiting_card_template
+  static const vTemplateHorizontalOneFront = 'assets/images/visiting_card_template/horizontal/business_card front_01.png';
+  static const vTemplateHorizontalOneBack = 'assets/images/visiting_card_template/horizontal/business_card-Back_01.png';
+  static const vTemplateHorizontalTwoFront = 'assets/images/visiting_card_template/horizontal/business_card front_02.png';
+  static const vTemplateHorizontalTwoBack = 'assets/images/visiting_card_template/horizontal/business_card-Back_02.png';
+  static const vTemplateHorizontalThreeFront = 'assets/images/visiting_card_template/horizontal/business_card front_03.png';
+  static const vTemplateHorizontalThreeBack = 'assets/images/visiting_card_template/horizontal/business_card-Back_03.png';
+  static const vTemplateHorizontalFourFront = 'assets/images/visiting_card_template/horizontal/business_card front_04.png';
+  static const vTemplateHorizontalFourBack = 'assets/images/visiting_card_template/horizontal/business_card-Back_04.png';
+  static const vTemplateHorizontalFiveFront = 'assets/images/visiting_card_template/horizontal/business_card front_05.png';
+  static const vTemplateHorizontalFiveBack = 'assets/images/visiting_card_template/horizontal/business_card-Back_05.png';
+
+  static const vTemplateVerticalOneFront = 'assets/images/visiting_card_template/vertical/Front_01.png';
+  static const vTemplateVerticalOneBack = 'assets/images/visiting_card_template/vertical/Back_01.png';
+  static const vTemplateVerticalTwoFront = 'assets/images/visiting_card_template/vertical/Front_02.png';
+  static const vTemplateVerticalTwoBack = 'assets/images/visiting_card_template/vertical/Back_02.png';
+  static const vTemplateVerticalThreeFront = 'assets/images/visiting_card_template/vertical/Front_03.png';
+  static const vTemplateVerticalThreeBack = 'assets/images/visiting_card_template/vertical/Back_03.png';
+  static const vTemplateVerticalFourFront = 'assets/images/visiting_card_template/vertical/Front_04.png';
+  static const vTemplateVerticalFourBack = 'assets/images/visiting_card_template/vertical/Back_04.png';
+  static const vTemplateVerticalFiveFront = 'assets/images/visiting_card_template/vertical/Front_05.png';
+  static const vTemplateVerticalFiveBack = 'assets/images/visiting_card_template/vertical/Back_05.png';
+
+  static const inactiveLeftSideArrow = 'assets/icons/inactive_left_side_arrow.svg';
+  static const activeLeftSideArrow = 'assets/icons/active_left_side_arrow.svg';
+  static const inactiveRightSideArrow = 'assets/icons/inactive_right_side_arrow.svg';
+  static const activeRightSideArrow = 'assets/icons/active_right_side_arrow.svg';
+
 
 }
 
