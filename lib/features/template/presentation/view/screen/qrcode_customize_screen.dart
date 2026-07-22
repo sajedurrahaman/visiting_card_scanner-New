@@ -523,175 +523,196 @@ class _TextTab extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(height: 8.h),
-                  _TextSectionLabel('Font Size'),
-            SizedBox(height: 6.h),
-            Row(
-              children: [
-                Text(
-                  'A',
-                  style: TextStyle(
-                    fontSize: 10.sp,
-                    color: const Color(0xFF9E9E9E),
-                  ),
-                ),
-                Expanded(
-                  child: SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: _accent,
-                      inactiveTrackColor: const Color(0xFF4F4E4E),
-                      trackHeight: 3,
-                      thumbColor: _accent,
-                      overlayShape: SliderComponentShape.noOverlay,
-                      thumbShape: const RoundSliderThumbShape(
-                        enabledThumbRadius: 6,
-                      ),
+                  _OptionCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _TextSectionLabel('Font Size'),
+                        SizedBox(height: 8.h),
+                        Row(
+                          children: [
+                            Text(
+                              'A',
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: const Color(0xFF9E9E9E),
+                              ),
+                            ),
+                            Expanded(
+                              child: SliderTheme(
+                                data: SliderTheme.of(context).copyWith(
+                                  activeTrackColor: _accent,
+                                  inactiveTrackColor: const Color(0xFF4F4E4E),
+                                  trackHeight: 4,
+                                  thumbColor: _accent,
+                                  overlayShape: SliderComponentShape.noOverlay,
+                                  thumbShape: const RoundSliderThumbShape(
+                                    enabledThumbRadius: 8,
+                                  ),
+                                ),
+                                child: Slider(
+                                  value: vm.overlayFontSize,
+                                  min: 10,
+                                  max: 28,
+                                  onChanged: vm.setOverlayFontSize,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              'A',
+                              style: TextStyle(
+                                fontSize: 18.sp,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF9E9E9E),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    child: Slider(
-                      value: vm.overlayFontSize,
-                      min: 10,
-                      max: 28,
-                      onChanged: vm.setOverlayFontSize,
-                    ),
                   ),
-                ),
-                Text(
-                  'A',
-                  style: TextStyle(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF9E9E9E),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 10.h),
-            _TextSectionLabel('Text Color'),
-            SizedBox(height: 8.h),
-            SizedBox(
-              height: 24.h,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: QrcodeCustomizeViewModel.textColors.length + 2,
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    final active = vm.overlaySolidSwatchUi == -1;
-                    return GestureDetector(
-                      onTap: vm.selectDefaultOverlayColor,
-                      child: Container(
-                        width: 24.w,
-                        height: 24.w,
-                        margin: EdgeInsets.only(right: 6.w),
-                        padding: EdgeInsets.all(3.w),
-                        decoration: BoxDecoration(
-                          color: active
-                              ? _accent.withValues(alpha: 0.15)
-                              : Colors.grey.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: active ? _accent : Colors.transparent,
-                            width: 2,
+                  SizedBox(height: 10.h),
+                  _OptionCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _TextSectionLabel('Text Color'),
+                        SizedBox(height: 10.h),
+                        SizedBox(
+                          height: 32.w,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: QrcodeCustomizeViewModel.textColors.length + 2,
+                            itemBuilder: (context, index) {
+                              if (index == 0) {
+                                final active = vm.overlaySolidSwatchUi == -1;
+                                return GestureDetector(
+                                  onTap: vm.selectDefaultOverlayColor,
+                                  child: Container(
+                                    width: 32.w,
+                                    height: 32.w,
+                                    margin: EdgeInsets.only(right: 8.w),
+                                    padding: EdgeInsets.all(4.w),
+                                    decoration: BoxDecoration(
+                                      color: active
+                                          ? _accent.withValues(alpha: 0.15)
+                                          : Colors.grey.withValues(alpha: 0.1),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: active ? _accent : Colors.transparent,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: SvgPicture.asset(QrColorHelper.defaultResetIcon),
+                                  ),
+                                );
+                              }
+                              if (index == 1) {
+                                final active = vm.overlaySolidSwatchUi == -2;
+                                return GestureDetector(
+                                  onTap: () async {
+                                    final color = await _showMultipleColorPicker(
+                                      context,
+                                      initial: vm.overlayTextColor,
+                                    );
+                                    if (color != null) {
+                                      vm.selectCustomOverlayColor(color);
+                                    }
+                                  },
+                                  child: Container(
+                                    width: 32.w,
+                                    height: 32.w,
+                                    margin: EdgeInsets.only(right: 8.w),
+                                    padding: EdgeInsets.all(4.w),
+                                    decoration: BoxDecoration(
+                                      color: active
+                                          ? _accent.withValues(alpha: 0.15)
+                                          : Colors.grey.withValues(alpha: 0.1),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: active ? _accent : Colors.transparent,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: SvgPicture.asset(ui.AppAssets.multipleColorIcon),
+                                  ),
+                                );
+                              }
+                              final colorIndex = index - 2;
+                              final color =
+                                  QrcodeCustomizeViewModel.textColors[colorIndex];
+                              return GestureDetector(
+                                onTap: () => vm.selectOverlaySolidColor(colorIndex),
+                                child: Container(
+                                  width: 32.w,
+                                  height: 32.w,
+                                  margin: EdgeInsets.symmetric(horizontal: 4.w),
+                                  decoration: BoxDecoration(
+                                    color: color,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: vm.overlaySolidSwatchUi == colorIndex
+                                          ? _accent
+                                          : Colors.transparent,
+                                      width: 2,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ),
-                        child: SvgPicture.asset(QrColorHelper.defaultResetIcon),
-                      ),
-                    );
-                  }
-                  if (index == 1) {
-                    final active = vm.overlaySolidSwatchUi == -2;
-                    return GestureDetector(
-                      onTap: () async {
-                        final color = await _showMultipleColorPicker(
-                          context,
-                          initial: vm.overlayTextColor,
-                        );
-                        if (color != null) {
-                          vm.selectCustomOverlayColor(color);
-                        }
-                      },
-                      child: Container(
-                        width: 24.w,
-                        height: 24.w,
-                        margin: EdgeInsets.only(right: 6.w),
-                        padding: EdgeInsets.all(3.w),
-                        decoration: BoxDecoration(
-                          color: active
-                              ? _accent.withValues(alpha: 0.15)
-                              : Colors.grey.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: active ? _accent : Colors.transparent,
-                            width: 2,
-                          ),
-                        ),
-                        child: SvgPicture.asset(ui.AppAssets.multipleColorIcon),
-                      ),
-                    );
-                  }
-                  final colorIndex = index - 2;
-                  final color =
-                      QrcodeCustomizeViewModel.textColors[colorIndex];
-                  return GestureDetector(
-                    onTap: () => vm.selectOverlaySolidColor(colorIndex),
-                    child: Container(
-                      width: 24.w,
-                      height: 24.w,
-                      margin: EdgeInsets.symmetric(horizontal: 3.w),
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: vm.overlaySolidSwatchUi == colorIndex
-                              ? _accent
-                              : Colors.transparent,
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            SizedBox(height: 10.h),
-            _TextSectionLabel('Font Style'),
-            SizedBox(height: 8.h),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: QrcodeCustomizeViewModel.fontStyleLabels.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                crossAxisSpacing: 6.w,
-                mainAxisSpacing: 6.h,
-                childAspectRatio: 2.8,
-              ),
-              itemBuilder: (context, index) {
-                final selected = vm.selectedFontStyleIndex == index;
-                return GestureDetector(
-                  onTap: () => vm.setFontStyleIndex(index),
-                  child: Container(
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFFFFF),
-                      borderRadius: BorderRadius.circular(5.r),
-                      border: Border.all(
-                        color: selected ? _accent : const Color(0xFFE0E0E0),
-                        width: selected ? 1.5 : 1,
-                      ),
-                    ),
-                    child: Text(
-                      'fonts',
-                      style: TextStyle(
-                        fontFamily: ui.AppFonts.sfPro,
-                        fontSize: 10.sp,
-                        fontWeight: _PreviewCard._fontWeightFor(index),
-                        fontStyle: _PreviewCard._fontStyleFor(index),
-                        color: const Color(0xFF1A1A1A),
-                      ),
+                      ],
                     ),
                   ),
-                );
-              },
-            ),
+                  SizedBox(height: 10.h),
+                  _OptionCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _TextSectionLabel('Font Style'),
+                        SizedBox(height: 8.h),
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: QrcodeCustomizeViewModel.fontStyleLabels.length,
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 4,
+                            crossAxisSpacing: 6.w,
+                            mainAxisSpacing: 6.h,
+                            childAspectRatio: 2.8,
+                          ),
+                          itemBuilder: (context, index) {
+                            final selected = vm.selectedFontStyleIndex == index;
+                            return GestureDetector(
+                              onTap: () => vm.setFontStyleIndex(index),
+                              child: Container(
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFFFFF),
+                                  borderRadius: BorderRadius.circular(5.r),
+                                  border: Border.all(
+                                    color: selected ? _accent : const Color(0xFFE0E0E0),
+                                    width: selected ? 1.5 : 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  'fonts',
+                                  style: TextStyle(
+                                    fontFamily: ui.AppFonts.sfPro,
+                                    fontSize: 10.sp,
+                                    fontWeight: _PreviewCard._fontWeightFor(index),
+                                    fontStyle: _PreviewCard._fontStyleFor(index),
+                                    color: const Color(0xFF1A1A1A),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -717,6 +738,34 @@ class _TextSectionLabel extends StatelessWidget {
         fontWeight: FontWeight.w700,
         letterSpacing: 0,
       ),
+    );
+  }
+}
+
+class _OptionCard extends StatelessWidget {
+  const _OptionCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFFFF),
+        borderRadius: BorderRadius.circular(12.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 8,
+            spreadRadius: 1,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 }
@@ -877,232 +926,259 @@ class _ColorTab extends StatelessWidget {
             onLeftTap: () => vm.setShowForegroundOptions(true),
             onRightTap: () => vm.setShowForegroundOptions(false),
           ),
-          SizedBox(height: 8.h),
-          _TextSectionLabel('Solid Color'),
-          SizedBox(height: 6.h),
-          SizedBox(
-            height: dotSize,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: QrColorHelper.colorOptions.length + 2,
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  final active = isForeground
-                      ? vm.foregroundSolidSwatchUi == -1
-                      : vm.backgroundSolidSwatchUi == -1;
-                  return GestureDetector(
-                    onTap: vm.selectDefaultSolid,
-                    child: Container(
-                      width: dotSize,
-                      height: dotSize,
-                      margin: EdgeInsets.only(right: 8.w),
-                      padding: EdgeInsets.all(4.w),
-                      decoration: BoxDecoration(
-                        color: active
-                            ? _accent.withValues(alpha: 0.15)
-                            : Colors.grey.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: active ? _accent : Colors.transparent,
-                          width: 2,
-                        ),
-                      ),
-                      child: SvgPicture.asset(QrColorHelper.defaultResetIcon),
-                    ),
-                  );
-                }
-                if (index == 1) {
-                  final active = isForeground
-                      ? vm.foregroundSolidSwatchUi == -2
-                      : vm.backgroundSolidSwatchUi == -2;
-                  return GestureDetector(
-                    onTap: () async {
-                      final initial = isForeground
-                          ? vm.foregroundColor
-                          : vm.backgroundColor;
-                      final color = await _showMultipleColorPicker(
-                        context,
-                        initial: initial,
-                      );
-                      if (color != null) {
-                        vm.selectCustomSolidColor(color);
+          SizedBox(height: 10.h),
+          _OptionCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _TextSectionLabel('Solid Color'),
+                SizedBox(height: 10.h),
+                SizedBox(
+                  height: dotSize,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: QrColorHelper.colorOptions.length + 2,
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        final active = isForeground
+                            ? vm.foregroundSolidSwatchUi == -1
+                            : vm.backgroundSolidSwatchUi == -1;
+                        return GestureDetector(
+                          onTap: vm.selectDefaultSolid,
+                          child: Container(
+                            width: dotSize,
+                            height: dotSize,
+                            margin: EdgeInsets.only(right: 8.w),
+                            padding: EdgeInsets.all(4.w),
+                            decoration: BoxDecoration(
+                              color: active
+                                  ? _accent.withValues(alpha: 0.15)
+                                  : Colors.grey.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: active ? _accent : Colors.transparent,
+                                width: 2,
+                              ),
+                            ),
+                            child: SvgPicture.asset(QrColorHelper.defaultResetIcon),
+                          ),
+                        );
                       }
-                    },
-                    child: Container(
-                      width: dotSize,
-                      height: dotSize,
-                      margin: EdgeInsets.only(right: 8.w),
-                      padding: EdgeInsets.all(4.w),
-                      decoration: BoxDecoration(
-                        color: active
-                            ? _accent.withValues(alpha: 0.15)
-                            : Colors.grey.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: active ? _accent : Colors.transparent,
-                          width: 2,
+                      if (index == 1) {
+                        final active = isForeground
+                            ? vm.foregroundSolidSwatchUi == -2
+                            : vm.backgroundSolidSwatchUi == -2;
+                        return GestureDetector(
+                          onTap: () async {
+                            final initial = isForeground
+                                ? vm.foregroundColor
+                                : vm.backgroundColor;
+                            final color = await _showMultipleColorPicker(
+                              context,
+                              initial: initial,
+                            );
+                            if (color != null) {
+                              vm.selectCustomSolidColor(color);
+                            }
+                          },
+                          child: Container(
+                            width: dotSize,
+                            height: dotSize,
+                            margin: EdgeInsets.only(right: 8.w),
+                            padding: EdgeInsets.all(4.w),
+                            decoration: BoxDecoration(
+                              color: active
+                                  ? _accent.withValues(alpha: 0.15)
+                                  : Colors.grey.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: active ? _accent : Colors.transparent,
+                                width: 2,
+                              ),
+                            ),
+                            child:
+                                SvgPicture.asset(ui.AppAssets.multipleColorIcon),
+                          ),
+                        );
+                      }
+                      final colorIndex = index - 2;
+                      final color = QrColorHelper.colorOptions[colorIndex];
+                      final selected = isForeground
+                          ? vm.foregroundSolidSwatchUi == colorIndex
+                          : vm.backgroundSolidSwatchUi == colorIndex;
+                      return GestureDetector(
+                        onTap: () => vm.selectSolidColor(colorIndex),
+                        child: Container(
+                          width: dotSize,
+                          height: dotSize,
+                          margin: EdgeInsets.symmetric(horizontal: 4.w),
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: selected ? _accent : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
                         ),
-                      ),
-                      child: SvgPicture.asset(ui.AppAssets.multipleColorIcon),
-                    ),
-                  );
-                }
-                final colorIndex = index - 2;
-                final color = QrColorHelper.colorOptions[colorIndex];
-                final selected = isForeground
-                    ? vm.foregroundSolidSwatchUi == colorIndex
-                    : vm.backgroundSolidSwatchUi == colorIndex;
-                return GestureDetector(
-                  onTap: () => vm.selectSolidColor(colorIndex),
-                  child: Container(
-                    width: dotSize,
-                    height: dotSize,
-                    margin: EdgeInsets.symmetric(horizontal: 4.w),
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: selected ? _accent : Colors.transparent,
-                        width: 2,
-                      ),
-                    ),
+                      );
+                    },
                   ),
-                );
-              },
+                ),
+              ],
             ),
           ),
           SizedBox(height: 10.h),
-          _TextSectionLabel('Gradient Color'),
-          SizedBox(height: 6.h),
-          SizedBox(
-            height: dotSize,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: QrColorHelper.gradientColors.length + 1,
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  final active = isForeground
-                      ? vm.foregroundGradientSwatchUi == -1
-                      : vm.backgroundGradientSwatchUi == -1;
-                  return GestureDetector(
-                    onTap: vm.selectDefaultGradient,
-                    child: Container(
-                      width: dotSize,
-                      height: dotSize,
-                      margin: EdgeInsets.only(right: 8.w),
-                      padding: EdgeInsets.all(4.w),
-                      decoration: BoxDecoration(
-                        color: active
-                            ? _accent.withValues(alpha: 0.15)
-                            : Colors.grey.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: active ? _accent : Colors.transparent,
-                          width: 2,
+          _OptionCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _TextSectionLabel('Gradient Color'),
+                SizedBox(height: 10.h),
+                SizedBox(
+                  height: dotSize,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: QrColorHelper.gradientColors.length + 1,
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        final active = isForeground
+                            ? vm.foregroundGradientSwatchUi == -1
+                            : vm.backgroundGradientSwatchUi == -1;
+                        return GestureDetector(
+                          onTap: vm.selectDefaultGradient,
+                          child: Container(
+                            width: dotSize,
+                            height: dotSize,
+                            margin: EdgeInsets.only(right: 8.w),
+                            padding: EdgeInsets.all(4.w),
+                            decoration: BoxDecoration(
+                              color: active
+                                  ? _accent.withValues(alpha: 0.15)
+                                  : Colors.grey.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: active ? _accent : Colors.transparent,
+                                width: 2,
+                              ),
+                            ),
+                            child: SvgPicture.asset(QrColorHelper.defaultResetIcon),
+                          ),
+                        );
+                      }
+                      final gradientIndex = index - 1;
+                      final gradient =
+                          QrColorHelper.gradientColors[gradientIndex];
+                      final selected = isForeground
+                          ? vm.foregroundGradientSwatchUi == gradientIndex
+                          : vm.backgroundGradientSwatchUi == gradientIndex;
+                      return GestureDetector(
+                        onTap: () => vm.selectGradient(gradientIndex),
+                        child: Container(
+                          width: dotSize,
+                          height: dotSize,
+                          margin: EdgeInsets.symmetric(horizontal: 4.w),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: gradient,
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: selected ? _accent : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
                         ),
-                      ),
-                      child: SvgPicture.asset(QrColorHelper.defaultResetIcon),
-                    ),
-                  );
-                }
-                final gradientIndex = index - 1;
-                final gradient = QrColorHelper.gradientColors[gradientIndex];
-                final selected = isForeground
-                    ? vm.foregroundGradientSwatchUi == gradientIndex
-                    : vm.backgroundGradientSwatchUi == gradientIndex;
-                return GestureDetector(
-                  onTap: () => vm.selectGradient(gradientIndex),
-                  child: Container(
-                    width: dotSize,
-                    height: dotSize,
-                    margin: EdgeInsets.symmetric(horizontal: 4.w),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: gradient,
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: selected ? _accent : Colors.transparent,
-                        width: 2,
-                      ),
-                    ),
+                      );
+                    },
                   ),
-                );
-              },
+                ),
+              ],
             ),
           ),
           if (!isForeground) ...[
-            SizedBox(height: 6.h),
-            _TextSectionLabel('Images'),
-            SizedBox(height: 2.h),
-            SizedBox(
-              height: 35.h,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: QrColorHelper.backgroundImages.length + 1,
-                itemBuilder: (context, index) {
-                  const thumbSize = 35.0;
-                  if (index == 0) {
-                    final active = vm.backgroundImageSwatchUi == -1 ||
-                        vm.selectedBackgroundImage == null;
-                    return GestureDetector(
-                      onTap: vm.resetBackgroundImage,
-                      child: Container(
-                        margin: EdgeInsets.only(right: 8.w),
-                        height: thumbSize.w,
-                        width: thumbSize.w,
-                        padding: EdgeInsets.all(6.w),
-                        decoration: BoxDecoration(
-                          color: active
-                              ? _accent.withValues(alpha: 0.15)
-                              : Colors.grey.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(30.r),
-                          border: Border.all(
-                            color: active ? _accent : Colors.transparent,
-                            width: 1,
+            SizedBox(height: 10.h),
+            _OptionCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _TextSectionLabel('Images'),
+                  SizedBox(height: 10.h),
+                  SizedBox(
+                    height: 35.h,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: QrColorHelper.backgroundImages.length + 1,
+                      itemBuilder: (context, index) {
+                        const thumbSize = 35.0;
+                        if (index == 0) {
+                          final active = vm.backgroundImageSwatchUi == -1 ||
+                              vm.selectedBackgroundImage == null;
+                          return GestureDetector(
+                            onTap: vm.resetBackgroundImage,
+                            child: Container(
+                              margin: EdgeInsets.only(right: 8.w),
+                              height: thumbSize.w,
+                              width: thumbSize.w,
+                              padding: EdgeInsets.all(6.w),
+                              decoration: BoxDecoration(
+                                color: active
+                                    ? _accent.withValues(alpha: 0.15)
+                                    : Colors.grey.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(30.r),
+                                border: Border.all(
+                                  color: active ? _accent : Colors.transparent,
+                                  width: 1,
+                                ),
+                              ),
+                              child:
+                                  SvgPicture.asset(QrColorHelper.defaultResetIcon),
+                            ),
+                          );
+                        }
+                        final imageIndex = index - 1;
+                        if (imageIndex < 0 ||
+                            imageIndex >=
+                                QrColorHelper.backgroundImages.length) {
+                          return const SizedBox.shrink();
+                        }
+                        final imagePath =
+                            QrColorHelper.backgroundImages[imageIndex];
+                        final selected =
+                            vm.selectedBackgroundImage == imagePath;
+                        return GestureDetector(
+                          onTap: () => vm.selectBackgroundImage(imageIndex),
+                          child: Container(
+                            margin: EdgeInsets.symmetric(horizontal: 4.w),
+                            height: thumbSize.w,
+                            width: thumbSize.w,
+                            decoration: BoxDecoration(
+                              color:
+                                  selected ? Colors.white : Colors.transparent,
+                              border: Border.all(
+                                color: selected ? _accent : Colors.transparent,
+                                width: 1,
+                              ),
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                            child: CircleAvatar(
+                              backgroundColor: Colors.transparent,
+                              foregroundColor: Colors.transparent,
+                              backgroundImage: AssetImage(imagePath),
+                              radius: 50,
+                            ),
                           ),
-                        ),
-                        child: SvgPicture.asset(QrColorHelper.defaultResetIcon),
-                      ),
-                    );
-                  }
-                  final imageIndex = index - 1;
-                  if (imageIndex < 0 ||
-                      imageIndex >= QrColorHelper.backgroundImages.length) {
-                    return const SizedBox.shrink();
-                  }
-                  final imagePath =
-                      QrColorHelper.backgroundImages[imageIndex];
-                  final selected =
-                      vm.selectedBackgroundImage == imagePath;
-                  return GestureDetector(
-                    onTap: () => vm.selectBackgroundImage(imageIndex),
-                    child: Container(
-                      margin: EdgeInsets.symmetric(horizontal: 4.w),
-                      height: thumbSize.w,
-                      width: thumbSize.w,
-                      decoration: BoxDecoration(
-                        color: selected ? Colors.white : Colors.transparent,
-                        border: Border.all(
-                          color: selected ? _accent : Colors.transparent,
-                          width: 1,
-                        ),
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      child: CircleAvatar(
-                        backgroundColor: Colors.transparent,
-                        foregroundColor: Colors.transparent,
-                        backgroundImage: AssetImage(imagePath),
-                        radius: 50,
-                      ),
+                        );
+                      },
                     ),
-                  );
-                },
+                  ),
+                ],
               ),
             ),
           ],
+          SizedBox(height: 8.h),
         ],
       ),
     );
@@ -1149,174 +1225,205 @@ class _LogoTab extends StatelessWidget {
                 onRightTap: () => vm.setLogoMode(QrLogoMode.text),
               ),
               SizedBox(height: 10.h),
-              _TextSectionLabel('Font Size'),
-            Row(
-              children: [
-                Text(
-                  'A',
-                  style: TextStyle(
-                    fontSize: 10.sp,
-                    color: const Color(0xFF9E9E9E),
-                  ),
-                ),
-                Expanded(
-                  child: SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: _accent,
-                      inactiveTrackColor: const Color(0xFF4F4E4E),
-                      trackHeight: 3,
-                      thumbColor: _accent,
-                      overlayShape: SliderComponentShape.noOverlay,
-                      thumbShape: const RoundSliderThumbShape(
-                        enabledThumbRadius: 6,
-                      ),
-                    ),
-                    child: Slider(
-                      value: vm.logoFontSize,
-                      min: 8,
-                      max: 10,
-                      divisions: 2,
-                      onChanged: vm.setLogoFontSize,
-                    ),
-                  ),
-                ),
-                Text(
-                  'A',
-                  style: TextStyle(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF9E9E9E),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 10.h),
-            _TextSectionLabel('Color'),
-            SizedBox(height: 8.h),
-            SizedBox(
-              height: 24.h,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: QrColorHelper.colorOptions.length + 2,
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    final active = vm.logoSolidSwatchUi == -1;
-                    return GestureDetector(
-                      onTap: vm.selectDefaultLogoColor,
-                      child: Container(
-                        width: 24.w,
-                        height: 24.w,
-                        margin: EdgeInsets.only(right: 6.w),
-                        padding: EdgeInsets.all(3.w),
-                        decoration: BoxDecoration(
-                          color: active
-                              ? _accent.withValues(alpha: 0.15)
-                              : Colors.grey.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: active ? _accent : Colors.transparent,
-                            width: 2,
+              _OptionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _TextSectionLabel('Font Size'),
+                    SizedBox(height: 8.h),
+                    Row(
+                      children: [
+                        Text(
+                          'A',
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: const Color(0xFF9E9E9E),
                           ),
                         ),
-                        child: SvgPicture.asset(QrColorHelper.defaultResetIcon),
+                        Expanded(
+                          child: SliderTheme(
+                            data: SliderTheme.of(context).copyWith(
+                              activeTrackColor: _accent,
+                              inactiveTrackColor: const Color(0xFF4F4E4E),
+                              trackHeight: 4,
+                              thumbColor: _accent,
+                              overlayShape: SliderComponentShape.noOverlay,
+                              thumbShape: const RoundSliderThumbShape(
+                                enabledThumbRadius: 8,
+                              ),
+                            ),
+                            child: Slider(
+                              value: vm.logoFontSize,
+                              min: 8,
+                              max: 10,
+                              divisions: 2,
+                              onChanged: vm.setLogoFontSize,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          'A',
+                          style: TextStyle(
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF9E9E9E),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 10.h),
+              _OptionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _TextSectionLabel('Color'),
+                    SizedBox(height: 10.h),
+                    SizedBox(
+                      height: 32.w,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: QrColorHelper.colorOptions.length + 2,
+                        itemBuilder: (context, index) {
+                          if (index == 0) {
+                            final active = vm.logoSolidSwatchUi == -1;
+                            return GestureDetector(
+                              onTap: vm.selectDefaultLogoColor,
+                              child: Container(
+                                width: 32.w,
+                                height: 32.w,
+                                margin: EdgeInsets.only(right: 8.w),
+                                padding: EdgeInsets.all(4.w),
+                                decoration: BoxDecoration(
+                                  color: active
+                                      ? _accent.withValues(alpha: 0.15)
+                                      : Colors.grey.withValues(alpha: 0.1),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: active ? _accent : Colors.transparent,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: SvgPicture.asset(
+                                  QrColorHelper.defaultResetIcon,
+                                ),
+                              ),
+                            );
+                          }
+                          if (index == 1) {
+                            final active = vm.logoSolidSwatchUi == -2;
+                            return GestureDetector(
+                              onTap: () async {
+                                final color = await _showMultipleColorPicker(
+                                  context,
+                                  initial: vm.logoTextColor,
+                                );
+                                if (color != null) {
+                                  vm.selectCustomLogoColor(color);
+                                }
+                              },
+                              child: Container(
+                                width: 32.w,
+                                height: 32.w,
+                                margin: EdgeInsets.only(right: 8.w),
+                                padding: EdgeInsets.all(4.w),
+                                decoration: BoxDecoration(
+                                  color: active
+                                      ? _accent.withValues(alpha: 0.15)
+                                      : Colors.grey.withValues(alpha: 0.1),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: active ? _accent : Colors.transparent,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: SvgPicture.asset(
+                                  ui.AppAssets.multipleColorIcon,
+                                ),
+                              ),
+                            );
+                          }
+                          final colorIndex = index - 2;
+                          final color = QrColorHelper.colorOptions[colorIndex];
+                          return GestureDetector(
+                            onTap: () => vm.selectLogoSolidColor(colorIndex),
+                            child: Container(
+                              width: 32.w,
+                              height: 32.w,
+                              margin: EdgeInsets.symmetric(horizontal: 4.w),
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: vm.logoSolidSwatchUi == colorIndex
+                                      ? _accent
+                                      : Colors.transparent,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  }
-                  if (index == 1) {
-                    final active = vm.logoSolidSwatchUi == -2;
-                    return GestureDetector(
-                      onTap: () async {
-                        final color = await _showMultipleColorPicker(
-                          context,
-                          initial: vm.logoTextColor,
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 10.h),
+              _OptionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _TextSectionLabel('Font Style'),
+                    SizedBox(height: 8.h),
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount:
+                          QrcodeCustomizeViewModel.fontStyleLabels.length,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 4,
+                        crossAxisSpacing: 6.w,
+                        mainAxisSpacing: 6.h,
+                        childAspectRatio: 2.8,
+                      ),
+                      itemBuilder: (context, index) {
+                        final selected =
+                            vm.selectedLogoFontStyleIndex == index;
+                        return GestureDetector(
+                          onTap: () => vm.setLogoFontStyleIndex(index),
+                          child: Container(
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFFFFF),
+                              borderRadius: BorderRadius.circular(5.r),
+                              border: Border.all(
+                                color: selected
+                                    ? _accent
+                                    : const Color(0xFFE0E0E0),
+                                width: selected ? 1.5 : 1,
+                              ),
+                            ),
+                            child: Text(
+                              'fonts',
+                              style: TextStyle(
+                                fontFamily: ui.AppFonts.sfPro,
+                                fontSize: 10.sp,
+                                fontWeight:
+                                    _PreviewCard._fontWeightFor(index),
+                                fontStyle: _PreviewCard._fontStyleFor(index),
+                                color: const Color(0xFF1A1A1A),
+                              ),
+                            ),
+                          ),
                         );
-                        if (color != null) {
-                          vm.selectCustomLogoColor(color);
-                        }
                       },
-                      child: Container(
-                        width: 24.w,
-                        height: 24.w,
-                        margin: EdgeInsets.only(right: 6.w),
-                        padding: EdgeInsets.all(3.w),
-                        decoration: BoxDecoration(
-                          color: active
-                              ? _accent.withValues(alpha: 0.15)
-                              : Colors.grey.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: active ? _accent : Colors.transparent,
-                            width: 2,
-                          ),
-                        ),
-                        child: SvgPicture.asset(ui.AppAssets.multipleColorIcon),
-                      ),
-                    );
-                  }
-                  final colorIndex = index - 2;
-                  final color = QrColorHelper.colorOptions[colorIndex];
-                  return GestureDetector(
-                    onTap: () => vm.selectLogoSolidColor(colorIndex),
-                    child: Container(
-                      width: 24.w,
-                      height: 24.w,
-                      margin: EdgeInsets.symmetric(horizontal: 3.w),
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: vm.logoSolidSwatchUi == colorIndex
-                              ? _accent
-                              : Colors.transparent,
-                          width: 2,
-                        ),
-                      ),
                     ),
-                  );
-                },
+                  ],
+                ),
               ),
-            ),
-            SizedBox(height: 10.h),
-            _TextSectionLabel('Font Style'),
-            SizedBox(height: 8.h),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: QrcodeCustomizeViewModel.fontStyleLabels.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                crossAxisSpacing: 6.w,
-                mainAxisSpacing: 6.h,
-                childAspectRatio: 2.8,
-              ),
-              itemBuilder: (context, index) {
-                final selected = vm.selectedLogoFontStyleIndex == index;
-                return GestureDetector(
-                  onTap: () => vm.setLogoFontStyleIndex(index),
-                  child: Container(
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFFFFF),
-                      borderRadius: BorderRadius.circular(5.r),
-                      border: Border.all(
-                        color: selected ? _accent : const Color(0xFFE0E0E0),
-                        width: selected ? 1.5 : 1,
-                      ),
-                    ),
-                    child: Text(
-                      'fonts',
-                      style: TextStyle(
-                        fontFamily: ui.AppFonts.sfPro,
-                        fontSize: 10.sp,
-                        fontWeight: _PreviewCard._fontWeightFor(index),
-                        fontStyle: _PreviewCard._fontStyleFor(index),
-                        color: const Color(0xFF1A1A1A),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
             ],
           ] else ...[
             _GradientToggle(

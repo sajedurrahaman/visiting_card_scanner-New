@@ -78,6 +78,7 @@ class _BarcodeCreateScreenState extends State<BarcodeCreateScreen> {
         builder: (_) => BarcodeCustomizeScreen(
           barcodeData: _controller.text.trim(),
           templateIndex: widget.templateIndex,
+          typeLabel: widget.typeLabel,
           thumbnailAsset: widget.thumbnailAsset,
         ),
       ),
