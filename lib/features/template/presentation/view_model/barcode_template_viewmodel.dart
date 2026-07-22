@@ -5,10 +5,12 @@ class BarcodeTemplateItem {
   const BarcodeTemplateItem({
     required this.id,
     required this.thumbnailAsset,
+    required this.stackTemplateIndex,
   });
 
   final String id;
   final String thumbnailAsset;
+  final int stackTemplateIndex;
 }
 
 class BarcodeTemplateViewModel extends ChangeNotifier {
@@ -30,26 +32,32 @@ class BarcodeTemplateViewModel extends ChangeNotifier {
     BarcodeTemplateItem(
       id: 'barcode1',
       thumbnailAsset: ui.AppAssets.barCodeOneThumbnail,
+      stackTemplateIndex: 1,
     ),
     BarcodeTemplateItem(
       id: 'barcode2',
       thumbnailAsset: ui.AppAssets.barCodeTwoThumbnail,
+      stackTemplateIndex: 3,
     ),
     BarcodeTemplateItem(
       id: 'barcode3',
       thumbnailAsset: ui.AppAssets.barCodeThreeThumbnail,
+      stackTemplateIndex: 5,
     ),
     BarcodeTemplateItem(
       id: 'barcode4',
       thumbnailAsset: ui.AppAssets.barCodeFourThumbnail,
+      stackTemplateIndex: 21,
     ),
     BarcodeTemplateItem(
       id: 'barcode5',
       thumbnailAsset: ui.AppAssets.barCodeFiveThumbnail,
+      stackTemplateIndex: 10,
     ),
     BarcodeTemplateItem(
       id: 'barcode6',
       thumbnailAsset: ui.AppAssets.barCodeSixThumbnail,
+      stackTemplateIndex: 12,
     ),
   ];
 }

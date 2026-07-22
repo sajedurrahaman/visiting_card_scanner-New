@@ -37,6 +37,15 @@ dependencies:
   provider: ^6.1.5+1
   flutter_screenutil: ^5.9.3
   flutter_svg: ^2.3.0
+  shared_preferences: ^2.5.3
+  path_provider: ^2.1.5
+  barcode_widget: ^2.0.4
+  screenshot: ^3.0.0
+  intl: ^0.20.2
+  qr_flutter:
+    git:
+      url: https://github.com/graphicscycle/qr.flutter.git
+      ref: main
 
 dev_dependencies:
   flutter_test:
@@ -70,6 +79,17 @@ flutter:
      - assets/images/visiting_card_template_without_data/vertical/
      - assets/qrcode/
      - assets/barcode/
+     - assets/qr_code_template/
+     - assets/qr_code_template/dot_and_eye/
+     - assets/qr_code_template/event/
+     - assets/qr_code_template/love/
+     - assets/qr_code_template/new/
+     - assets/qr_code_template/social/
+     - assets/qr_code_template/wifi/
+     - assets/svg/
+     - assets/svg/genertor/
+     - assets/svg/genertor/qrcode/
+     - assets/barcode_stack/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

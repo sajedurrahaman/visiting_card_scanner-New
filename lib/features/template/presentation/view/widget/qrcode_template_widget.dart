@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/qrcode_create_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/qrcode_category_chip.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/qrcode_template_tile.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/qrcode_type_select_showdialog.dart';
@@ -53,9 +54,22 @@ class QrcodeTemplateWidget extends StatelessWidget {
               final item = templates[index];
               return QrcodeTemplateTile(
                 item: item,
-                onTap: () {
+                onTap: () async {
                   viewModel.selectTemplate(item.id);
-                  QrcodeTypeSelectDialog.show(context);
+                  final typeLabel = await QrcodeTypeSelectDialog.show(context);
+                  if (typeLabel == null || !context.mounted) {
+                    return;
+                  }
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => QrcodeCreateScreen(
+                        typeLabel: typeLabel,
+                        templateIndex: item.stackTemplateIndex,
+                        thumbnailAsset: item.thumbnailAsset,
+                      ),
+                    ),
+                  );
                 },
               );
             },

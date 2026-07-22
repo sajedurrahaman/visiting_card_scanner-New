@@ -154,6 +154,14 @@ class AppAssets {
    static const qrDialogMainLogo = 'assets/qrcode/qrcode_dialog_image.png';
 
 
+   static const qrTemplateRowIconText = 'assets/qrcode/template_row_text_icon.svg';
+   static const qrTemplateRowIconTemplate = 'assets/qrcode/template_row_template_icon.svg';
+   static const qrTemplateRowIconColor = 'assets/qrcode/template_row_color_icon.svg';
+   static const qrTemplateRowIconLogo = 'assets/qrcode/template_row_logo_icon.svg';
+   static const qrTemplateRowIconEye = 'assets/qrcode/template_row_eye_icon.svg';
+   static const qrTemplateRowIconDot = 'assets/qrcode/template_row_dot_icon.svg';
+
+
   // bar code dialog icon
   static const barGeneralTypes = 'assets/barcode/general_types.svg';
   static const barIsbn = 'assets/barcode/isbn.svg';
@@ -175,6 +183,33 @@ class AppAssets {
 
   static const barDialogMainLogo = 'assets/barcode/barcode_dialog_image.png';
 
+  static const barTemplateRowText = 'assets/barcode/template_row_barcode_text_icon.svg';
+  static const barTemplateRowTemplate = 'assets/barcode/template_row_barcode_template_icon.svg';
+  static const barTemplateRowColor = 'assets/barcode/template_row_barcode_color_icon.svg';
+  static const barTemplateRowHeight = 'assets/barcode/template_row_barcode_height_icon.svg';
+
+  // QR stack frames (from PDF-Scanner generator)
+  static const qrStackDotEyeDir = 'assets/qr_code_template/dot_and_eye/';
+  static const qrStackNewDir = 'assets/qr_code_template/new/';
+  static const qrStackSocialDir = 'assets/qr_code_template/social/';
+  static const qrStackWifiDir = 'assets/qr_code_template/wifi/';
+  static const qrStackEventDir = 'assets/qr_code_template/event/';
+  static const qrStackLoveDir = 'assets/qr_code_template/love/';
+  static const qrStackHotDir = 'assets/svg/genertor/qrcode/';
+
+  // Barcode stack frames (indices 1,3,5,10,12,21)
+  static const barStackGeneralTypes =
+      'assets/svg/genertor/general_types_frame_bar_code.svg';
+  static const barStackEan8 = 'assets/svg/genertor/barcode_EAN-8.svg';
+  static const barStackBlue = 'assets/svg/genertor/blue.svg';
+  static const barStackBag = 'assets/svg/bag_bar_code.svg';
+  static const barStackWave = 'assets/svg/bar_code_wave_framee.svg';
+  static const barStackTemplate21 = 'assets/svg/barcode_template_21.svg';
+
+
+  static const noneIcon = 'assets/icons/none_icon.svg';
+  static const noneIconOne = 'assets/icons/null_icon_one.png';
+  static const multipleColorIcon = 'assets/icons/mutiple_color_picker.svg';
 
 
 }

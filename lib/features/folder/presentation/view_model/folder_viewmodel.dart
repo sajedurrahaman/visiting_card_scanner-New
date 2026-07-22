@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:visiting_card/app/storage/app_storage_service.dart';
 import 'package:visiting_card/features/folder/domain/model/sub_folder_item.dart';
 import 'package:visiting_card/features/folder/presentation/view/widget/folder_item_data.dart';
 import 'package:visiting_card/features/home/domain/model/recent_card_item.dart';
+import 'package:visiting_card/features/home/domain/model/saved_file_model.dart';
 
 class FolderViewModel extends ChangeNotifier {
   FolderViewModel() {
-    _initDemoData();
+    loadFromStorage();
   }
 
   static const visitingCardFolderId = 'visiting_card';
@@ -75,6 +77,32 @@ class FolderViewModel extends ChangeNotifier {
 
   bool canDeleteSelection(String folderId) => selectedCount(folderId) > 0;
 
+  Future<void> loadFromStorage() async {
+    final files = AppStorageService().getAllFiles();
+    _cards[visitingCardFolderId] = _cardsForFolder(files, visitingCardFolderId);
+    _cards[qrCodeFolderId] = _cardsForFolder(files, qrCodeFolderId);
+    _cards[barcodeFolderId] = _cardsForFolder(files, barcodeFolderId);
+    notifyListeners();
+  }
+
+  List<RecentCardItem> _cardsForFolder(
+    List<SavedFileModel> files,
+    String folderId,
+  ) {
+    return files
+        .where((file) => file.folderId == folderId)
+        .map(
+          (file) => RecentCardItem(
+            id: file.id,
+            name: file.name,
+            dateTime: file.dateTime,
+            thumbnailPath: file.pathImage.isNotEmpty ? file.pathImage : null,
+            isTextFile: file.isTextFile,
+          ),
+        )
+        .toList();
+  }
+
   void exitSelectionMode(String folderId) {
     _selectionModes[folderId] = false;
     _selectedItemIds[folderId]?.clear();
@@ -106,7 +134,7 @@ class FolderViewModel extends ChangeNotifier {
     }
   }
 
-  void deleteSelectedItems(String folderId) {
+  Future<void> deleteSelectedItems(String folderId) async {
     final selectedIds = _selectedItemIds[folderId];
     if (selectedIds == null || selectedIds.isEmpty) {
       return;
@@ -126,6 +154,12 @@ class FolderViewModel extends ChangeNotifier {
       _selectionModes.remove(id);
       _selectedItemIds.remove(id);
     }
+
+    final remaining = AppStorageService()
+        .getAllFiles()
+        .where((file) => !selectedIds.contains(file.id))
+        .toList();
+    await AppStorageService().replaceAllFiles(remaining);
 
     selectedIds.clear();
     notifyListeners();
@@ -310,127 +344,9 @@ class FolderViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _registerSubFolder({
-    required String parentId,
-    required SubFolderItem item,
-  }) {
-    final subFolders = _subFolders.putIfAbsent(parentId, () => []);
-    if (subFolders.any((folder) => folder.id == item.id)) {
-      return;
-    }
-    subFolders.add(item);
-    _subFolders[item.id] = _subFolders[item.id] ?? [];
-    _cards[item.id] = _cards[item.id] ?? [];
-    _parentIds[item.id] = parentId;
-  }
-
-  void _initDemoData() {
-    _cards[visitingCardFolderId] = List.of(_demoVisitingCards);
-    _cards[qrCodeFolderId] = List.of(_demoQrCodeCards);
-    _cards[barcodeFolderId] = List.of(_demoBarcodeCards);
-
-    _registerSubFolder(
-      parentId: visitingCardFolderId,
-      item: const SubFolderItem(
-        id: 'sub_demo_1',
-        name: 'New Folder',
-        dateTime: '08-18-2025',
-      ),
-    );
-    _registerSubFolder(
-      parentId: visitingCardFolderId,
-      item: const SubFolderItem(
-        id: 'sub_demo_2',
-        name: 'Nahid',
-        dateTime: '08-18-2025',
-      ),
-    );
-    _registerSubFolder(
-      parentId: visitingCardFolderId,
-      item: const SubFolderItem(
-        id: 'sub_demo_3',
-        name: 'Hasib',
-        dateTime: '08-18-2025',
-      ),
-    );
-    _cards['sub_demo_1'] = List.of(_demoSubFolderCards);
-  }
-
   String _formatDate(DateTime date) {
     final month = date.month.toString().padLeft(2, '0');
     final day = date.day.toString().padLeft(2, '0');
     return '$month-$day-${date.year}';
   }
-
-  static const _demoSubFolderCards = [
-    RecentCardItem(
-      id: 'sub_vc_1',
-      name: 'Devid jhon',
-      dateTime: '01-Jan-2025 09:15',
-    ),
-    RecentCardItem(
-      id: 'sub_vc_2',
-      name: 'Miraj Ahmed',
-      dateTime: '01-Jan-2025 09:15',
-    ),
-  ];
-
-  static const _demoVisitingCards = [
-    RecentCardItem(
-      id: 'vc_1',
-      name: 'Devid jhon',
-      dateTime: '01-Jan-2025 09:15',
-    ),
-    RecentCardItem(
-      id: 'vc_2',
-      name: 'Devid jhon',
-      dateTime: '01-Jan-2025 09:15',
-    ),
-    RecentCardItem(
-      id: 'vc_3',
-      name: 'Devid jhon',
-      dateTime: '01-Jan-2025 09:15',
-    ),
-    RecentCardItem(
-      id: 'vc_4',
-      name: 'Devid jhon',
-      dateTime: '01-Jan-2025 09:15',
-    ),
-  ];
-
-  static const _demoQrCodeCards = [
-    RecentCardItem(
-      id: 'qr_1',
-      name: 'Devid jhon',
-      dateTime: '01-Jan-2025 09:15',
-      isTextFile: true,
-    ),
-    RecentCardItem(
-      id: 'qr_2',
-      name: 'Miraj Ahmed',
-      dateTime: '01-Jan-2025 09:15',
-      isTextFile: true,
-    ),
-    RecentCardItem(
-      id: 'qr_3',
-      name: 'Mark jhon',
-      dateTime: '01-Jan-2025 09:15',
-      isTextFile: true,
-    ),
-  ];
-
-  static const _demoBarcodeCards = [
-    RecentCardItem(
-      id: 'bc_1',
-      name: 'Devid jhon',
-      dateTime: '01-Jan-2025 09:15',
-      isTextFile: true,
-    ),
-    RecentCardItem(
-      id: 'bc_2',
-      name: 'Miraj Ahmed',
-      dateTime: '01-Jan-2025 09:15',
-      isTextFile: true,
-    ),
-  ];
 }
