@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:gal/gal.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:screenshot/screenshot.dart';
@@ -524,10 +525,19 @@ class QrcodeCustomizeViewModel extends ChangeNotifier {
         pathImage: path,
         fileType: 'qr',
         folderId: FolderViewModel.qrCodeFolderId,
-        isTextFile: true,
+        isTextFile: false,
       );
 
       await AppStorageService().storeAllFiles(model);
+
+      try {
+        final hasAccess = await Gal.hasAccess();
+        if (!hasAccess) {
+          await Gal.requestAccess();
+        }
+        await Gal.putImage(path, album: 'Visiting Card');
+      } catch (_) {}
+
       await homeViewModel.loadRecentFromStorage();
       await folderViewModel.loadFromStorage();
 

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:gal/gal.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
@@ -368,10 +369,19 @@ class BarcodeCustomizeViewModel extends ChangeNotifier {
         pathImage: path,
         fileType: 'barcode',
         folderId: FolderViewModel.barcodeFolderId,
-        isTextFile: true,
+        isTextFile: false,
       );
 
       await AppStorageService().storeAllFiles(model);
+
+      try {
+        final hasAccess = await Gal.hasAccess();
+        if (!hasAccess) {
+          await Gal.requestAccess();
+        }
+        await Gal.putImage(path, album: 'Visiting Card');
+      } catch (_) {}
+
       await homeViewModel.loadRecentFromStorage();
       await folderViewModel.loadFromStorage();
 

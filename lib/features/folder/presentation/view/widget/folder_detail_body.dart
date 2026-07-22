@@ -12,6 +12,7 @@ import 'package:visiting_card/features/folder/presentation/view/widget/folder_se
 import 'package:visiting_card/features/folder/presentation/view/widget/sub_folder_tile.dart';
 import 'package:visiting_card/features/folder/presentation/view_model/folder_viewmodel.dart';
 import 'package:visiting_card/features/home/presentation/view/widgets/recent_card_tile.dart';
+import 'package:visiting_card/features/home/presentation/view_model/home_view_model.dart';
 
 class FolderDetailBody extends StatelessWidget {
   const FolderDetailBody({
@@ -201,6 +202,12 @@ class FolderDetailBody extends StatelessWidget {
                           selectionTrailing: FolderSelectionCheckbox(
                             isSelected: isSelected,
                           ),
+                          onTap: isSelectionMode
+                              ? () => viewModel.toggleItemSelection(
+                                    folderId,
+                                    card.id,
+                                  )
+                              : null,
                         ),
                       ),
                     );
@@ -222,12 +229,15 @@ class FolderDetailBody extends StatelessWidget {
                     }
                     ui.AppToast.success(context, 'Moved successfully');
                   },
-                  onShare: () {
-                    viewModel.shareSelectedItems(folderId);
+                  onShare: () async {
+                    await viewModel.shareSelectedItems(folderId);
+                    if (!context.mounted) return;
                     ui.AppToast.success(context, 'Share selected items');
                   },
-                  onDelete: () {
-                    viewModel.deleteSelectedItems(folderId);
+                  onDelete: () async {
+                    await viewModel.deleteSelectedItems(folderId);
+                    if (!context.mounted) return;
+                    context.read<HomeViewModel>().loadRecentFromStorage();
                     ui.AppToast.success(context, 'Deleted selected items');
                   },
                 ),

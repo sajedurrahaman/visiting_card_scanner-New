@@ -1,26 +1,31 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:gal/gal.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
+import 'package:visiting_card/features/folder/presentation/view_model/folder_viewmodel.dart';
 import 'package:visiting_card/features/home/domain/model/recent_card_item.dart';
 import 'package:visiting_card/features/home/presentation/view_model/home_view_model.dart';
 
 enum RecentCardMenuAction { rename, download, share, delete }
 
 class RecentCardMenuViewModel extends ChangeNotifier {
-  void handleMenuAction(
+  Future<void> handleMenuAction(
     BuildContext context, {
     required RecentCardItem item,
     required RecentCardMenuAction action,
-  }) {
+  }) async {
     switch (action) {
       case RecentCardMenuAction.rename:
-        rename(context, item);
+        await rename(context, item);
       case RecentCardMenuAction.download:
-        download(context, item);
+        await download(context, item);
       case RecentCardMenuAction.share:
-        share(context, item);
+        await share(context, item);
       case RecentCardMenuAction.delete:
-        delete(context, item);
+        await delete(context, item);
     }
   }
 
@@ -33,18 +38,47 @@ class RecentCardMenuViewModel extends ChangeNotifier {
     if (!context.mounted) return;
     if (newName == null || newName.isEmpty || newName == item.name) return;
 
-    context.read<HomeViewModel>().renameRecentCard(item.id, newName);
+    await context.read<HomeViewModel>().renameRecentCard(item.id, newName);
+    if (!context.mounted) return;
+    await context.read<FolderViewModel>().loadFromStorage();
+    if (!context.mounted) return;
     ui.AppToast.success(context, 'Renamed to $newName');
   }
 
-  void download(BuildContext context, RecentCardItem item) {
-    // TODO: Integrate file download when storage layer is ready.
-    ui.AppToast.success(context, 'Downloading ${item.name}...');
+  Future<void> download(BuildContext context, RecentCardItem item) async {
+    final path = item.path ?? item.thumbnailPath;
+    if (path == null || path.isEmpty || !File(path).existsSync()) {
+      ui.AppToast.success(context, 'File not found');
+      return;
+    }
+
+    try {
+      final hasAccess = await Gal.hasAccess();
+      if (!hasAccess) {
+        await Gal.requestAccess();
+      }
+      await Gal.putImage(path, album: 'Visiting Card');
+      if (!context.mounted) return;
+      ui.AppToast.success(context, 'Saved to gallery');
+    } catch (_) {
+      if (!context.mounted) return;
+      ui.AppToast.success(context, 'Failed to save to gallery');
+    }
   }
 
-  void share(BuildContext context, RecentCardItem item) {
-    // TODO: Integrate share sheet when file path is available.
-    ui.AppToast.success(context, 'Sharing ${item.name}...');
+  Future<void> share(BuildContext context, RecentCardItem item) async {
+    final path = item.path ?? item.thumbnailPath;
+    if (path == null || path.isEmpty || !File(path).existsSync()) {
+      ui.AppToast.success(context, 'File not found');
+      return;
+    }
+
+    try {
+      await Share.shareXFiles([XFile(path)], text: item.name);
+    } catch (_) {
+      if (!context.mounted) return;
+      ui.AppToast.success(context, 'Share failed');
+    }
   }
 
   Future<void> delete(BuildContext context, RecentCardItem item) async {
@@ -57,7 +91,10 @@ class RecentCardMenuViewModel extends ChangeNotifier {
     if (!context.mounted) return;
     if (shouldDelete != true) return;
 
-    context.read<HomeViewModel>().deleteRecentCard(item.id);
+    await context.read<HomeViewModel>().deleteRecentCard(item.id);
+    if (!context.mounted) return;
+    await context.read<FolderViewModel>().loadFromStorage();
+    if (!context.mounted) return;
     ui.AppToast.success(context, '${item.name} deleted');
   }
 }

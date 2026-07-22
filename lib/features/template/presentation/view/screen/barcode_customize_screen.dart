@@ -279,16 +279,16 @@ class _TabRow extends StatelessWidget {
           ),
         ],
       ),
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           for (final tab in tabs)
-            _ToolbarTab(
-              iconPath: tab.$2,
-              label: tab.$3,
-              selected: vm.selectedTab == tab.$1,
-              onTap: () => vm.setTab(tab.$1),
+            Expanded(
+              child: _ToolbarTab(
+                iconPath: tab.$2,
+                label: tab.$3,
+                selected: vm.selectedTab == tab.$1,
+                onTap: () => vm.setTab(tab.$1),
+              ),
             ),
         ],
       ),
@@ -319,22 +319,38 @@ class _ToolbarTab extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Figma: no extra circle wrapper — SVG already includes icon art.
-          SvgPicture.asset(
-            iconPath,
-            width: 30.w,
-            height: 30.w,
-            fit: BoxFit.contain,
+          // Active tab top indicator (Figma / theme color).
+          Container(
+            width: 40.w,
+            height: 3.h,
+            decoration: BoxDecoration(
+              color: selected ? _accent : Colors.transparent,
+              borderRadius: BorderRadius.circular(2.r),
+            ),
           ),
-          SizedBox(height: 6.h),
-          Text(
-            label,
-            style: ui.AppTextStyles.iconUnderText(
-              color: selected ? _accent : const Color(0xFF404040),
-            ).copyWith(
-              fontSize: 11.sp,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              letterSpacing: 0,
+          Padding(
+            padding: EdgeInsets.fromLTRB(4.w, 8.h, 4.w, 10.h),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  iconPath,
+                  width: 30.w,
+                  height: 30.w,
+                  fit: BoxFit.contain,
+                ),
+                SizedBox(height: 6.h),
+                Text(
+                  label,
+                  style: ui.AppTextStyles.iconUnderText(
+                    color: selected ? _accent : const Color(0xFF404040),
+                  ).copyWith(
+                    fontSize: 11.sp,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

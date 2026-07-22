@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/home/domain/model/recent_card_item.dart';
+import 'package:visiting_card/features/home/presentation/view/screen/saved_image_preview_screen.dart';
 import 'package:visiting_card/features/home/presentation/view_model/recent_card_menu_view_model.dart';
 
 class RecentCardTile extends StatelessWidget {
@@ -12,118 +15,133 @@ class RecentCardTile extends StatelessWidget {
     this.isSelectionMode = false,
     this.isSelected = false,
     this.selectionTrailing,
+    this.onTap,
   });
 
   final RecentCardItem item;
   final bool isSelectionMode;
   final bool isSelected;
   final Widget? selectionTrailing;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final menuViewModel = context.read<RecentCardMenuViewModel>();
 
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 16.h),
-      decoration: BoxDecoration(
-        color: isSelectionMode && isSelected
-            ? ui.Colors.cardBgColor
-            : Colors.white,
-        borderRadius: BorderRadius.circular(12.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          _RecentThumbnail(item: item),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.name,
-                  style: ui.AppTextStyles.helperText(
-                    color: const Color(0xFF1A1A1A),
-                  ).copyWith(fontWeight: FontWeight.w600),
-                ),
-                SizedBox(height: 4.h),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.access_time,
-                      size: 14.sp,
-                      color: const Color(0xFF9E9E9E),
+    return GestureDetector(
+      onTap: onTap ??
+          (isSelectionMode
+              ? null
+              : () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SavedImagePreviewScreen(item: item),
                     ),
-                    SizedBox(width: 4.w),
-                    Flexible(
-                      child: Text(
-                        item.dateTime,
-                        style: ui.AppTextStyles.iconUnderText(
-                          color: const Color(0xFF9E9E9E),
+                  );
+                }),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 16.h),
+        decoration: BoxDecoration(
+          color: isSelectionMode && isSelected
+              ? ui.Colors.cardBgColor
+              : Colors.white,
+          borderRadius: BorderRadius.circular(12.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            _RecentThumbnail(item: item),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.name,
+                    style: ui.AppTextStyles.helperText(
+                      color: const Color(0xFF1A1A1A),
+                    ).copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  SizedBox(height: 4.h),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        size: 14.sp,
+                        color: const Color(0xFF9E9E9E),
+                      ),
+                      SizedBox(width: 4.w),
+                      Flexible(
+                        child: Text(
+                          item.dateTime,
+                          style: ui.AppTextStyles.iconUnderText(
+                            color: const Color(0xFF9E9E9E),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            if (isSelectionMode)
+              selectionTrailing ?? const SizedBox.shrink()
+            else
+              PopupMenuButton<RecentCardMenuAction>(
+                padding: EdgeInsets.zero,
+                color: Colors.white,
+                elevation: 8,
+                position: PopupMenuPosition.under,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14.r),
                 ),
-              ],
-            ),
-          ),
-          if (isSelectionMode)
-            selectionTrailing ?? const SizedBox.shrink()
-          else
-            PopupMenuButton<RecentCardMenuAction>(
-            padding: EdgeInsets.zero,
-            color: Colors.white,
-            elevation: 8,
-            position: PopupMenuPosition.under,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14.r),
-            ),
-            onSelected: (action) => menuViewModel.handleMenuAction(
-              context,
-              item: item,
-              action: action,
-            ),
-            itemBuilder: (context) => [
-              _buildMenuItem(
-                value: RecentCardMenuAction.rename,
-                icon: Icons.edit_outlined,
-                label: 'Rename',
+                onSelected: (action) => menuViewModel.handleMenuAction(
+                  context,
+                  item: item,
+                  action: action,
+                ),
+                itemBuilder: (context) => [
+                  _buildMenuItem(
+                    value: RecentCardMenuAction.rename,
+                    icon: Icons.edit_outlined,
+                    label: 'Rename',
+                  ),
+                  _buildMenuItem(
+                    value: RecentCardMenuAction.download,
+                    icon: Icons.download_outlined,
+                    label: 'Download',
+                  ),
+                  _buildMenuItem(
+                    value: RecentCardMenuAction.share,
+                    icon: Icons.share_outlined,
+                    label: 'Share',
+                  ),
+                  _buildMenuItem(
+                    value: RecentCardMenuAction.delete,
+                    icon: Icons.delete_outline,
+                    label: 'Delete',
+                  ),
+                ],
+                child: Icon(
+                  Icons.more_vert,
+                  size: 22.sp,
+                  color: const Color(0xFF1A1A1A),
+                ),
               ),
-              _buildMenuItem(
-                value: RecentCardMenuAction.download,
-                icon: Icons.download_outlined,
-                label: 'Download',
-              ),
-              _buildMenuItem(
-                value: RecentCardMenuAction.share,
-                icon: Icons.share_outlined,
-                label: 'Share',
-              ),
-              _buildMenuItem(
-                value: RecentCardMenuAction.delete,
-                icon: Icons.delete_outline,
-                label: 'Delete',
-              ),
-            ],
-            child: Icon(
-              Icons.more_vert,
-              size: 22.sp,
-              color: const Color(0xFF1A1A1A),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -156,40 +174,77 @@ class _RecentThumbnail extends StatelessWidget {
 
   final RecentCardItem item;
 
+  /// Matches PDF-Scanner Discover/Directory list image thumbs:
+  /// 50×46, radius 8, [Image.file] + [BoxFit.cover].
+  static double get _width => 50.w;
+  static double get _height => 46.h;
+
+  File? _resolveImageFile() {
+    for (final path in [item.thumbnailPath, item.path]) {
+      if (path == null || path.isEmpty) continue;
+      final file = File(path);
+      if (file.existsSync()) return file;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (item.isTextFile) {
-      return Container(
-        width: 52.w,
-        height: 52.w,
-        decoration: BoxDecoration(
-          color: const Color(0xFFE8F4FF),
-          borderRadius: BorderRadius.circular(8.r),
-        ),
-        alignment: Alignment.center,
-        child: Icon(
-          Icons.description_outlined,
-          color: const Color(0xFF2F80ED),
-          size: 28.sp,
+    final file = _resolveImageFile();
+    final radius = BorderRadius.circular(8.r);
+
+    if (file != null) {
+      return ClipRRect(
+        borderRadius: radius,
+        child: Image.file(
+          file,
+          width: _width,
+          height: _height,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.medium,
+          gaplessPlayback: true,
+          errorBuilder: (context, error, stackTrace) {
+            return _placeholder(
+              icon: Icons.broken_image_outlined,
+              background: Colors.grey.shade200,
+            );
+          },
         ),
       );
     }
 
+    if (item.isTextFile) {
+      return _placeholder(
+        icon: Icons.description_outlined,
+        background: const Color(0xFFE8F4FF),
+        iconColor: const Color(0xFF2F80ED),
+      );
+    }
+
+    return _placeholder(
+      icon: item.fileType == 'barcode'
+          ? Icons.qr_code_2_outlined
+          : item.fileType == 'qr'
+              ? Icons.qr_code_outlined
+              : Icons.credit_card,
+      background: const Color(0xFFF3F3F3),
+    );
+  }
+
+  Widget _placeholder({
+    required IconData icon,
+    required Color background,
+    Color iconColor = const Color(0xFF9E9E9E),
+  }) {
     return Container(
-      width: 52.w,
-      height: 52.w,
+      width: _width,
+      height: _height,
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F3F3),
+        color: background,
         borderRadius: BorderRadius.circular(8.r),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: item.thumbnailPath != null
-          ? Image.asset(item.thumbnailPath!, fit: BoxFit.cover)
-          : Icon(
-              Icons.credit_card,
-              color: const Color(0xFF9E9E9E),
-              size: 26.sp,
-            ),
+      alignment: Alignment.center,
+      child: Icon(icon, color: iconColor, size: 22.sp),
     );
   }
 }

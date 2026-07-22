@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:visiting_card/app/storage/app_storage_service.dart';
 import 'package:visiting_card/features/folder/domain/model/sub_folder_item.dart';
 import 'package:visiting_card/features/folder/presentation/view/widget/folder_item_data.dart';
@@ -97,6 +100,9 @@ class FolderViewModel extends ChangeNotifier {
             name: file.name,
             dateTime: file.dateTime,
             thumbnailPath: file.pathImage.isNotEmpty ? file.pathImage : null,
+            path: file.path.isNotEmpty ? file.path : null,
+            fileType: file.fileType,
+            folderId: file.folderId,
             isTextFile: file.isTextFile,
           ),
         )
@@ -140,6 +146,19 @@ class FolderViewModel extends ChangeNotifier {
       return;
     }
 
+    final allFiles = AppStorageService().getAllFiles();
+    for (final file in allFiles.where((f) => selectedIds.contains(f.id))) {
+      for (final path in {file.path, file.pathImage}) {
+        if (path.isEmpty) continue;
+        final disk = File(path);
+        if (await disk.exists()) {
+          try {
+            await disk.delete();
+          } catch (_) {}
+        }
+      }
+    }
+
     _subFolders[folderId]?.removeWhere(
       (item) => selectedIds.contains(item.id),
     );
@@ -155,10 +174,8 @@ class FolderViewModel extends ChangeNotifier {
       _selectedItemIds.remove(id);
     }
 
-    final remaining = AppStorageService()
-        .getAllFiles()
-        .where((file) => !selectedIds.contains(file.id))
-        .toList();
+    final remaining =
+        allFiles.where((file) => !selectedIds.contains(file.id)).toList();
     await AppStorageService().replaceAllFiles(remaining);
 
     selectedIds.clear();
@@ -193,10 +210,10 @@ class FolderViewModel extends ChangeNotifier {
     return 'Folder';
   }
 
-  bool moveSelectedItemsTo({
+  Future<bool> moveSelectedItemsTo({
     required String sourceFolderId,
     required String destinationFolderId,
-  }) {
+  }) async {
     if (sourceFolderId == destinationFolderId) {
       return false;
     }
@@ -212,26 +229,42 @@ class FolderViewModel extends ChangeNotifier {
       return false;
     }
 
-    final sourceCards =
-        List<RecentCardItem>.from(_cards[sourceFolderId] ?? const []);
-    final movingCards = sourceCards
-        .where((card) => movingIds.contains(card.id))
-        .toList(growable: false);
-    sourceCards.removeWhere((card) => movingIds.contains(card.id));
-    _cards[sourceFolderId] = sourceCards;
-
-    final destinationCards =
-        List<RecentCardItem>.from(_cards[destinationFolderId] ?? const []);
-    destinationCards.insertAll(0, movingCards);
-    _cards[destinationFolderId] = destinationCards;
+    final files = AppStorageService().getAllFiles();
+    final updated = files
+        .map(
+          (file) => movingIds.contains(file.id)
+              ? file.copyWith(folderId: destinationFolderId)
+              : file,
+        )
+        .toList();
+    await AppStorageService().replaceAllFiles(updated);
+    await loadFromStorage();
 
     selectedIds.removeAll(movingIds);
     exitSelectionMode(sourceFolderId);
     return true;
   }
 
-  void shareSelectedItems(String folderId) {
-    // TODO: Integrate share sheet when file paths are available.
+  Future<void> shareSelectedItems(String folderId) async {
+    final selectedIds = _selectedItemIds[folderId];
+    if (selectedIds == null || selectedIds.isEmpty) {
+      return;
+    }
+
+    final files = cardsFor(folderId)
+        .where((card) => selectedIds.contains(card.id))
+        .map((card) => card.path ?? card.thumbnailPath)
+        .whereType<String>()
+        .where((path) => path.isNotEmpty && File(path).existsSync())
+        .map(XFile.new)
+        .toList();
+
+    if (files.isEmpty) {
+      return;
+    }
+
+    await Share.shareXFiles(files);
+    exitSelectionMode(folderId);
   }
 
   void onFolderTap(int index) {

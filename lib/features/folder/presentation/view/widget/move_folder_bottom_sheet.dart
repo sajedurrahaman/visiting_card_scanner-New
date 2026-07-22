@@ -82,7 +82,7 @@ class _MoveFolderBottomSheetState extends State<MoveFolderBottomSheet> {
   }
 
   Future<void> _moveHere(FolderViewModel viewModel) async {
-    final moved = viewModel.moveSelectedItemsTo(
+    final moved = await viewModel.moveSelectedItemsTo(
       sourceFolderId: widget.sourceFolderId,
       destinationFolderId: _browseFolderId,
     );

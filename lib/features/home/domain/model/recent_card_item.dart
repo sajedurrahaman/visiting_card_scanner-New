@@ -4,6 +4,9 @@ class RecentCardItem {
     required this.name,
     required this.dateTime,
     this.thumbnailPath,
+    this.path,
+    this.fileType,
+    this.folderId,
     this.isTextFile = false,
   });
 
@@ -11,13 +14,21 @@ class RecentCardItem {
   final String name;
   final String dateTime;
   final String? thumbnailPath;
+  final String? path;
+  final String? fileType;
+  final String? folderId;
   final bool isTextFile;
+
+  bool get hasFilePath => path != null && path!.isNotEmpty;
 
   RecentCardItem copyWith({
     String? id,
     String? name,
     String? dateTime,
     String? thumbnailPath,
+    String? path,
+    String? fileType,
+    String? folderId,
     bool? isTextFile,
   }) {
     return RecentCardItem(
@@ -25,6 +36,9 @@ class RecentCardItem {
       name: name ?? this.name,
       dateTime: dateTime ?? this.dateTime,
       thumbnailPath: thumbnailPath ?? this.thumbnailPath,
+      path: path ?? this.path,
+      fileType: fileType ?? this.fileType,
+      folderId: folderId ?? this.folderId,
       isTextFile: isTextFile ?? this.isTextFile,
     );
   }
