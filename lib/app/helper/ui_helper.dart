@@ -214,6 +214,16 @@ class AppAssets {
 
   // visiting template card icon
   static const pickerCameraIcon = 'assets/icons/camera_icon.svg';
+  static const flashOnIcon = 'assets/icons/flash_on.svg';
+  static const flashOffIcon = 'assets/icons/flash_off.svg';
+  static const autoCameraIcon = 'assets/icons/Auto.svg';
+  static const cropIcon = 'assets/icons/crop.svg';
+  static const retakeIcon = 'assets/icons/retake.svg';
+  static const galleryImportIcon = 'assets/icons/imagesIcon.svg';
+  static const noCropIcon = 'assets/icons/nocrop.svg';
+  static const autoCropIcon = 'assets/icons/auto_crop.svg';
+  static const rotateLeftIcon = 'assets/icons/rotateleft.svg';
+  static const rotateRightIcon = 'assets/icons/roate_right.svg';
   static const defaultQrcodeIcon = 'assets/icons/default_qrcode.png';
   static const visitingTemplateLocalFileUploadIcon = 'assets/icons/local_upload_icon.png';
   static const visitingTemplateEditIcon = 'assets/icons/green_edit.svg';
@@ -250,6 +260,9 @@ class AppAssets {
   static const vTemplateVerticalFourBackWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Back_04.png';
   static const vTemplateVerticalFiveFrontWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Front_05.png';
   static const vTemplateVerticalFiveBackWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Back_05.png';
+
+
+  static const visitingCardAddPageIcon = 'assets/icons/Add page.svg';
 
 
 }

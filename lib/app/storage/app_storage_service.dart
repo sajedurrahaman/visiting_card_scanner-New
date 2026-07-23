@@ -49,6 +49,17 @@ class AppStorageService {
     );
   }
 
+  Future<void> updateFile(SavedFileModel model) async {
+    final files = getAllFiles();
+    final index = files.indexWhere((e) => e.id == model.id);
+    if (index < 0) {
+      await storeAllFiles(model);
+      return;
+    }
+    files[index] = model;
+    await replaceAllFiles(files);
+  }
+
   Future<void> replaceAllFiles(List<SavedFileModel> files) async {
     await _storage.setString(
       allFilesKey,

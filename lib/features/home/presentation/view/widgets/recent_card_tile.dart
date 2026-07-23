@@ -7,6 +7,7 @@ import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/home/domain/model/recent_card_item.dart';
 import 'package:visiting_card/features/home/presentation/view/screen/saved_image_preview_screen.dart';
 import 'package:visiting_card/features/home/presentation/view_model/recent_card_menu_view_model.dart';
+import 'package:visiting_card/features/scan/presentation/view/screen/visiting_card_contact_details_screen.dart';
 
 class RecentCardTile extends StatelessWidget {
   const RecentCardTile({
@@ -33,10 +34,13 @@ class RecentCardTile extends StatelessWidget {
           (isSelectionMode
               ? null
               : () {
+                  final isVisitingCard = item.fileType == 'visiting_card';
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => SavedImagePreviewScreen(item: item),
+                      builder: (_) => isVisitingCard
+                          ? VisitingCardContactDetailsScreen(item: item)
+                          : SavedImagePreviewScreen(item: item),
                     ),
                   );
                 }),

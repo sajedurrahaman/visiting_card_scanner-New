@@ -2,10 +2,22 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Scan physical visiting cards with the camera.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Save scanned visiting card details to your phone contacts.</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+		<string>mailto</string>
+		<string>sms</string>
+		<string>https</string>
+		<string>http</string>
+	</array>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Save QR codes and barcodes to your photo library.</string>
+	<string>Save QR codes, barcodes, and visiting cards to your photo library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Save QR codes and barcodes to your photo library.</string>
+	<string>Import visiting card images and save cards to your photo library.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

@@ -483,7 +483,7 @@ class VisitingGradientButton extends StatelessWidget {
         onTap: enabled ? onTap : null,
         child: Container(
           width: double.infinity,
-          height: 40.h,
+          height: 36.h,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             gradient: gradient,
@@ -493,7 +493,7 @@ class VisitingGradientButton extends StatelessWidget {
             label,
             style: TextStyle(
               fontFamily: ui.AppFonts.sfPro,
-              fontSize: 15.sp,
+              fontSize: 14.sp,
               fontWeight: FontWeight.w600,
               color: Colors.white,
             ),

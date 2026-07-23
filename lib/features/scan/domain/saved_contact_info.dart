@@ -1,0 +1,105 @@
+import 'dart:convert';
+import 'dart:io';
+
+class SavedContactInfo {
+  const SavedContactInfo({
+    this.name = '',
+    this.designation = '',
+    this.company = '',
+    this.phones = const [],
+    this.emails = const [],
+    this.websites = const [],
+    this.addresses = const [],
+    this.imagePaths = const [],
+  });
+
+  final String name;
+  final String designation;
+  final String company;
+  final List<SavedTypedValue> phones;
+  final List<SavedTypedValue> emails;
+  final List<SavedTypedValue> websites;
+  final List<String> addresses;
+  final List<String> imagePaths;
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'designation': designation,
+        'company': company,
+        'phones': phones.map((e) => e.toJson()).toList(),
+        'emails': emails.map((e) => e.toJson()).toList(),
+        'websites': websites.map((e) => e.toJson()).toList(),
+        'addresses': addresses,
+        'imagePaths': imagePaths,
+      };
+
+  factory SavedContactInfo.fromJson(Map<String, dynamic> json) {
+    List<SavedTypedValue> typed(String key) {
+      final raw = json[key];
+      if (raw is! List) return const [];
+      return raw
+          .whereType<Map>()
+          .map((e) => SavedTypedValue.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+
+    List<String> strings(String key) {
+      final raw = json[key];
+      if (raw is! List) return const [];
+      return raw.map((e) => e.toString()).where((e) => e.trim().isNotEmpty).toList();
+    }
+
+    return SavedContactInfo(
+      name: json['name'] as String? ?? '',
+      designation: json['designation'] as String? ?? '',
+      company: json['company'] as String? ?? '',
+      phones: typed('phones'),
+      emails: typed('emails'),
+      websites: typed('websites'),
+      addresses: strings('addresses'),
+      imagePaths: strings('imagePaths'),
+    );
+  }
+
+  static Future<void> writeToFolder(
+    String folderPath,
+    SavedContactInfo contact,
+  ) async {
+    final file = File('$folderPath/contact.json');
+    await file.writeAsString(jsonEncode(contact.toJson()), flush: true);
+  }
+
+  static Future<SavedContactInfo?> readFromFolder(String folderPath) async {
+    final file = File('$folderPath/contact.json');
+    if (!await file.exists()) return null;
+    try {
+      final decoded = jsonDecode(await file.readAsString());
+      if (decoded is! Map) return null;
+      return SavedContactInfo.fromJson(Map<String, dynamic>.from(decoded));
+    } catch (_) {
+      return null;
+    }
+  }
+}
+
+class SavedTypedValue {
+  const SavedTypedValue({
+    required this.value,
+    this.type = '',
+  });
+
+  final String value;
+  final String type;
+
+  Map<String, dynamic> toJson() => {
+        'value': value,
+        'type': type,
+      };
+
+  factory SavedTypedValue.fromJson(Map<String, dynamic> json) {
+    return SavedTypedValue(
+      value: json['value'] as String? ?? '',
+      type: json['type'] as String? ?? '',
+    );
+  }
+}
