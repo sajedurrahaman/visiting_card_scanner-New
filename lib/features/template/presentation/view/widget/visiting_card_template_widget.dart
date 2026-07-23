@@ -1,12 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_edit_contact_info_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/template_orientation_tabs.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_template_tile.dart';
+import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_template_viewmodel.dart';
 
 class VisitingCardTemplateWidget extends StatelessWidget {
   const VisitingCardTemplateWidget({super.key});
+
+  Future<void> _openEditScreen(
+    BuildContext context,
+    VisitingCardTemplateViewModel viewModel,
+    VisitingCardTemplateItem item,
+  ) async {
+    viewModel.selectTemplate(item.id);
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider(
+          create: (_) => VisitingCardEditContactViewModel.fromTemplate(
+            item,
+            isHorizontal: viewModel.isHorizontal,
+          ),
+          child: const VisitingCardEditContactInfoScreen(),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +62,7 @@ class VisitingCardTemplateWidget extends StatelessWidget {
                 isHorizontal: viewModel.isHorizontal,
                 isSelected: viewModel.selectedTemplateId == item.id,
                 sideIndex: viewModel.sideFor(item.id),
-                onTap: () => viewModel.selectTemplate(item.id),
+                onTap: () => _openEditScreen(context, viewModel, item),
                 onShowFront: () => viewModel.showFront(item.id),
                 onShowBack: () => viewModel.showBack(item.id),
               );

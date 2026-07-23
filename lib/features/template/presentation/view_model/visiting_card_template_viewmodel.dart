@@ -8,11 +8,15 @@ class VisitingCardTemplateItem {
     required this.id,
     required this.frontAsset,
     required this.backAsset,
+    required this.frontAssetWithoutData,
+    required this.backAssetWithoutData,
   });
 
   final String id;
   final String frontAsset;
   final String backAsset;
+  final String frontAssetWithoutData;
+  final String backAssetWithoutData;
 }
 
 class VisitingCardTemplateViewModel extends ChangeNotifier {
@@ -70,26 +74,36 @@ class VisitingCardTemplateViewModel extends ChangeNotifier {
       id: 'h1',
       frontAsset: ui.AppAssets.vTemplateHorizontalOneFront,
       backAsset: ui.AppAssets.vTemplateHorizontalOneBack,
+      frontAssetWithoutData: ui.AppAssets.vTemplateHorizontalOneFrontWithOutData,
+      backAssetWithoutData: ui.AppAssets.vTemplateHorizontalOneBackWithOutData,
     ),
     VisitingCardTemplateItem(
       id: 'h2',
       frontAsset: ui.AppAssets.vTemplateHorizontalTwoFront,
       backAsset: ui.AppAssets.vTemplateHorizontalTwoBack,
+      frontAssetWithoutData: ui.AppAssets.vTemplateHorizontalTwoFrontWithOutData,
+      backAssetWithoutData: ui.AppAssets.vTemplateHorizontalTwoBackWithOutData,
     ),
     VisitingCardTemplateItem(
       id: 'h3',
       frontAsset: ui.AppAssets.vTemplateHorizontalThreeFront,
       backAsset: ui.AppAssets.vTemplateHorizontalThreeBack,
+      frontAssetWithoutData: ui.AppAssets.vTemplateHorizontalThreeFrontWithOutData,
+      backAssetWithoutData: ui.AppAssets.vTemplateHorizontalThreeBackWithOutData,
     ),
     VisitingCardTemplateItem(
       id: 'h4',
       frontAsset: ui.AppAssets.vTemplateHorizontalFourFront,
       backAsset: ui.AppAssets.vTemplateHorizontalFourBack,
+      frontAssetWithoutData: ui.AppAssets.vTemplateHorizontalFourFrontWithOutData,
+      backAssetWithoutData: ui.AppAssets.vTemplateHorizontalFourBackWithOutData,
     ),
     VisitingCardTemplateItem(
       id: 'h5',
       frontAsset: ui.AppAssets.vTemplateHorizontalFiveFront,
       backAsset: ui.AppAssets.vTemplateHorizontalFiveBack,
+      frontAssetWithoutData: ui.AppAssets.vTemplateHorizontalFiveFrontWithOutData,
+      backAssetWithoutData: ui.AppAssets.vTemplateHorizontalFiveBackWithOutData,
     ),
   ];
 
@@ -98,26 +112,36 @@ class VisitingCardTemplateViewModel extends ChangeNotifier {
       id: 'v1',
       frontAsset: ui.AppAssets.vTemplateVerticalOneFront,
       backAsset: ui.AppAssets.vTemplateVerticalOneBack,
+      frontAssetWithoutData: ui.AppAssets.vTemplateVerticalOneFrontWithOutData,
+      backAssetWithoutData: ui.AppAssets.vTemplateVerticalOneBackWithOutData,
     ),
     VisitingCardTemplateItem(
       id: 'v2',
       frontAsset: ui.AppAssets.vTemplateVerticalTwoFront,
       backAsset: ui.AppAssets.vTemplateVerticalTwoBack,
+      frontAssetWithoutData: ui.AppAssets.vTemplateVerticalTwoFrontWithOutData,
+      backAssetWithoutData: ui.AppAssets.vTemplateVerticalTwoBackWithOutData,
     ),
     VisitingCardTemplateItem(
       id: 'v3',
       frontAsset: ui.AppAssets.vTemplateVerticalThreeFront,
       backAsset: ui.AppAssets.vTemplateVerticalThreeBack,
+      frontAssetWithoutData: ui.AppAssets.vTemplateVerticalThreeFrontWithOutData,
+      backAssetWithoutData: ui.AppAssets.vTemplateVerticalThreeBackWithOutData,
     ),
     VisitingCardTemplateItem(
       id: 'v4',
       frontAsset: ui.AppAssets.vTemplateVerticalFourFront,
       backAsset: ui.AppAssets.vTemplateVerticalFourBack,
+      frontAssetWithoutData: ui.AppAssets.vTemplateVerticalFourFrontWithOutData,
+      backAssetWithoutData: ui.AppAssets.vTemplateVerticalFourBackWithOutData,
     ),
     VisitingCardTemplateItem(
       id: 'v5',
       frontAsset: ui.AppAssets.vTemplateVerticalFiveFront,
       backAsset: ui.AppAssets.vTemplateVerticalFiveBack,
+      frontAssetWithoutData: ui.AppAssets.vTemplateVerticalFiveFrontWithOutData,
+      backAssetWithoutData: ui.AppAssets.vTemplateVerticalFiveBackWithOutData,
     ),
   ];
 }

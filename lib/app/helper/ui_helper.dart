@@ -212,6 +212,46 @@ class AppAssets {
   static const multipleColorIcon = 'assets/icons/mutiple_color_picker.svg';
 
 
+  // visiting template card icon
+  static const pickerCameraIcon = 'assets/icons/camera_icon.svg';
+  static const defaultQrcodeIcon = 'assets/icons/default_qrcode.png';
+  static const visitingTemplateLocalFileUploadIcon = 'assets/icons/local_upload_icon.png';
+  static const visitingTemplateEditIcon = 'assets/icons/green_edit.svg';
+  static const visitingTemplateLocationIcon = 'assets/icons/green_location.svg';
+  static const visitingTemplateMailIcon = 'assets/icons/green_mail.svg';
+  static const visitingTemplatePhoneIcon = 'assets/icons/green_phone.svg';
+  static const visitingTemplateShareIcon = 'assets/icons/green_share.svg';
+  static const visitingTemplateIcon = 'assets/icons/green_template.svg';
+  static const visitingTemplateWebsiteIcon = 'assets/icons/green_website.svg';
+  static const visitingTemplateQrcodeCustomizeIcon = 'assets/icons/visiting_qr_customize_icon.svg';
+  static const visitingTemplateQrcodePlaceIcon = 'assets/icons/visiting_qr_place_icon.svg';
+  static const visitingTemplateAddIcon = 'assets/icons/add_icon.svg';
+  static const visitingTemplateCrossIcon = 'assets/icons/cross_icon.svg';
+
+  // select visiting template card without data
+  static const vTemplateHorizontalOneFrontWithOutData = 'assets/images/visiting_card_template_without_data/horizontal/business_card front_01.png';
+  static const vTemplateHorizontalOneBackWithOutData = 'assets/images/visiting_card_template_without_data/horizontal/business_card-Back_01.png';
+  static const vTemplateHorizontalTwoFrontWithOutData = 'assets/images/visiting_card_template_without_data/horizontal/business_card front_02.png';
+  static const vTemplateHorizontalTwoBackWithOutData = 'assets/images/visiting_card_template_without_data/horizontal/business_card-Back_02.png';
+  static const vTemplateHorizontalThreeFrontWithOutData = 'assets/images/visiting_card_template_without_data/horizontal/business_card front_03.png';
+  static const vTemplateHorizontalThreeBackWithOutData = 'assets/images/visiting_card_template_without_data/horizontal/business_card-Back_03.png';
+  static const vTemplateHorizontalFourFrontWithOutData = 'assets/images/visiting_card_template_without_data/horizontal/business_card front_04.png';
+  static const vTemplateHorizontalFourBackWithOutData = 'assets/images/visiting_card_template_without_data/horizontal/business_card-Back_04.png';
+  static const vTemplateHorizontalFiveFrontWithOutData = 'assets/images/visiting_card_template_without_data/horizontal/business_card front_05.png';
+  static const vTemplateHorizontalFiveBackWithOutData = 'assets/images/visiting_card_template_without_data/horizontal/business_card-Back_05.png';
+
+  static const vTemplateVerticalOneFrontWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Front_01.png';
+  static const vTemplateVerticalOneBackWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Back_01.png';
+  static const vTemplateVerticalTwoFrontWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Front_02.png';
+  static const vTemplateVerticalTwoBackWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Back_02.png';
+  static const vTemplateVerticalThreeFrontWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Front_03.png';
+  static const vTemplateVerticalThreeBackWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Back_03.png';
+  static const vTemplateVerticalFourFrontWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Front_04.png';
+  static const vTemplateVerticalFourBackWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Back_04.png';
+  static const vTemplateVerticalFiveFrontWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Front_05.png';
+  static const vTemplateVerticalFiveBackWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Back_05.png';
+
+
 }
 
 class AppFonts {

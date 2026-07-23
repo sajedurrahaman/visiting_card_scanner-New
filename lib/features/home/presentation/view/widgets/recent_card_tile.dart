@@ -70,9 +70,14 @@ class RecentCardTile extends StatelessWidget {
                 children: [
                   Text(
                     item.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: ui.AppTextStyles.helperText(
                       color: const Color(0xFF1A1A1A),
-                    ).copyWith(fontWeight: FontWeight.w600),
+                    ).copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12.sp,
+                    ),
                   ),
                   SizedBox(height: 4.h),
                   Row(
