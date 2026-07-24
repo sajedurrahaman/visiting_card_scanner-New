@@ -21,7 +21,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
     this.backgroundGradientColors = const [],
     this.hasExplicitBackground = false,
     this.barcodeHeight = 150,
-    this.pdf417Height = 7,
+    this.pdf417Height = 8,
     this.headingText = '',
     this.showHeading = true,
     this.headingColor = Colors.black,
@@ -205,7 +205,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: detailsColor,
                     ),
-                    barcode: barcode,
+                    barcode: Barcode.code128(),
                     color: foregroundColor,
                     data: _data,
                     errorBuilder: (context, error) =>
@@ -238,7 +238,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: detailsColor,
                     ),
-                    barcode: barcode,
+                    barcode: Barcode.code128(),
                     color: foregroundColor,
                     data: _data,
                     errorBuilder: (context, error) =>
@@ -271,7 +271,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: detailsColor,
                     ),
-                    barcode: barcode,
+                    barcode: Barcode.code128(),
                     color: foregroundColor,
                     data: _data,
                     errorBuilder: (context, error) =>
@@ -303,7 +303,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: detailsColor,
                     ),
-                    barcode: barcode,
+                    barcode: Barcode.code128(),
                     color: foregroundColor,
                     data: _data,
                     errorBuilder: (context, error) =>
@@ -335,7 +335,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: detailsColor,
                     ),
-                    barcode: barcode,
+                    barcode: Barcode.code128(),
                     color: foregroundColor,
                     data: _data,
                     errorBuilder: (context, error) =>
@@ -368,7 +368,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: detailsColor,
                     ),
-                    barcode: barcode,
+                    barcode: Barcode.code128(),
                     color: foregroundColor,
                     data: _data,
                     errorBuilder: (context, error) =>
@@ -401,7 +401,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: detailsColor,
                     ),
-                    barcode: barcode,
+                    barcode: Barcode.code128(),
                     color: foregroundColor,
                     data: _data,
                     errorBuilder: (context, error) =>
@@ -434,7 +434,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: detailsColor,
                     ),
-                    barcode: barcode,
+                    barcode: Barcode.code128(),
                     color: foregroundColor,
                     data: _data,
                     errorBuilder: (context, error) =>
@@ -462,7 +462,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                     height: 40.h,
                     width: 70.w,
                     drawText: false,
-                    barcode: barcode,
+                    barcode: Barcode.code128(),
                     style: TextStyle(
                       fontSize: detailsFontSize.sp,
                       fontWeight: FontWeight.bold,
@@ -500,7 +500,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: detailsColor,
                     ),
-                    barcode: barcode,
+                    barcode: Barcode.code128(),
                     color: foregroundColor,
                     data: _data,
                     errorBuilder: (context, error) =>
@@ -534,7 +534,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: detailsColor,
                     ),
-                    barcode: barcode,
+                    barcode: Barcode.code128(),
                     color: foregroundColor,
                     data: _data,
                     errorBuilder: (context, error) =>
@@ -568,7 +568,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: detailsColor,
                     ),
-                    barcode: barcode,
+                    barcode: Barcode.code128(),
                     color: foregroundColor,
                     data: _data,
                     errorBuilder: (context, error) =>
@@ -601,7 +601,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: detailsColor,
                     ),
-                    barcode: barcode,
+                    barcode: Barcode.code128(),
                     color: foregroundColor,
                     data: _data,
                     errorBuilder: (context, error) =>
@@ -636,7 +636,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         color: detailsColor,
                       ),
-                      barcode: barcode,
+                      barcode: Barcode.code128(),
                       color: foregroundColor,
                       data: _data,
                       errorBuilder: (context, error) =>
@@ -670,7 +670,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: detailsColor,
                     ),
-                    barcode: barcode,
+                    barcode: Barcode.code128(),
                     color: foregroundColor,
                     data: _data,
                     errorBuilder: (context, error) =>
@@ -703,7 +703,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: detailsColor,
                     ),
-                    barcode: barcode,
+                    barcode: Barcode.code128(),
                     color: foregroundColor,
                     data: _data,
                     errorBuilder: (context, error) =>
@@ -731,7 +731,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                             fontSize: detailsFontSize.sp,
                             fontWeight: FontWeight.bold,
                             color: detailsColor),
-                        barcode: barcode,
+                        barcode: Barcode.code128(),
                         color: foregroundColor,
                         data: _data,
                         errorBuilder: (context, error) =>
@@ -750,7 +750,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                         height: 40.h,
                         width: 70.w,
                         drawText: false,
-                        barcode: barcode,
+                        barcode: Barcode.code128(),
                         style: TextStyle(
                             fontSize: detailsFontSize.sp,
                             fontWeight: FontWeight.bold,
@@ -777,7 +777,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                             fontSize: detailsFontSize.sp,
                             fontWeight: FontWeight.bold,
                             color: detailsColor),
-                        barcode: barcode,
+                        barcode: Barcode.code128(),
                         color: foregroundColor,
                         data: _data,
                         errorBuilder: (context, error) =>
@@ -800,7 +800,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                             fontSize: detailsFontSize.sp,
                             fontWeight: FontWeight.bold,
                             color: detailsColor),
-                        barcode: barcode,
+                        barcode: Barcode.code128(),
                         color: foregroundColor,
                         data: _data,
                         errorBuilder: (context, error) =>
@@ -817,7 +817,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                         height: 60.h,
                         width: 140.w,
                         drawText: false,
-                        barcode: barcode,
+                        barcode: Barcode.code128(),
                         style: TextStyle(
                             fontSize: detailsFontSize.sp,
                             fontWeight: FontWeight.bold,
@@ -842,7 +842,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                             fontSize: detailsFontSize.sp,
                             fontWeight: FontWeight.bold,
                             color: detailsColor),
-                        barcode: barcode,
+                        barcode: Barcode.code128(),
                         color: foregroundColor,
                         data: _data,
                         errorBuilder: (context, error) =>
@@ -864,7 +864,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                             fontSize: detailsFontSize.sp,
                             fontWeight: FontWeight.bold,
                             color: detailsColor),
-                        barcode: barcode,
+                        barcode: Barcode.code128(),
                         color: foregroundColor,
                         data: _data,
                         errorBuilder: (context, error) =>
@@ -886,7 +886,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                             fontSize: detailsFontSize.sp,
                             fontWeight: FontWeight.bold,
                             color: detailsColor),
-                        barcode: barcode,
+                        barcode: Barcode.code128(),
                         color: foregroundColor,
                         data: _data,
                         errorBuilder: (context, error) =>
@@ -908,7 +908,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                             fontSize: detailsFontSize.sp,
                             fontWeight: FontWeight.bold,
                             color: detailsColor),
-                        barcode: barcode,
+                        barcode: Barcode.code128(),
                         color: foregroundColor,
                         data: _data,
                         errorBuilder: (context, error) =>
@@ -930,7 +930,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                             fontSize: detailsFontSize.sp,
                             fontWeight: FontWeight.bold,
                             color: detailsColor),
-                        barcode: barcode,
+                        barcode: Barcode.code128(),
                         color: foregroundColor,
                         data: _data,
                         errorBuilder: (context, error) =>
@@ -952,7 +952,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                             fontSize: detailsFontSize.sp,
                             fontWeight: FontWeight.bold,
                             color: detailsColor),
-                        barcode: barcode,
+                        barcode: Barcode.code128(),
                         color: foregroundColor,
                         data: _data,
                         errorBuilder: (context, error) =>
@@ -969,7 +969,7 @@ class BarcodeTemplateStackBuilder extends StatelessWidget {
                     height: 60.h,
                     width: 150.w,
                     drawText: false,
-                    barcode: barcode,
+                    barcode: Barcode.code128(),
                     color: foregroundColor,
                     data: _data,
                     errorBuilder: (context, error) =>

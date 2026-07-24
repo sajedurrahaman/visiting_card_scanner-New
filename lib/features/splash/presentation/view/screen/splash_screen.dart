@@ -43,7 +43,7 @@ class _SplashScreenState extends State<SplashScreen> {
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
-              padding: EdgeInsets.only(bottom: 56.h),
+              padding: EdgeInsets.only(bottom: 30.h),
               child: Text(
                 'Visiting Card Scanner',
                 style: AppTextStyles.mainText(),

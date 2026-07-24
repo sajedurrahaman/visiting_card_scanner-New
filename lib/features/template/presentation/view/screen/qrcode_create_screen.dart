@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
+import 'package:visiting_card/features/template/presentation/helper/qr_bar_code_helper.dart';
+import 'package:visiting_card/features/template/presentation/helper/qr_barcode_input_helper.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/qrcode_customize_screen.dart';
 
 class QrcodeCreateScreen extends StatefulWidget {
@@ -24,15 +26,47 @@ class _QrcodeCreateScreenState extends State<QrcodeCreateScreen> {
   static const _maxLength = 300;
 
   final _formKey = GlobalKey<FormState>();
-  final _primaryController = TextEditingController();
+  late final TextEditingController _primaryController;
   final _secondaryController = TextEditingController();
   final _tertiaryController = TextEditingController();
+
+  // PDF Scanner contact fields (10).
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _companyController = TextEditingController();
+  final _jobController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _websiteController = TextEditingController(text: 'http://');
+  final _addressController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _countryController = TextEditingController();
+
+  bool get _isContacts => widget.typeLabel == 'Contacts';
+
+  @override
+  void initState() {
+    super.initState();
+    _primaryController = TextEditingController(
+      text: QrBarcodeInputHelper.initialTextForQrType(widget.typeLabel),
+    );
+  }
 
   @override
   void dispose() {
     _primaryController.dispose();
     _secondaryController.dispose();
     _tertiaryController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _companyController.dispose();
+    _jobController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _websiteController.dispose();
+    _addressController.dispose();
+    _cityController.dispose();
+    _countryController.dispose();
     super.dispose();
   }
 
@@ -76,32 +110,35 @@ class _QrcodeCreateScreenState extends State<QrcodeCreateScreen> {
   String _buildQrData() {
     final primary = _primaryController.text.trim();
     final secondary = _secondaryController.text.trim();
-    final tertiary = _tertiaryController.text.trim();
 
     switch (widget.typeLabel) {
-      case 'Website':
-        if (primary.startsWith('http://') || primary.startsWith('https://')) {
-          return primary;
-        }
-        return 'https://$primary';
       case 'Wi-Fi':
-        return 'WIFI:T:WPA;S:$primary;P:$secondary;;';
+        return 'WIFI:S:$primary;T:WPA;P:$secondary;H:false;;';
       case 'Email':
         return 'mailto:$primary';
       case 'Phone':
-      case 'WhatsApp':
-      case 'Viber':
         return 'tel:$primary';
+      case 'WhatsApp':
+        return 'https://wa.me/$primary?text=${Uri.encodeComponent(secondary)}';
       case 'SMS':
         return 'SMSTO:$primary:$secondary';
       case 'Location':
         return 'geo:$primary,$secondary';
       case 'Contacts':
-        return 'BEGIN:VCARD\nVERSION:3.0\nFN:$primary\nTEL:$secondary\nEMAIL:$tertiary\nEND:VCARD';
+        // Same payload shape as PDF Scanner contactInputForm.
+        return 'N:${_lastNameController.text} ${_firstNameController.text}\n'
+            'ORG:${_companyController.text}\n'
+            'TITLE:${_jobController.text}\n'
+            'TEL:${_phoneController.text}\n'
+            'EMAIL:${_emailController.text}\n'
+            'URL:${_websiteController.text}\n'
+            'ADR:${_addressController.text}, ${_cityController.text}, ${_countryController.text}\n';
+      case 'Website':
       case 'Facebook':
       case 'Instagram':
       case 'X':
       case 'Spotify':
+      case 'Viber':
       case 'Product':
         return primary;
       case 'Text':
@@ -197,22 +234,27 @@ class _QrcodeCreateScreenState extends State<QrcodeCreateScreen> {
                               ),
                             ),
                           ),
-                          ValueListenableBuilder<TextEditingValue>(
-                            valueListenable: _primaryController,
-                            builder: (_, value, _) {
-                              return Text(
-                                '${value.text.length}/$_maxLength',
-                                style: ui.AppTextStyles.iconUnderText(
-                                  color: const Color(0xFF9E9E9E),
-                                ),
-                              );
-                            },
-                          ),
+                          if (!_isContacts)
+                            ValueListenableBuilder<TextEditingValue>(
+                              valueListenable: _primaryController,
+                              builder: (_, value, _) {
+                                return Text(
+                                  '${value.text.length}/$_maxLength',
+                                  style: ui.AppTextStyles.iconUnderText(
+                                    color: const Color(0xFF9E9E9E),
+                                  ),
+                                );
+                              },
+                            ),
                         ],
                       ),
                       SizedBox(height: 12.h),
-                      _buildPrimaryField(isMultiline),
-                      ..._buildExtraFields(),
+                      if (_isContacts)
+                        ..._buildContactFields()
+                      else ...[
+                        _buildPrimaryField(isMultiline),
+                        ..._buildExtraFields(),
+                      ],
                     ],
                   ),
                 ),
@@ -256,36 +298,153 @@ class _QrcodeCreateScreenState extends State<QrcodeCreateScreen> {
     );
   }
 
+  /// PDF Scanner contactInputForm — 10 fields.
+  List<Widget> _buildContactFields() {
+    return [
+      _fieldRow(
+        left: _labeledField(
+          title: 'First Name:',
+          hint: 'Enter Name',
+          controller: _firstNameController,
+          validator: (v) => QrBarCodeHelper.validateName(v?.trim()),
+        ),
+        right: _labeledField(
+          title: 'Last Name:',
+          hint: 'Enter Name',
+          controller: _lastNameController,
+          validator: (v) => QrBarCodeHelper.validateName(v?.trim()),
+        ),
+      ),
+      SizedBox(height: 10.h),
+      _fieldRow(
+        left: _labeledField(
+          title: 'Company Name:',
+          hint: 'Enter Company',
+          controller: _companyController,
+          validator: (v) => QrBarCodeHelper.validateCompanyName(v?.trim()),
+        ),
+        right: _labeledField(
+          title: 'Job Name:',
+          hint: 'Enter Job',
+          controller: _jobController,
+          validator: (v) => QrBarCodeHelper.validateJobName(v?.trim()),
+        ),
+      ),
+      SizedBox(height: 10.h),
+      _fieldRow(
+        left: _labeledField(
+          title: 'Phone Number:',
+          hint: 'Enter Phone',
+          controller: _phoneController,
+          keyboardType: TextInputType.phone,
+          validator: (v) => QrBarCodeHelper.validatePhoneNumber(v?.trim()),
+        ),
+        right: _labeledField(
+          title: 'Email Address:',
+          hint: 'Enter Email',
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
+          validator: (v) =>
+              QrBarCodeHelper.validateEmail(v?.toLowerCase().trim()),
+        ),
+      ),
+      SizedBox(height: 10.h),
+      _labeledField(
+        title: 'Website:',
+        hint: 'Enter Web Address',
+        controller: _websiteController,
+        keyboardType: TextInputType.url,
+        validator: (v) =>
+            QrBarCodeHelper.validateWebsiteURLForContact((v ?? '').trim()),
+      ),
+      SizedBox(height: 10.h),
+      _labeledField(
+        title: 'Address:',
+        hint: 'Enter Address',
+        controller: _addressController,
+        validator: (v) => QrBarCodeHelper.validateAddress(v?.trim()),
+      ),
+      SizedBox(height: 10.h),
+      _fieldRow(
+        left: _labeledField(
+          title: 'City:',
+          hint: 'Enter City',
+          controller: _cityController,
+          validator: (v) => QrBarCodeHelper.validateCityName(v?.trim()),
+        ),
+        right: _labeledField(
+          title: 'Country:',
+          hint: 'Enter Country',
+          controller: _countryController,
+          validator: (v) => QrBarCodeHelper.validateCountry(v?.trim()),
+        ),
+      ),
+    ];
+  }
+
+  Widget _fieldRow({required Widget left, required Widget right}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: left),
+        SizedBox(width: 8.w),
+        Expanded(child: right),
+      ],
+    );
+  }
+
+  Widget _labeledField({
+    required String title,
+    required String hint,
+    required TextEditingController controller,
+    String? Function(String?)? validator,
+    TextInputType? keyboardType,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: ui.AppTextStyles.iconUnderText(
+            color: const Color(0xFF1A1A1A),
+          ).copyWith(fontWeight: FontWeight.w600, fontSize: 11.sp),
+        ),
+        SizedBox(height: 4.h),
+        _extraField(
+          controller: controller,
+          hint: hint,
+          validator: validator,
+          keyboardType: keyboardType,
+        ),
+      ],
+    );
+  }
+
   Widget _buildPrimaryField(bool isMultiline) {
-    final hint = switch (widget.typeLabel) {
-      'Website' => 'Enter website URL',
-      'Wi-Fi' => 'Enter network name (SSID)',
-      'Email' => 'Enter email address',
-      'Phone' || 'WhatsApp' || 'Viber' => 'Enter phone number',
-      'SMS' => 'Enter phone number',
-      'Location' => 'Enter latitude',
-      'Contacts' => 'Enter full name',
-      'Facebook' ||
-      'Instagram' ||
-      'X' ||
-      'Spotify' ||
-      'Product' =>
-        'Enter link or text',
-      _ => 'Type or paste text',
-    };
+    final hint = QrBarcodeInputHelper.hintForQrType(widget.typeLabel);
 
     return TextFormField(
       controller: _primaryController,
       maxLength: _maxLength,
       maxLines: isMultiline ? 6 : 1,
       minLines: isMultiline ? 5 : 1,
-      onChanged: (_) => setState(() {}),
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return 'This field is required';
-        }
-        return null;
+      keyboardType: switch (widget.typeLabel) {
+        'Email' => TextInputType.emailAddress,
+        'Phone' || 'WhatsApp' || 'SMS' => TextInputType.phone,
+        'Website' ||
+        'Facebook' ||
+        'Instagram' ||
+        'X' ||
+        'Spotify' ||
+        'Viber' =>
+          TextInputType.url,
+        'Location' =>
+          const TextInputType.numberWithOptions(decimal: true, signed: true),
+        _ => TextInputType.text,
       },
+      onChanged: (_) => setState(() {}),
+      validator: (value) =>
+          QrBarcodeInputHelper.validateQrPrimary(widget.typeLabel, value),
       decoration: InputDecoration(
         counterText: '',
         hintText: hint,
@@ -308,6 +467,7 @@ class _QrcodeCreateScreenState extends State<QrcodeCreateScreen> {
             width: 1.5,
           ),
         ),
+        errorMaxLines: 2,
       ),
     );
   }
@@ -320,7 +480,8 @@ class _QrcodeCreateScreenState extends State<QrcodeCreateScreen> {
           _extraField(
             controller: _secondaryController,
             hint: 'Enter password',
-            requiredField: true,
+            validator: (v) =>
+                QrBarcodeInputHelper.validateQrSecondary(widget.typeLabel, v),
           ),
         ];
       case 'SMS':
@@ -330,7 +491,19 @@ class _QrcodeCreateScreenState extends State<QrcodeCreateScreen> {
             controller: _secondaryController,
             hint: 'Type or paste text',
             maxLines: 4,
-            requiredField: true,
+            validator: (v) =>
+                QrBarcodeInputHelper.validateQrSecondary(widget.typeLabel, v),
+          ),
+        ];
+      case 'WhatsApp':
+        return [
+          SizedBox(height: 12.h),
+          _extraField(
+            controller: _secondaryController,
+            hint: 'Enter Message',
+            maxLines: 4,
+            validator: (v) =>
+                QrBarcodeInputHelper.validateQrSecondary(widget.typeLabel, v),
           ),
         ];
       case 'Location':
@@ -338,23 +511,13 @@ class _QrcodeCreateScreenState extends State<QrcodeCreateScreen> {
           SizedBox(height: 12.h),
           _extraField(
             controller: _secondaryController,
-            hint: 'Enter longitude',
-            requiredField: true,
-          ),
-        ];
-      case 'Contacts':
-        return [
-          SizedBox(height: 12.h),
-          _extraField(
-            controller: _secondaryController,
-            hint: 'Enter phone number',
-            requiredField: false,
-          ),
-          SizedBox(height: 12.h),
-          _extraField(
-            controller: _tertiaryController,
-            hint: 'Enter email',
-            requiredField: false,
+            hint: 'Enter Longitude',
+            keyboardType: const TextInputType.numberWithOptions(
+              decimal: true,
+              signed: true,
+            ),
+            validator: (v) =>
+                QrBarcodeInputHelper.validateQrSecondary(widget.typeLabel, v),
           ),
         ];
       default:
@@ -365,19 +528,15 @@ class _QrcodeCreateScreenState extends State<QrcodeCreateScreen> {
   Widget _extraField({
     required TextEditingController controller,
     required String hint,
-    bool requiredField = true,
+    String? Function(String?)? validator,
     int maxLines = 1,
+    TextInputType? keyboardType,
   }) {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
-      validator: (value) {
-        if (!requiredField) return null;
-        if (value == null || value.trim().isEmpty) {
-          return 'This field is required';
-        }
-        return null;
-      },
+      keyboardType: keyboardType,
+      validator: validator,
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: ui.AppTextStyles.helperText(color: const Color(0xFFB0B0B0)),
@@ -399,6 +558,7 @@ class _QrcodeCreateScreenState extends State<QrcodeCreateScreen> {
             width: 1.5,
           ),
         ),
+        errorMaxLines: 2,
       ),
     );
   }

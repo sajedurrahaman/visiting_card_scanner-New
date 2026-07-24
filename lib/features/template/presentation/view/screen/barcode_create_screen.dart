@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
+import 'package:visiting_card/features/template/presentation/helper/qr_barcode_input_helper.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/barcode_customize_screen.dart';
 
 class BarcodeCreateScreen extends StatefulWidget {
@@ -87,6 +88,18 @@ class _BarcodeCreateScreenState extends State<BarcodeCreateScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hint = QrBarcodeInputHelper.hintForBarcodeType(widget.typeLabel);
+    final isDigitsOnly = const {
+      'EAN-8',
+      'EAN-13',
+      'UPC-A',
+      'UPC-E',
+      'ITF',
+      'ITF-14',
+      'MSI',
+      'ISBN',
+    }.contains(widget.typeLabel);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),
       appBar: AppBar(
@@ -170,16 +183,18 @@ class _BarcodeCreateScreenState extends State<BarcodeCreateScreen> {
                         maxLength: _maxLength,
                         maxLines: 5,
                         minLines: 4,
+                        keyboardType: isDigitsOnly
+                            ? TextInputType.number
+                            : TextInputType.text,
                         onChanged: (_) => setState(() {}),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'This field is required';
-                          }
-                          return null;
-                        },
+                        validator: (value) =>
+                            QrBarcodeInputHelper.validateBarcode(
+                          widget.typeLabel,
+                          value,
+                        ),
                         decoration: InputDecoration(
                           counterText: '',
-                          hintText: 'Type or paste text',
+                          hintText: hint,
                           hintStyle: ui.AppTextStyles.helperText(
                             color: const Color(0xFFB0B0B0),
                           ),
@@ -206,6 +221,7 @@ class _BarcodeCreateScreenState extends State<BarcodeCreateScreen> {
                               width: 1.5,
                             ),
                           ),
+                          errorMaxLines: 2,
                         ),
                       ),
                     ],

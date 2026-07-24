@@ -990,9 +990,9 @@ class _HeightTab extends StatelessWidget {
                       ),
                       child: Slider(
                         value: value,
-                        min: isPdf417 ? 6 : 140,
+                        min: isPdf417 ? 8 : 140,
                         max: isPdf417 ? 10 : 160,
-                        divisions: isPdf417 ? 4 : null,
+                        divisions: isPdf417 ? 2 : null,
                         onChanged: isPdf417
                             ? vm.setPdf417Height
                             : vm.setBarcodeHeight,

@@ -71,7 +71,7 @@ class BarcodeCustomizeViewModel extends ChangeNotifier {
   int? backgroundGradientSwatchUi;
 
   double barcodeHeight = 150;
-  double pdf417Height = 7;
+  double pdf417Height = 8;
   bool isSaving = false;
 
   bool get isPdf417 => barcodeType == AppBarcodeType.pdf417;
