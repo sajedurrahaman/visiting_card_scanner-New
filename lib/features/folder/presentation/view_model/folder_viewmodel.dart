@@ -92,7 +92,7 @@ class FolderViewModel extends ChangeNotifier {
     List<SavedFileModel> files,
     String folderId,
   ) {
-    return files
+    final cards = files
         .where((file) => file.folderId == folderId)
         .map(
           (file) => RecentCardItem(
@@ -107,6 +107,16 @@ class FolderViewModel extends ChangeNotifier {
           ),
         )
         .toList();
+    // PDF Scanner folder parity: newest saved file on top.
+    cards.sort((a, b) => _recencyKey(b).compareTo(_recencyKey(a)));
+    return cards;
+  }
+
+  static int _recencyKey(RecentCardItem item) {
+    final fromId = RegExp(r'^(\d+)').firstMatch(item.id)?.group(1);
+    final parsedId = fromId == null ? null : int.tryParse(fromId);
+    if (parsedId != null && parsedId > 0) return parsedId;
+    return 0;
   }
 
   void exitSelectionMode(String folderId) {

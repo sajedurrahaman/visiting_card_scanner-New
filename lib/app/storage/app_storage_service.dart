@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:intl/intl.dart';
 import 'package:isar_plus/isar_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -113,8 +114,32 @@ class AppStorageService {
   }
 
   void _reloadCache() {
-    final entities = _db.savedFiles.where().findAll();
-    _cache = entities.map(_toModel).toList();
+    // PDF Scanner recent parity: newest first (Isar id desc / latest saves on top).
+    final entities = _db.savedFiles.where().sortByIdDesc().findAll();
+    final models = entities.map(_toModel).toList();
+    models.sort(_compareNewestFirst);
+    _cache = models;
+  }
+
+  /// Prefer timestamp prefix in [SavedFileModel.id]; fall back to dateTime / id.
+  static int _compareNewestFirst(SavedFileModel a, SavedFileModel b) {
+    final aKey = _recencyKey(a);
+    final bKey = _recencyKey(b);
+    final byKey = bKey.compareTo(aKey);
+    if (byKey != 0) return byKey;
+    return b.id.compareTo(a.id);
+  }
+
+  static int _recencyKey(SavedFileModel file) {
+    final fromId = RegExp(r'^(\d+)').firstMatch(file.id)?.group(1);
+    final parsedId = fromId == null ? null : int.tryParse(fromId);
+    if (parsedId != null && parsedId > 0) return parsedId;
+
+    try {
+      return DateFormat('dd-MMM-yyyy HH:mm').parse(file.dateTime).millisecondsSinceEpoch;
+    } catch (_) {
+      return 0;
+    }
   }
 
   Future<void> _migrateFromSharedPreferencesIfNeeded() async {

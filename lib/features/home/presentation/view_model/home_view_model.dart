@@ -19,6 +19,7 @@ class HomeViewModel extends ChangeNotifier {
 
   Future<void> loadRecentFromStorage() async {
     final files = AppStorageService().getAllFiles();
+    // Keep Recent newest-first (independent of folder list).
     final sorted = List.of(files)
       ..sort((a, b) => b.id.compareTo(a.id));
     _recentCards = sorted

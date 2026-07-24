@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:gal/gal.dart';
+// import 'package:gal/gal.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
@@ -286,11 +286,13 @@ class VisitingCardScanViewModel extends ChangeNotifier {
         savedImagePaths.add(out.path);
         if (i == 0) frontPath = out.path;
 
-        try {
-          final hasAccess = await Gal.hasAccess();
-          if (!hasAccess) await Gal.requestAccess();
-          await Gal.putImage(out.path, album: 'Visiting Card');
-        } catch (_) {}
+        // Gallery save disabled for scan → add contact → save flow.
+        // Keep contact create + recent + folder storage only.
+        // try {
+        //   final hasAccess = await Gal.hasAccess();
+        //   if (!hasAccess) await Gal.requestAccess();
+        //   await Gal.putImage(out.path, album: 'Visiting Card');
+        // } catch (_) {}
       }
 
       final contact = _buildSavedContact(savedImagePaths);
