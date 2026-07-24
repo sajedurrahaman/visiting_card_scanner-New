@@ -5,6 +5,7 @@ class QrColorHelper {
   QrColorHelper._();
 
   static const defaultResetIcon = 'assets/svg/default.svg';
+  static const imageAddIcon = 'assets/svg/image_add.svg';
 
   static const colorOptions = [
     Color(0xFF000000),

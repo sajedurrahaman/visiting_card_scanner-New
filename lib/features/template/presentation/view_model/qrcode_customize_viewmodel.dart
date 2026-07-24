@@ -87,6 +87,10 @@ class QrcodeCustomizeViewModel extends ChangeNotifier {
 
   bool get hasLogoAsset => selectedLogoAsset != null && selectedLogoAsset!.isNotEmpty;
 
+  /// Gallery-picked logo (PDF Scanner index-1 picker parity).
+  bool get hasPickedLogo =>
+      hasLogoAsset && selectedLogoIndex == -2;
+
   bool get hasLogoText => logoText.trim().isNotEmpty;
 
   Color get effectiveForegroundColor {
@@ -492,6 +496,13 @@ class QrcodeCustomizeViewModel extends ChangeNotifier {
   void selectLogoAsset(int index) {
     selectedLogoIndex = index;
     selectedLogoAsset = QrColorHelper.logoOptions[index];
+    logoText = '';
+    notifyListeners();
+  }
+
+  void selectPickedLogo(String path) {
+    selectedLogoIndex = -2;
+    selectedLogoAsset = path;
     logoText = '';
     notifyListeners();
   }

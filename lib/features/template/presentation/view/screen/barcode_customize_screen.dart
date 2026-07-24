@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:screenshot/screenshot.dart';
+import 'package:visiting_card/app/helper/multiple_color_picker.dart';
 import 'package:visiting_card/app/helper/qr_color_helper.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/folder/presentation/view_model/folder_viewmodel.dart';
@@ -527,7 +528,7 @@ class _TextTab extends StatelessWidget {
                               final initial = vm.isBarCodeDetails
                                   ? vm.detailsColor
                                   : vm.headingColor;
-                              final color = await _showMultipleColorPicker(
+                              final color = await showMultipleColorPicker(
                                 context,
                                 initial: initial,
                               );
@@ -818,7 +819,7 @@ class _ColorTab extends StatelessWidget {
                             final initial = isForeground
                                 ? vm.foregroundColor
                                 : vm.backgroundColor;
-                            final color = await _showMultipleColorPicker(
+                            final color = await showMultipleColorPicker(
                               context,
                               initial: initial,
                             );
@@ -1133,75 +1134,4 @@ class _GradientToggleButton extends StatelessWidget {
       ),
     );
   }
-}
-
-Future<Color?> _showMultipleColorPicker(
-  BuildContext context, {
-  Color? initial,
-}) async {
-  var hsv = HSVColor.fromColor(initial ?? Colors.black);
-
-  return showDialog<Color>(
-    context: context,
-    builder: (dialogContext) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          final picked = hsv.toColor();
-          return AlertDialog(
-            title: Text(
-              'Pick color',
-              style: ui.AppTextStyles.mainText().copyWith(fontSize: 16.sp),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 56.w,
-                  height: 56.w,
-                  decoration: BoxDecoration(
-                    color: picked,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFFE0E0E0)),
-                  ),
-                ),
-                SizedBox(height: 12.h),
-                Slider(
-                  value: hsv.hue,
-                  min: 0,
-                  max: 360,
-                  activeColor: ui.Colors.parentIconSelectTextColor,
-                  onChanged: (value) => setState(() => hsv = hsv.withHue(value)),
-                ),
-                Slider(
-                  value: hsv.saturation,
-                  min: 0,
-                  max: 1,
-                  activeColor: ui.Colors.parentIconSelectTextColor,
-                  onChanged: (value) =>
-                      setState(() => hsv = hsv.withSaturation(value)),
-                ),
-                Slider(
-                  value: hsv.value,
-                  min: 0,
-                  max: 1,
-                  activeColor: ui.Colors.parentIconSelectTextColor,
-                  onChanged: (value) => setState(() => hsv = hsv.withValue(value)),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext, picked),
-                child: const Text('OK'),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  );
 }

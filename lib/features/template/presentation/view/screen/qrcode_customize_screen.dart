@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:screenshot/screenshot.dart';
+import 'package:visiting_card/app/helper/multiple_color_picker.dart';
 import 'package:visiting_card/app/helper/qr_color_helper.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/folder/presentation/view_model/folder_viewmodel.dart';
@@ -611,7 +613,7 @@ class _TextTab extends StatelessWidget {
                                 final active = vm.overlaySolidSwatchUi == -2;
                                 return GestureDetector(
                                   onTap: () async {
-                                    final color = await _showMultipleColorPicker(
+                                    final color = await showMultipleColorPicker(
                                       context,
                                       initial: vm.overlayTextColor,
                                     );
@@ -973,7 +975,7 @@ class _ColorTab extends StatelessWidget {
                             final initial = isForeground
                                 ? vm.foregroundColor
                                 : vm.backgroundColor;
-                            final color = await _showMultipleColorPicker(
+                            final color = await showMultipleColorPicker(
                               context,
                               initial: initial,
                             );
@@ -1316,7 +1318,7 @@ class _LogoTab extends StatelessWidget {
                             final active = vm.logoSolidSwatchUi == -2;
                             return GestureDetector(
                               onTap: () async {
-                                final color = await _showMultipleColorPicker(
+                                final color = await showMultipleColorPicker(
                                   context,
                                   initial: vm.logoTextColor,
                                 );
@@ -1434,77 +1436,125 @@ class _LogoTab extends StatelessWidget {
               onRightTap: () => vm.setLogoMode(QrLogoMode.text),
             ),
             SizedBox(height: 12.h),
-            Text('Size', style: ui.AppTextStyles.iconUnderText()),
-            SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                activeTrackColor: _accent,
-                inactiveTrackColor: const Color(0xFF4F4E4E),
-                trackHeight: 5,
-                thumbColor: _accent,
-                overlayShape: SliderComponentShape.noOverlay,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
-              ),
-              child: Slider(
-                value: vm.logoSize,
-                min: 10,
-                max: 25,
-                divisions: 10,
-                onChanged: vm.setLogoSize,
+            _OptionCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _TextSectionLabel('Size'),
+                  SizedBox(height: 8.h),
+                  SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      activeTrackColor: _accent,
+                      inactiveTrackColor: const Color(0xFF4F4E4E),
+                      trackHeight: 4,
+                      thumbColor: _accent,
+                      overlayShape: SliderComponentShape.noOverlay,
+                      thumbShape: const RoundSliderThumbShape(
+                        enabledThumbRadius: 8,
+                      ),
+                    ),
+                    child: Slider(
+                      value: vm.logoSize,
+                      min: 10,
+                      max: 25,
+                      divisions: 10,
+                      onChanged: vm.setLogoSize,
+                    ),
+                  ),
+                ],
               ),
             ),
-            SizedBox(height: 8.h),
-            Text('Image', style: ui.AppTextStyles.iconUnderText()),
-            SizedBox(height: 6.h),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: QrColorHelper.logoOptions.length + 1,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 6,
-                crossAxisSpacing: 8.w,
-                mainAxisSpacing: 8.h,
-                childAspectRatio: 1,
-              ),
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  final selected = !vm.hasLogoAsset;
-                  return GestureDetector(
-                    onTap: vm.clearSelectedLogo,
-                    child: Container(
-                      padding: EdgeInsets.all(6.w),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? _accent.withValues(alpha: 0.15)
-                            : Colors.grey.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8.r),
-                        border: Border.all(
-                          color: selected ? _accent : Colors.transparent,
+            SizedBox(height: 10.h),
+            _OptionCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _TextSectionLabel('Image'),
+                  SizedBox(height: 10.h),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: QrColorHelper.logoOptions.length + 2,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 6,
+                      crossAxisSpacing: 8.w,
+                      mainAxisSpacing: 8.h,
+                      childAspectRatio: 1,
+                    ),
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        final selected = !vm.hasLogoAsset;
+                        return GestureDetector(
+                          onTap: vm.clearSelectedLogo,
+                          child: Container(
+                            padding: EdgeInsets.all(6.w),
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? _accent.withValues(alpha: 0.15)
+                                  : Colors.grey.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8.r),
+                              border: Border.all(
+                                color: selected ? _accent : Colors.transparent,
+                              ),
+                            ),
+                            child: SvgPicture.asset(
+                              QrColorHelper.defaultResetIcon,
+                            ),
+                          ),
+                        );
+                      }
+                      if (index == 1) {
+                        final selected = vm.hasPickedLogo;
+                        return GestureDetector(
+                          onTap: () async {
+                            final image = await ImagePicker().pickImage(
+                              source: ImageSource.gallery,
+                            );
+                            if (image != null) {
+                              vm.selectPickedLogo(image.path);
+                            }
+                          },
+                          child: Container(
+                            padding: EdgeInsets.all(6.w),
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? _accent.withValues(alpha: 0.15)
+                                  : Colors.grey.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8.r),
+                              border: Border.all(
+                                color: selected ? _accent : Colors.transparent,
+                              ),
+                            ),
+                            child: SvgPicture.asset(
+                              QrColorHelper.imageAddIcon,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        );
+                      }
+                      final logoIndex = index - 2;
+                      final asset = QrColorHelper.logoOptions[logoIndex];
+                      final selected = vm.selectedLogoIndex == logoIndex;
+                      return GestureDetector(
+                        onTap: () => vm.selectLogoAsset(logoIndex),
+                        child: Container(
+                          padding: EdgeInsets.all(6.w),
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? _accent.withValues(alpha: 0.15)
+                                : Colors.grey.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8.r),
+                            border: Border.all(
+                              color: selected ? _accent : Colors.transparent,
+                            ),
+                          ),
+                          child: SvgPicture.asset(asset, fit: BoxFit.contain),
                         ),
-                      ),
-                      child: SvgPicture.asset(QrColorHelper.defaultResetIcon),
-                    ),
-                  );
-                }
-                final logoIndex = index - 1;
-                final asset = QrColorHelper.logoOptions[logoIndex];
-                final selected = vm.selectedLogoIndex == logoIndex;
-                return GestureDetector(
-                  onTap: () => vm.selectLogoAsset(logoIndex),
-                  child: Container(
-                    padding: EdgeInsets.all(6.w),
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? _accent.withValues(alpha: 0.15)
-                          : Colors.grey.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8.r),
-                      border: Border.all(
-                        color: selected ? _accent : Colors.transparent,
-                      ),
-                    ),
-                    child: SvgPicture.asset(asset, fit: BoxFit.contain),
+                      );
+                    },
                   ),
-                );
-              },
+                ],
+              ),
             ),
           ],
         ],
@@ -1722,77 +1772,3 @@ class _GradientToggleButton extends StatelessWidget {
     );
   }
 }
-
-Future<Color?> _showMultipleColorPicker(
-  BuildContext context, {
-  Color? initial,
-}) async {
-  var hsv = HSVColor.fromColor(initial ?? Colors.black);
-
-  return showDialog<Color>(
-    context: context,
-    builder: (dialogContext) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          final picked = hsv.toColor();
-          return AlertDialog(
-            title: Text(
-              'Pick color',
-              style: ui.AppTextStyles.mainText().copyWith(fontSize: 16.sp),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 56.w,
-                  height: 56.w,
-                  decoration: BoxDecoration(
-                    color: picked,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFFE0E0E0)),
-                  ),
-                ),
-                SizedBox(height: 12.h),
-                Slider(
-                  value: hsv.hue,
-                  min: 0,
-                  max: 360,
-                  activeColor: ui.Colors.parentIconSelectTextColor,
-                  onChanged: (value) =>
-                      setState(() => hsv = hsv.withHue(value)),
-                ),
-                Slider(
-                  value: hsv.saturation,
-                  min: 0,
-                  max: 1,
-                  activeColor: ui.Colors.parentIconSelectTextColor,
-                  onChanged: (value) =>
-                      setState(() => hsv = hsv.withSaturation(value)),
-                ),
-                Slider(
-                  value: hsv.value,
-                  min: 0,
-                  max: 1,
-                  activeColor: ui.Colors.parentIconSelectTextColor,
-                  onChanged: (value) =>
-                      setState(() => hsv = hsv.withValue(value)),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext, picked),
-                child: const Text('OK'),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  );
-}
-

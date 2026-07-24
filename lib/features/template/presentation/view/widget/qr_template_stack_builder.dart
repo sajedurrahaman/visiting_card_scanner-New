@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -58,8 +60,17 @@ class QrTemplateStackBuilder extends StatelessWidget {
 
   Widget _logoOverlay() {
     if (_hasLogoAsset) {
+      final path = logoAsset!;
+      if (!path.startsWith('assets/')) {
+        return Image.file(
+          File(path),
+          width: logoSize,
+          height: logoSize,
+          fit: BoxFit.contain,
+        );
+      }
       return SvgPicture.asset(
-        logoAsset!,
+        path,
         width: logoSize,
         height: logoSize,
       );
