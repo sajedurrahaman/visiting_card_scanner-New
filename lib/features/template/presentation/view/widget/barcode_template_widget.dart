@@ -15,7 +15,7 @@ class BarcodeTemplateWidget extends StatelessWidget {
     final templates = viewModel.templates;
 
     return GridView.builder(
-      padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 120.h),
+      padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 120.h),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         crossAxisSpacing: 12.w,

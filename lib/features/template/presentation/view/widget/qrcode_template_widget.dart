@@ -20,7 +20,7 @@ class QrcodeTemplateWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.only(bottom: 8.h),
+          padding: EdgeInsets.only(top: 4.h, bottom: 8.h),
           child: SizedBox(
             height: QrcodeCategoryChip.chipSize.w,
             child: ListView.separated(

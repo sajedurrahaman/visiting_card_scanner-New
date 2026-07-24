@@ -58,6 +58,8 @@ dependencies:
       ref: main
   contacts_service_plus: ^0.0.3
   flutter_contacts: ^2.3.0
+  mobile_scanner: ^7.4.0
+  lottie: ^3.5.1
 
 dev_dependencies:
   flutter_test:

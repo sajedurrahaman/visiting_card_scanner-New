@@ -39,7 +39,7 @@ class VisitingCardTemplateWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 12.h),
+          padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 12.h),
           child: TemplateOrientationTabs(
             orientation: viewModel.orientation,
             onChanged: viewModel.changeOrientation,

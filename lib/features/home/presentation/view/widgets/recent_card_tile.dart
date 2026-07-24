@@ -2,11 +2,13 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/home/domain/model/recent_card_item.dart';
 import 'package:visiting_card/features/home/presentation/view/screen/saved_image_preview_screen.dart';
 import 'package:visiting_card/features/home/presentation/view_model/recent_card_menu_view_model.dart';
+import 'package:visiting_card/features/scan/presentation/helper/qr_barcode_scan_storage.dart';
 import 'package:visiting_card/features/scan/presentation/view/screen/visiting_card_contact_details_screen.dart';
 
 class RecentCardTile extends StatelessWidget {
@@ -33,14 +35,27 @@ class RecentCardTile extends StatelessWidget {
       onTap: onTap ??
           (isSelectionMode
               ? null
-              : () {
-                  final isVisitingCard = item.fileType == 'visiting_card';
+              : () async {
+                  if (item.fileType == 'visiting_card') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            VisitingCardContactDetailsScreen(item: item),
+                      ),
+                    );
+                    return;
+                  }
+
+                  if (QrBarcodeScanStorage.isScanTextItem(item)) {
+                    await QrBarcodeScanStorage.openSavedScan(context, item);
+                    return;
+                  }
+
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => isVisitingCard
-                          ? VisitingCardContactDetailsScreen(item: item)
-                          : SavedImagePreviewScreen(item: item),
+                      builder: (_) => SavedImagePreviewScreen(item: item),
                     ),
                   );
                 }),
@@ -189,8 +204,13 @@ class _RecentThumbnail extends StatelessWidget {
   static double get _height => 46.h;
 
   File? _resolveImageFile() {
+    // Scan .txt files are not images — never load them via Image.file.
+    if (item.isTextFile) return null;
+
     for (final path in [item.thumbnailPath, item.path]) {
       if (path == null || path.isEmpty) continue;
+      final lower = path.toLowerCase();
+      if (lower.endsWith('.txt') || lower.endsWith('.json')) continue;
       final file = File(path);
       if (file.existsSync()) return file;
     }
@@ -223,10 +243,15 @@ class _RecentThumbnail extends StatelessWidget {
     }
 
     if (item.isTextFile) {
-      return _placeholder(
-        icon: Icons.description_outlined,
-        background: const Color(0xFFE8F4FF),
-        iconColor: const Color(0xFF2F80ED),
+      return _assetThumb(
+        asset: item.fileType == 'barcode'
+            ? ui.AppAssets.barcodeThumbIcon
+            : item.fileType == 'qr'
+                ? ui.AppAssets.qrCodeThumbIcon
+                : ui.AppAssets.txtFileThumbIcon,
+        background: item.fileType == 'barcode'
+            ? const Color(0xFFE7E0FE)
+            : const Color(0xFFDAEDFF),
       );
     }
 
@@ -237,6 +262,27 @@ class _RecentThumbnail extends StatelessWidget {
               ? Icons.qr_code_outlined
               : Icons.credit_card,
       background: const Color(0xFFF3F3F3),
+    );
+  }
+
+  Widget _assetThumb({
+    required String asset,
+    required Color background,
+  }) {
+    return Container(
+      width: _width,
+      height: _height,
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      alignment: Alignment.center,
+      child: SvgPicture.asset(
+        asset,
+        width: 28.w,
+        height: 28.w,
+        fit: BoxFit.contain,
+      ),
     );
   }
 

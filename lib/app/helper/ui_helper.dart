@@ -265,6 +265,18 @@ class AppAssets {
   static const visitingCardAddPageIcon = 'assets/icons/Add page.svg';
 
 
+  // Qr and Bar code camera scan output icon
+  static const qrBarScannerOutputCopyIcon = 'assets/icons/bar_and_qr_code_scanner_output_copy_icon.svg';
+  static const qrBarScannerOutputShareIcon = 'assets/icons/bar_and_qr_code_scanner_output_share_icon.svg';
+  static const qrBarScannerOutputWebsiteIcon = 'assets/icons/bar_and_qr_code_scanner_output_website_icon.svg';
+  static const qrCodeScanBorder = 'assets/svg/qrcode_border.svg';
+  static const barcodeScanFrame = 'assets/svg/barcode_frame.svg';
+  static const scanLottie = 'assets/images/scanning.json';
+  static const qrCodeThumbIcon = 'assets/svg/qrcode.svg';
+  static const barcodeThumbIcon = 'assets/svg/barcode.svg';
+  static const txtFileThumbIcon = 'assets/svg/TXT.svg';
+
+
 }
 
 class AppFonts {

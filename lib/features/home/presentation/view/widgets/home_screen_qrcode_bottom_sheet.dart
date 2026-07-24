@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
+import 'package:visiting_card/features/scan/presentation/view/screen/qr_barcode_camera_scan_screen.dart';
+import 'package:visiting_card/features/scan/presentation/view/screen/qr_barcode_scan_result_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/qrcode_template_screen.dart';
 
 enum _QrCodeScanMethod { useTemplate, scanWithCamera }
 
@@ -25,6 +28,28 @@ class HomeScreenQrcodeBottomSheet extends StatefulWidget {
 class _HomeScreenQrcodeBottomSheetState
     extends State<HomeScreenQrcodeBottomSheet> {
   _QrCodeScanMethod? _selectedMethod;
+
+  void _openTemplates(BuildContext context) {
+    final navigator = Navigator.of(context);
+    navigator.pop();
+    navigator.push(
+      MaterialPageRoute(
+        builder: (_) => const QrcodeTemplateScreen(),
+      ),
+    );
+  }
+
+  void _openCamera(BuildContext context) {
+    final navigator = Navigator.of(context);
+    navigator.pop();
+    navigator.push(
+      MaterialPageRoute(
+        builder: (_) => const QrBarcodeCameraScanScreen(
+          kind: QrBarcodeScanKind.qrCode,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,8 +86,7 @@ class _HomeScreenQrcodeBottomSheetState
               setState(() {
                 _selectedMethod = _QrCodeScanMethod.useTemplate;
               });
-              Navigator.pop(context);
-              // TODO: Navigate to QR code template screen.
+              _openTemplates(context);
             },
           ),
           SizedBox(height: 10.h),
@@ -76,8 +100,7 @@ class _HomeScreenQrcodeBottomSheetState
               setState(() {
                 _selectedMethod = _QrCodeScanMethod.scanWithCamera;
               });
-              Navigator.pop(context);
-              // TODO: Navigate to camera scan screen.
+              _openCamera(context);
             },
           ),
           SizedBox(height: 16.h),

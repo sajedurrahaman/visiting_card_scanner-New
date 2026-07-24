@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/scan/presentation/view/screen/visiting_card_camera_screen.dart';
 import 'package:visiting_card/features/scan/presentation/view_model/visiting_card_scan_viewmodel.dart';
-import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_template_widget.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_template_screen.dart';
 
 enum _VisitingCardScanMethod { useTemplate, scanWithCamera }
 
@@ -31,37 +31,19 @@ class _HomeScreenVisitingCardBottomSheetState
   _VisitingCardScanMethod? _selectedMethod;
 
   void _openTemplates(BuildContext context) {
-    Navigator.pop(context);
-    Navigator.push(
-      context,
+    final navigator = Navigator.of(context);
+    navigator.pop();
+    navigator.push(
       MaterialPageRoute(
-        builder: (_) => Scaffold(
-          backgroundColor: const Color(0xFFF7F8FA),
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            title: Text(
-              'Visiting Card Templates',
-              style: ui.AppTextStyles.mainText().copyWith(fontSize: 18.sp),
-            ),
-            centerTitle: true,
-            leading: IconButton(
-              icon: Icon(Icons.arrow_back_ios_new, size: 18.sp),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-          body: const SingleChildScrollView(
-            child: VisitingCardTemplateWidget(),
-          ),
-        ),
+        builder: (_) => const VisitingCardTemplateScreen(),
       ),
     );
   }
 
   void _openCamera(BuildContext context) {
-    Navigator.pop(context);
-    Navigator.push(
-      context,
+    final navigator = Navigator.of(context);
+    navigator.pop();
+    navigator.push(
       MaterialPageRoute(
         builder: (_) => ChangeNotifierProvider(
           create: (_) => VisitingCardScanViewModel(),
