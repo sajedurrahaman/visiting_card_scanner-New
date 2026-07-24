@@ -1,0 +1,7 @@
+targets:
+  $default:
+    builders:
+      isar_plus|isar_generator:
+        generate_for:
+          include:
+            - lib/app/storage/saved_file_entity.dart

@@ -61,6 +61,8 @@ dependencies:
   mobile_scanner: ^7.4.0
   lottie: ^3.5.1
   flutter_colorpicker: ^1.1.0
+  isar_plus: ^1.2.2
+  isar_plus_flutter_libs: ^1.2.2
 
 dev_dependencies:
   flutter_test:
@@ -72,6 +74,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  build_runner: ^2.4.13
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
