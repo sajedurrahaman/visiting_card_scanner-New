@@ -5,10 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
-import 'package:visiting_card/features/folder/presentation/view_model/folder_viewmodel.dart';
-import 'package:visiting_card/features/home/presentation/view_model/home_view_model.dart';
-import 'package:visiting_card/features/scan/domain/saved_contact_info.dart';
-import 'package:visiting_card/features/scan/presentation/helper/visiting_card_share_helper.dart';
+import 'package:visiting_card/features/scan/presentation/view/screen/visiting_card_scanned_details_screen.dart';
 import 'package:visiting_card/features/scan/presentation/view_model/visiting_card_scan_viewmodel.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_edit_field_cards.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
@@ -38,61 +35,21 @@ class _VisitingCardScannedContactScreenState
     super.dispose();
   }
 
-  Future<void> _save(BuildContext context) async {
+  Future<void> _onNext() async {
+    FocusScope.of(context).unfocus();
     final vm = context.read<VisitingCardScanViewModel>();
-    final home = context.read<HomeViewModel>();
-    final folder = context.read<FolderViewModel>();
-    final isUpdate = vm.isUpdatingExisting;
-
-    // Snapshot before save clears VM fields (PDF Scanner also saves to phone).
-    final phoneContact = SavedContactInfo(
-      name: vm.names.isNotEmpty ? vm.names.first.value.trim() : '',
-      designation:
-          vm.designations.isNotEmpty ? vm.designations.first.value.trim() : '',
-      company: vm.companies.isNotEmpty ? vm.companies.first.value.trim() : '',
-      phones: vm.phones
-          .where((e) => e.value.trim().isNotEmpty)
-          .map((e) => SavedTypedValue(value: e.value.trim(), type: e.type))
-          .toList(),
-      emails: vm.emails
-          .where((e) => e.value.trim().isNotEmpty)
-          .map((e) => SavedTypedValue(value: e.value.trim(), type: e.type))
-          .toList(),
-      websites: vm.websites
-          .where((e) => e.value.trim().isNotEmpty)
-          .map((e) => SavedTypedValue(value: e.value.trim(), type: e.type))
-          .toList(),
-      addresses: vm.addresses
-          .map((e) => e.value.trim())
-          .where((e) => e.isNotEmpty)
-          .toList(),
+    final saved = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider.value(
+          value: vm,
+          child: const VisitingCardScannedDetailsScreen(),
+        ),
+      ),
     );
-
-    final ok = await vm.saveScannedCard(
-      homeViewModel: home,
-      folderViewModel: folder,
-    );
-    if (!context.mounted) return;
-
-    if (!ok) {
-      ui.AppToast.show(
-        context,
-        message: isUpdate
-            ? 'Failed to update visiting card'
-            : 'Failed to save visiting card',
-      );
-      return;
-    }
-
-    if (isUpdate) {
-      ui.AppToast.success(context, 'Contact update Successfully');
+    // Update flow: details pop(true) → leave edit and return to saved card.
+    if (saved == true && mounted) {
       Navigator.pop(context);
-    } else {
-      // Same as PDF Scanner: new Save also writes into phone Contacts.
-      // Toast comes from saveContactToPhone (single success/error message).
-      await VisitingCardShareHelper.saveContactToPhone(context, phoneContact);
-      if (!context.mounted) return;
-      Navigator.of(context).popUntil((route) => route.isFirst);
     }
   }
 
@@ -101,7 +58,7 @@ class _VisitingCardScannedContactScreenState
     final vm = context.watch<VisitingCardScanViewModel>();
     final images = vm.images;
     final isFirst = _currentIndex == 0;
-    final isLast = _currentIndex >= images.length - 1;
+    final isLast = images.isEmpty || _currentIndex >= images.length - 1;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),
@@ -167,7 +124,7 @@ class _VisitingCardScannedContactScreenState
                     ),
                     SizedBox(width: 10.w),
                     Text(
-                      '${_currentIndex + 1}/${images.length}',
+                      '${images.isEmpty ? 0 : _currentIndex + 1}/${images.length}',
                       style: TextStyle(
                         fontSize: 13.sp,
                         fontWeight: FontWeight.w600,
@@ -268,11 +225,8 @@ class _VisitingCardScannedContactScreenState
                 ),
                 SizedBox(height: 8.h),
                 VisitingGradientButton(
-                  label: vm.isSaving
-                      ? (vm.isUpdatingExisting ? 'Updating...' : 'Saving...')
-                      : (vm.isUpdatingExisting ? 'Update' : 'Save'),
-                  enabled: !vm.isSaving,
-                  onTap: () => _save(context),
+                  label: 'Next',
+                  onTap: _onNext,
                 ),
               ],
             ),

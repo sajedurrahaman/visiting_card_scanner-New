@@ -31,7 +31,7 @@ class VisitingCardTemplateViewModel extends ChangeNotifier {
       _orientation == VisitingCardOrientation.horizontal;
 
   List<VisitingCardTemplateItem> get templates =>
-      isHorizontal ? _horizontalTemplates : _verticalTemplates;
+      isHorizontal ? horizontalTemplates : verticalTemplates;
 
   int sideFor(String templateId) => _sideByTemplateId[templateId] ?? 0;
 
@@ -69,7 +69,7 @@ class VisitingCardTemplateViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  static const _horizontalTemplates = [
+  static const horizontalTemplates = [
     VisitingCardTemplateItem(
       id: 'h1',
       frontAsset: ui.AppAssets.vTemplateHorizontalOneFront,
@@ -107,7 +107,7 @@ class VisitingCardTemplateViewModel extends ChangeNotifier {
     ),
   ];
 
-  static const _verticalTemplates = [
+  static const verticalTemplates = [
     VisitingCardTemplateItem(
       id: 'v1',
       frontAsset: ui.AppAssets.vTemplateVerticalOneFront,

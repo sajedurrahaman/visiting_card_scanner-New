@@ -393,7 +393,7 @@ class VisitingCardScanViewModel extends ChangeNotifier {
     }
   }
 
-  SavedContactInfo _buildSavedContact(List<String> savedImagePaths) {
+  SavedContactInfo buildSavedContact({List<String>? imagePaths}) {
     return SavedContactInfo(
       name: names.first.value.trim(),
       designation: designations.first.value.trim(),
@@ -414,8 +414,17 @@ class VisitingCardScanViewModel extends ChangeNotifier {
           .map((e) => e.value.trim())
           .where((e) => e.isNotEmpty)
           .toList(),
-      imagePaths: savedImagePaths,
+      imagePaths: imagePaths ??
+          images
+              .map((e) => e.filePath)
+              .whereType<String>()
+              .where((e) => e.isNotEmpty)
+              .toList(),
     );
+  }
+
+  SavedContactInfo _buildSavedContact(List<String> savedImagePaths) {
+    return buildSavedContact(imagePaths: savedImagePaths);
   }
 
   String _safeFolderName(String raw) {

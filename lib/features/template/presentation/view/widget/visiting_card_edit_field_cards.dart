@@ -526,7 +526,7 @@ class VisitingOutlinedButton extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        height: 40.h,
+        height: 36.h,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: Colors.white,

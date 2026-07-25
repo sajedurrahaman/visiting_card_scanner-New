@@ -2,8 +2,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:gal/gal.dart';
+import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
@@ -11,6 +12,7 @@ import 'package:visiting_card/app/storage/app_storage_service.dart';
 import 'package:visiting_card/features/folder/presentation/view_model/folder_viewmodel.dart';
 import 'package:visiting_card/features/home/domain/model/saved_file_model.dart';
 import 'package:visiting_card/features/home/presentation/view_model/home_view_model.dart';
+import 'package:visiting_card/features/scan/domain/saved_contact_info.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_template_viewmodel.dart';
 
 class ContactFieldEntry {
@@ -122,6 +124,61 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   void showFront() => setSide(0);
   void showBack() => setSide(1);
 
+  /// Copy editable contact fields from scanner / another edit VM.
+  void applyContactFrom(VisitingCardEditContactViewModel other) {
+    _replaceEntries(names, other.names);
+    _replaceEntries(designations, other.designations);
+    _replaceEntries(companies, other.companies);
+    _replaceEntries(taglines, other.taglines);
+    _replaceEntries(phones, other.phones, fallbackType: 'Cell');
+    _replaceEntries(emails, other.emails, fallbackType: 'Company');
+    _replaceEntries(websites, other.websites, fallbackType: 'Company');
+    _replaceEntries(addresses, other.addresses);
+    qrAssetPath = other.qrAssetPath;
+    logoAssetPath = other.logoAssetPath;
+    hasChosenQr = other.hasChosenQr;
+    hasChosenLogo = other.hasChosenLogo;
+    notifyListeners();
+  }
+
+  void applyContactLists({
+    required List<ContactFieldEntry> names,
+    required List<ContactFieldEntry> designations,
+    required List<ContactFieldEntry> companies,
+    required List<ContactFieldEntry> phones,
+    required List<ContactFieldEntry> emails,
+    required List<ContactFieldEntry> websites,
+    required List<ContactFieldEntry> addresses,
+    List<ContactFieldEntry>? taglines,
+  }) {
+    _replaceEntries(this.names, names);
+    _replaceEntries(this.designations, designations);
+    _replaceEntries(this.companies, companies);
+    _replaceEntries(this.taglines, taglines ?? const []);
+    _replaceEntries(this.phones, phones, fallbackType: 'Cell');
+    _replaceEntries(this.emails, emails, fallbackType: 'Company');
+    _replaceEntries(this.websites, websites, fallbackType: 'Company');
+    _replaceEntries(this.addresses, addresses);
+    notifyListeners();
+  }
+
+  void _replaceEntries(
+    List<ContactFieldEntry> target,
+    List<ContactFieldEntry> source, {
+    String fallbackType = '',
+  }) {
+    target
+      ..clear()
+      ..addAll(
+        source.map(
+          (e) => ContactFieldEntry(value: e.value, type: e.type),
+        ),
+      );
+    if (target.isEmpty) {
+      target.add(ContactFieldEntry(type: fallbackType));
+    }
+  }
+
   void chooseQrCode() {
     if (!canEditQr) return;
     hasChosenQr = true;
@@ -212,6 +269,33 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Same shape as scanner [SavedContactInfo] for share / phone contacts.
+  SavedContactInfo buildSavedContact({List<String> imagePaths = const []}) {
+    return SavedContactInfo(
+      name: names.first.value.trim(),
+      designation: designations.first.value.trim(),
+      company: companies.first.value.trim(),
+      phones: phones
+          .where((e) => e.value.trim().isNotEmpty)
+          .map((e) => SavedTypedValue(value: e.value.trim(), type: e.type))
+          .toList(),
+      emails: emails
+          .where((e) => e.value.trim().isNotEmpty)
+          .map((e) => SavedTypedValue(value: e.value.trim(), type: e.type))
+          .toList(),
+      websites: websites
+          .where((e) => e.value.trim().isNotEmpty)
+          .map((e) => SavedTypedValue(value: e.value.trim(), type: e.type))
+          .toList(),
+      addresses: addresses
+          .map((e) => e.value.trim())
+          .where((e) => e.isNotEmpty)
+          .toList(),
+      imagePaths: imagePaths,
+    );
+  }
+
+  /// Scanner visiting-card save: one contact folder + details → Recent + Folder.
   Future<bool> saveCard({
     required HomeViewModel homeViewModel,
     required FolderViewModel folderViewModel,
@@ -240,41 +324,46 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       final stamp = DateFormat('yyyyMMdd_HHmmss').format(now);
       final dateLabel = DateFormat('dd-MMM-yyyy HH:mm').format(now);
 
-      final frontPath = await _persistBytes(frontBytes, suffix: 'front');
-      final backPath = await _persistBytes(backBytes, suffix: 'back');
+      final contactName = names.first.value.trim().isNotEmpty
+          ? names.first.value.trim()
+          : 'Visiting Card';
+      final safeFolderName = _safeFolderName('${contactName}_$stamp');
 
-      final frontModel = SavedFileModel(
-        id: '${now.millisecondsSinceEpoch}_front',
-        name: 'Front_Card_$stamp',
+      final docs = await getApplicationDocumentsDirectory();
+      final contactFolder = Directory(
+        p.join(
+          docs.path,
+          'Convert Document',
+          'Visiting Card',
+          safeFolderName,
+        ),
+      );
+      await contactFolder.create(recursive: true);
+
+      final frontPath = p.join(contactFolder.path, 'card_front.jpg');
+      final backPath = p.join(contactFolder.path, 'card_back.jpg');
+      await File(frontPath).writeAsBytes(_toJpeg(frontBytes), flush: true);
+      await File(backPath).writeAsBytes(_toJpeg(backBytes), flush: true);
+
+      final imagePaths = [frontPath, backPath];
+      final contact = buildSavedContact(imagePaths: imagePaths);
+      await SavedContactInfo.writeToFolder(contactFolder.path, contact);
+      await File(p.join(contactFolder.path, 'contact_details.txt'))
+          .writeAsString(_contactDetailsText());
+
+      final displayName =
+          contact.name.isNotEmpty ? contact.name : 'Visiting Card';
+      final model = SavedFileModel(
+        id: '${now.millisecondsSinceEpoch}',
+        name: displayName,
         dateTime: dateLabel,
-        path: frontPath,
+        path: contactFolder.path,
         pathImage: frontPath,
         fileType: 'visiting_card',
         folderId: FolderViewModel.visitingCardFolderId,
         isTextFile: false,
       );
-      final backModel = SavedFileModel(
-        id: '${now.millisecondsSinceEpoch}_back',
-        name: 'Back_Card_$stamp',
-        dateTime: dateLabel,
-        path: backPath,
-        pathImage: backPath,
-        fileType: 'visiting_card',
-        folderId: FolderViewModel.visitingCardFolderId,
-        isTextFile: false,
-      );
-
-      await AppStorageService().storeAllFiles(frontModel);
-      await AppStorageService().storeAllFiles(backModel);
-
-      try {
-        final hasAccess = await Gal.hasAccess();
-        if (!hasAccess) {
-          await Gal.requestAccess();
-        }
-        await Gal.putImage(frontPath, album: 'Visiting Card');
-        await Gal.putImage(backPath, album: 'Visiting Card');
-      } catch (_) {}
+      await AppStorageService().storeAllFiles(model);
 
       await homeViewModel.loadRecentFromStorage();
       await folderViewModel.loadFromStorage();
@@ -290,20 +379,52 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     }
   }
 
-  Future<String> _persistBytes(
-    Uint8List bytes, {
-    String suffix = '',
-  }) async {
-    final dir = await getApplicationDocumentsDirectory();
-    final cardDir = Directory('${dir.path}/visiting_card');
-    if (!await cardDir.exists()) {
-      await cardDir.create(recursive: true);
+  Uint8List _toJpeg(Uint8List bytes) {
+    final decoded = img.decodeImage(bytes);
+    if (decoded == null) return bytes;
+    return Uint8List.fromList(img.encodeJpg(decoded, quality: 92));
+  }
+
+  String _safeFolderName(String raw) {
+    return raw
+        .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_')
+        .replaceAll(RegExp(r'\s+'), '_')
+        .trim();
+  }
+
+  String _contactDetailsText() {
+    final buffer = StringBuffer();
+    void addLine(String label, String value) {
+      final v = value.trim();
+      if (v.isEmpty) return;
+      buffer.writeln('$label: $v');
     }
-    final name = suffix.isEmpty
-        ? 'card_${DateTime.now().millisecondsSinceEpoch}.png'
-        : 'card_${DateTime.now().millisecondsSinceEpoch}_$suffix.png';
-    final file = File('${cardDir.path}/$name');
-    await file.writeAsBytes(bytes, flush: true);
-    return file.path;
+
+    addLine('Name', names.first.value);
+    addLine('Designation', designations.first.value);
+    addLine('Company', companies.first.value);
+    for (final phone in phones) {
+      if (phone.value.trim().isNotEmpty) {
+        buffer.writeln('${phone.type}: ${phone.value.trim()}');
+      }
+    }
+    for (final email in emails) {
+      if (email.value.trim().isNotEmpty) {
+        buffer.writeln('Email (${email.type}): ${email.value.trim()}');
+      }
+    }
+    for (final web in websites) {
+      if (web.value.trim().isNotEmpty) {
+        buffer.writeln('Website (${web.type}): ${web.value.trim()}');
+      }
+    }
+    for (final address in addresses) {
+      if (address.value.trim().isNotEmpty) {
+        buffer.writeln('Address: ${address.value.trim()}');
+      }
+    }
+    return buffer.isEmpty
+        ? 'Visiting card contact (exported)'
+        : buffer.toString();
   }
 }

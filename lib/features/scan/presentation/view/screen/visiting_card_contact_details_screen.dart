@@ -473,7 +473,7 @@ class _VisitingCardContactDetailsScreenState
                             ),
                             _ActionColumn(
                               icon: ui.AppAssets.visitingTemplateLocationIcon,
-                              label: 'Address',
+                              label: 'Location',
                               onTap: firstAddress.isEmpty
                                   ? null
                                   : () => _openMap(firstAddress),
@@ -482,6 +482,11 @@ class _VisitingCardContactDetailsScreenState
                               icon: ui.AppAssets.visitingTemplateEditIcon,
                               label: 'Edit',
                               onTap: _openEdit,
+                            ),
+                            _ActionColumn(
+                              icon: ui.AppAssets.visitingTemplateShareIcon,
+                              label: 'Share',
+                              onTap: _shareCard,
                             ),
                           ],
                         ),

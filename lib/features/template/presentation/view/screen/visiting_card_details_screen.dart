@@ -1,15 +1,15 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/folder/presentation/view_model/folder_viewmodel.dart';
 import 'package:visiting_card/features/home/presentation/view_model/home_view_model.dart';
 import 'package:visiting_card/features/parent/presentation/view_model/parent_view_model.dart';
+import 'package:visiting_card/features/scan/presentation/helper/visiting_card_share_helper.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_export_utils.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_edit_field_cards.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
@@ -44,11 +44,15 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
     }
   }
 
+  /// Scanner-style save → folder + recent (+ phone contacts), then home.
   Future<void> _onSave() async {
     final vm = context.read<VisitingCardEditContactViewModel>();
+    if (vm.isSaving) return;
+
     final home = context.read<HomeViewModel>();
     final folder = context.read<FolderViewModel>();
     final previous = vm.sideIndex;
+    final phoneContact = vm.buildSavedContact();
 
     final ok = await vm.saveCard(
       homeViewModel: home,
@@ -58,27 +62,46 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
 
     if (!mounted) return;
     vm.setSide(previous);
-    ui.AppToast.success(context, ok ? 'Saved to gallery' : 'Save failed');
+
+    if (!ok) {
+      ui.AppToast.show(context, message: 'Failed to save visiting card');
+      return;
+    }
+
+    // Same as scanner: also write into phone Contacts.
+    await VisitingCardShareHelper.saveContactToPhone(context, phoneContact);
+    if (!mounted) return;
+    _backToHome();
   }
 
+  /// Scanner visiting-card Share Via dialog.
   Future<void> _onShare() async {
     final vm = context.read<VisitingCardEditContactViewModel>();
-    final previous = vm.sideIndex;
-
-    final frontBytes = await _captureSide(vm, 0);
-    final backBytes = await _captureSide(vm, 1);
-    vm.setSide(previous);
-    if (frontBytes == null || backBytes == null) return;
-
-    final dir = await Directory.systemTemp.createTemp('share_card');
-    final frontFile = File('${dir.path}/visiting_card_front.png');
-    final backFile = File('${dir.path}/visiting_card_back.png');
-    await frontFile.writeAsBytes(frontBytes, flush: true);
-    await backFile.writeAsBytes(backBytes, flush: true);
-    await Share.shareXFiles(
-      [XFile(frontFile.path), XFile(backFile.path)],
-      text: 'Visiting Card',
+    await VisitingCardShareHelper.showShareViaDialog(
+      context,
+      contact: vm.buildSavedContact(),
+      fallbackName: 'Visiting Card',
     );
+  }
+
+  Future<void> _onCall(String number) async {
+    final cleaned = number.trim();
+    if (cleaned.isEmpty) return;
+    final uri = Uri(scheme: 'tel', path: cleaned);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
+  Future<void> _onOpenMap(String address) async {
+    final encoded = Uri.encodeComponent(address.trim());
+    if (encoded.isEmpty) return;
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$encoded',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   void _backToHome() {
@@ -89,6 +112,14 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<VisitingCardEditContactViewModel>();
+    final firstPhone = vm.phones
+        .where((e) => e.value.trim().isNotEmpty)
+        .map((e) => e.value.trim())
+        .firstOrNull;
+    final firstAddress = vm.addresses
+        .where((e) => e.value.trim().isNotEmpty)
+        .map((e) => e.value.trim())
+        .firstOrNull;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),
@@ -127,13 +158,43 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
                   ),
                   child: Column(
                     children: [
-                      // High-quality capture target (no pager).
-                      RepaintBoundary(
-                        key: _cardCaptureKey,
-                        child: VisitingCardLivePreview(
-                          vm: vm,
-                          showPager: false,
-                        ),
+                      // Capture target only — corner icons stay outside so they
+                      // are not baked into saved front/back images.
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          RepaintBoundary(
+                            key: _cardCaptureKey,
+                            child: VisitingCardLivePreview(
+                              vm: vm,
+                              showPager: false,
+                            ),
+                          ),
+                          Positioned(
+                            top: 6.h,
+                            left: 6.w,
+                            child: _CornerActionButton(
+                              onTap: _onShare,
+                              child: SvgPicture.asset(
+                                ui.AppAssets.visitingTemplateShareIcon,
+                                width: 15.w,
+                                height: 15.w,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 6.h,
+                            right: 6.w,
+                            child: _CornerActionButton(
+                              onTap: vm.isSaving ? null : _onSave,
+                              child: Icon(
+                                Icons.download_outlined,
+                                size: 15.sp,
+                                color: ui.Colors.parentIconSelectTextColor,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       SizedBox(height: 8.h),
                       VisitingCardLivePreview(
@@ -161,11 +222,18 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       _ActionItem(
-                        asset: ui.AppAssets.visitingTemplateIcon,
-                        label: 'Template',
-                        onTap: () {
-                          Navigator.popUntil(context, (route) => route.isFirst);
-                        },
+                        asset: ui.AppAssets.visitingTemplatePhoneIcon,
+                        label: 'Tel',
+                        onTap: firstPhone == null
+                            ? null
+                            : () => _onCall(firstPhone),
+                      ),
+                      _ActionItem(
+                        asset: ui.AppAssets.visitingTemplateLocationIcon,
+                        label: 'Location',
+                        onTap: firstAddress == null
+                            ? null
+                            : () => _onOpenMap(firstAddress),
                       ),
                       _ActionItem(
                         asset: ui.AppAssets.visitingTemplateEditIcon,
@@ -281,33 +349,65 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
   }
 }
 
+class _CornerActionButton extends StatelessWidget {
+  const _CornerActionButton({
+    required this.child,
+    this.onTap,
+  });
+
+  final Widget child;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.92),
+      shape: const CircleBorder(),
+      elevation: 2,
+      shadowColor: Colors.black26,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 22.w,
+          height: 22.w,
+          child: Center(child: child),
+        ),
+      ),
+    );
+  }
+}
+
 class _ActionItem extends StatelessWidget {
   const _ActionItem({
     required this.asset,
     required this.label,
-    required this.onTap,
+    this.onTap,
   });
 
   final String asset;
   final String label;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Column(
-        children: [
-          SvgPicture.asset(asset, width: 28.w, height: 28.w),
-          SizedBox(height: 6.h),
-          Text(
-            label,
-            style: ui.AppTextStyles.iconUnderText(
-              color: const Color(0xFF1A1A1A),
-            ).copyWith(fontWeight: FontWeight.w500),
-          ),
-        ],
+      child: Opacity(
+        opacity: onTap == null ? 0.4 : 1,
+        child: Column(
+          children: [
+            SvgPicture.asset(asset, width: 28.w, height: 28.w),
+            SizedBox(height: 6.h),
+            Text(
+              label,
+              style: ui.AppTextStyles.iconUnderText(
+                color: const Color(0xFF1A1A1A),
+              ).copyWith(fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
       ),
     );
   }
