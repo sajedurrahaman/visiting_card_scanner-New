@@ -14,6 +14,7 @@ class AppAssets {
   static const parentNavLogoThreeSelect = 'assets/icons/select_folder.svg';
   static const parentNavLogoFourSelect = 'assets/icons/select_setting.svg';
   static const parentNavLogoCenter = 'assets/icons/nav_center.svg';
+  static const scanModeSelectorIcon = 'assets/icons/scan_mode_selector.svg';
 
   // home
   static const homeVisitingCard = 'assets/icons/visiting_card.svg';

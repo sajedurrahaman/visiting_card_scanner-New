@@ -6,9 +6,10 @@ import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/folder/presentation/view/screen/folder_screen.dart';
 import 'package:visiting_card/features/home/presentation/view/screen/home_screen.dart';
 import 'package:visiting_card/features/parent/presentation/view/widgets/parent_bottom_nav_bar.dart';
+import 'package:visiting_card/features/parent/presentation/view_model/parent_view_model.dart';
+import 'package:visiting_card/features/scan/presentation/helper/parent_scan_navigator.dart';
 import 'package:visiting_card/features/settings/presentation/view/screen/settings_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/template_screen.dart';
-import 'package:visiting_card/features/parent/presentation/view_model/parent_view_model.dart';
 
 class ParentScreen extends StatelessWidget {
   const ParentScreen({super.key});
@@ -74,7 +75,7 @@ class ParentCenterNavButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: context.read<ParentViewModel>().onCenterButtonTap,
+      onTap: () => ParentScanNavigator.open(context),
       child: SvgPicture.asset(
         ui.AppAssets.parentNavLogoCenter,
         width: 64.w,

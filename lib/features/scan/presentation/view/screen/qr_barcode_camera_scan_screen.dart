@@ -6,17 +6,25 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
+import 'package:visiting_card/features/scan/presentation/helper/parent_scan_navigator.dart';
 import 'package:visiting_card/features/scan/presentation/helper/qr_barcode_scan_storage.dart';
 import 'package:visiting_card/features/scan/presentation/view/screen/qr_barcode_scan_result_screen.dart';
+import 'package:visiting_card/features/scan/presentation/view/widget/parent_scan_mode_strip.dart';
 
 /// Camera scanner for QR / Barcode — PDF Scanner UI, green theme.
 class QrBarcodeCameraScanScreen extends StatefulWidget {
   const QrBarcodeCameraScanScreen({
     super.key,
     required this.kind,
+    this.showScanModeStrip = false,
+    this.scanMode,
   });
 
   final QrBarcodeScanKind kind;
+
+  /// Parent center FAB flow: show Visiting Card / QR / Barcode mode strip.
+  final bool showScanModeStrip;
+  final ParentScanMode? scanMode;
 
   @override
   State<QrBarcodeCameraScanScreen> createState() =>
@@ -301,43 +309,58 @@ class _QrBarcodeCameraScanScreenState extends State<QrBarcodeCameraScanScreen>
                   width: size.width,
                   height: 150,
                   color: Colors.black,
-                  child: Align(
-                    alignment: const Alignment(-0.72, 0.15),
-                    child: ValueListenableBuilder(
-                      valueListenable: _controller,
-                      builder: (context, state, _) {
-                        if (!state.isInitialized || !state.isRunning) {
-                          return const SizedBox.shrink();
-                        }
-                        return Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              color: Colors.white,
-                              iconSize: 28,
-                              onPressed: _importFromGallery,
-                              icon: SvgPicture.asset(
-                                ui.AppAssets.galleryImportIcon,
-                                width: 28,
-                                height: 28,
-                                colorFilter: const ColorFilter.mode(
-                                  Colors.white,
-                                  BlendMode.srcIn,
-                                ),
-                              ),
-                            ),
-                            const Text(
-                              'Import Image',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w400,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
+                  child: Column(
+                    children: [
+                      if (widget.showScanModeStrip)
+                        ParentScanModeStrip(
+                          selected: widget.scanMode ??
+                              (widget.kind == QrBarcodeScanKind.qrCode
+                                  ? ParentScanMode.qrCode
+                                  : ParentScanMode.barcode),
+                          onChanged: (mode) =>
+                              ParentScanNavigator.switchMode(context, mode),
+                        ),
+                      Expanded(
+                        child: Align(
+                          alignment: const Alignment(-0.72, 0.15),
+                          child: ValueListenableBuilder(
+                            valueListenable: _controller,
+                            builder: (context, state, _) {
+                              if (!state.isInitialized || !state.isRunning) {
+                                return const SizedBox.shrink();
+                              }
+                              return Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    color: Colors.white,
+                                    iconSize: 28,
+                                    onPressed: _importFromGallery,
+                                    icon: SvgPicture.asset(
+                                      ui.AppAssets.galleryImportIcon,
+                                      width: 28,
+                                      height: 28,
+                                      colorFilter: const ColorFilter.mode(
+                                        Colors.white,
+                                        BlendMode.srcIn,
+                                      ),
+                                    ),
+                                  ),
+                                  const Text(
+                                    'Import Image',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w400,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

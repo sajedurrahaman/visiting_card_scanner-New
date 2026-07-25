@@ -10,7 +10,9 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/scan/domain/scanned_image_model.dart';
+import 'package:visiting_card/features/scan/presentation/helper/parent_scan_navigator.dart';
 import 'package:visiting_card/features/scan/presentation/view/screen/visiting_card_scan_preview_screen.dart';
+import 'package:visiting_card/features/scan/presentation/view/widget/parent_scan_mode_strip.dart';
 import 'package:visiting_card/features/scan/presentation/view/widget/visiting_card_scan_box_overlay.dart';
 import 'package:visiting_card/features/scan/presentation/view_model/visiting_card_scan_viewmodel.dart';
 
@@ -19,10 +21,16 @@ class VisitingCardCameraScreen extends StatefulWidget {
     super.key,
     this.isRetakeMode = false,
     this.selectedImageIndex,
+    this.showScanModeStrip = false,
+    this.scanMode = ParentScanMode.visitingCard,
   });
 
   final bool isRetakeMode;
   final int? selectedImageIndex;
+
+  /// Parent center FAB flow: show Visiting Card / QR / Barcode mode strip.
+  final bool showScanModeStrip;
+  final ParentScanMode scanMode;
 
   @override
   State<VisitingCardCameraScreen> createState() =>
@@ -39,6 +47,7 @@ class _VisitingCardCameraScreenState extends State<VisitingCardCameraScreen> {
   double _scale = 1.0;
   static const _minScale = 0.7;
   static const _maxScale = 1.4;
+  /// Matches PDF Scanner black controls bar (strip + import/capture fit inside).
   static const _bottomBarHeight = 150.0;
   double _startingScale = 1.0;
   Timer? _autoTimer;
@@ -515,7 +524,7 @@ class _VisitingCardCameraScreenState extends State<VisitingCardCameraScreen> {
                     Positioned.fill(child: _buildCameraPreview()),
                     if (!widget.isRetakeMode)
                       Positioned(
-                        bottom: 180,
+                        bottom: _bottomBarHeight + 30,
                         left: 0,
                         right: 0,
                         child: Row(
@@ -542,146 +551,186 @@ class _VisitingCardCameraScreenState extends State<VisitingCardCameraScreen> {
                       child: Container(
                         height: _bottomBarHeight,
                         color: Colors.black,
-                        child: Stack(
+                        child: Column(
                           children: [
-                            /// Done above bottom-right thumbnail (PDF Scanner)
-                            if (vm.images.isNotEmpty && !widget.isRetakeMode)
-                              Positioned(
-                                top: 4,
-                                right: 8,
-                                child: TextButton(
-                                  onPressed: _openPreview,
-                                  child: const Text(
-                                    'Done',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
+                            if (widget.showScanModeStrip)
+                              ParentScanModeStrip(
+                                selected: widget.scanMode,
+                                onChanged: (mode) =>
+                                    ParentScanNavigator.switchMode(
+                                  context,
+                                  mode,
                                 ),
                               ),
-                            Positioned(
-                              bottom: 16,
-                              left: 0,
-                              right: 0,
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 14),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    IconButton(
-                                      onPressed: _pickFromGallery,
-                                      icon: Column(
-                                        mainAxisSize: MainAxisSize.min,
+                            Expanded(
+                              child: Stack(
+                                children: [
+                                  /// Done above bottom-right thumbnail (PDF Scanner)
+                                  if (vm.images.isNotEmpty &&
+                                      !widget.isRetakeMode)
+                                    Positioned(
+                                      top: 0,
+                                      right: 8,
+                                      child: TextButton(
+                                        onPressed: _openPreview,
+                                        child: const Text(
+                                          'Done',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  Positioned(
+                                    bottom: widget.showScanModeStrip ? 8 : 16,
+                                    left: 0,
+                                    right: 0,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 14),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
-                                          SvgPicture.asset(
-                                            ui.AppAssets.galleryImportIcon,
-                                            width: 28,
-                                            height: 28,
-                                            colorFilter: const ColorFilter.mode(
-                                              Colors.white,
-                                              BlendMode.srcIn,
+                                          IconButton(
+                                            onPressed: _pickFromGallery,
+                                            icon: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                SvgPicture.asset(
+                                                  ui.AppAssets
+                                                      .galleryImportIcon,
+                                                  width: 28,
+                                                  height: 28,
+                                                  colorFilter:
+                                                      const ColorFilter.mode(
+                                                    Colors.white,
+                                                    BlendMode.srcIn,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 6),
+                                                const Text(
+                                                  'Import Image',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w400,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                          const SizedBox(height: 6),
-                                          const Text(
-                                            'Import Image',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w400,
-                                              color: Colors.white,
+                                          GestureDetector(
+                                            onTap: _takePicture,
+                                            child: Container(
+                                              width: widget.showScanModeStrip
+                                                  ? 58
+                                                  : 68,
+                                              height: widget.showScanModeStrip
+                                                  ? 58
+                                                  : 68,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: Colors.white,
+                                                  width: 4,
+                                                ),
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: Container(
+                                                width: widget.showScanModeStrip
+                                                    ? 46
+                                                    : 54,
+                                                height: widget.showScanModeStrip
+                                                    ? 46
+                                                    : 54,
+                                                decoration:
+                                                    const BoxDecoration(
+                                                  color: Colors.white,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                              ),
                                             ),
+                                          ),
+                                          /// Captured preview — bottom right
+                                          SizedBox(
+                                            width: 72,
+                                            height: 56,
+                                            child: vm.images.isNotEmpty &&
+                                                    !widget.isRetakeMode
+                                                ? Align(
+                                                    alignment:
+                                                        Alignment.centerRight,
+                                                    child: Stack(
+                                                      clipBehavior: Clip.none,
+                                                      children: [
+                                                        GestureDetector(
+                                                          onTap: _openPreview,
+                                                          child: Container(
+                                                            width: 46,
+                                                            height: 46,
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              border:
+                                                                  Border.all(
+                                                                color:
+                                                                    Colors.red,
+                                                                width: 2,
+                                                              ),
+                                                              image:
+                                                                  DecorationImage(
+                                                                image:
+                                                                    MemoryImage(
+                                                                  vm
+                                                                      .images
+                                                                      .last
+                                                                      .bytes,
+                                                                ),
+                                                                fit: BoxFit
+                                                                    .cover,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        Positioned(
+                                                          top: -10,
+                                                          right: -5,
+                                                          child: Container(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .all(6),
+                                                            decoration:
+                                                                const BoxDecoration(
+                                                              color: Colors.red,
+                                                              shape: BoxShape
+                                                                  .circle,
+                                                            ),
+                                                            child: Text(
+                                                              '${vm.images.length}',
+                                                              style:
+                                                                  const TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontSize: 11,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  )
+                                                : const SizedBox.shrink(),
                                           ),
                                         ],
                                       ),
                                     ),
-                                    GestureDetector(
-                                      onTap: _takePicture,
-                                      child: Container(
-                                        width: 68,
-                                        height: 68,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: Colors.white,
-                                            width: 4,
-                                          ),
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: Container(
-                                          width: 54,
-                                          height: 54,
-                                          decoration: const BoxDecoration(
-                                            color: Colors.white,
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    /// Captured preview — bottom right
-                                    SizedBox(
-                                      width: 72,
-                                      height: 56,
-                                      child: vm.images.isNotEmpty &&
-                                              !widget.isRetakeMode
-                                          ? Align(
-                                              alignment: Alignment.centerRight,
-                                              child: Stack(
-                                                clipBehavior: Clip.none,
-                                                children: [
-                                                  GestureDetector(
-                                                    onTap: _openPreview,
-                                                    child: Container(
-                                                      width: 46,
-                                                      height: 46,
-                                                      decoration: BoxDecoration(
-                                                        border: Border.all(
-                                                          color: Colors.red,
-                                                          width: 2,
-                                                        ),
-                                                        image: DecorationImage(
-                                                          image: MemoryImage(
-                                                            vm.images.last
-                                                                .bytes,
-                                                          ),
-                                                          fit: BoxFit.cover,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  Positioned(
-                                                    top: -10,
-                                                    right: -5,
-                                                    child: Container(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              6),
-                                                      decoration:
-                                                          const BoxDecoration(
-                                                        color: Colors.red,
-                                                        shape: BoxShape.circle,
-                                                      ),
-                                                      child: Text(
-                                                        '${vm.images.length}',
-                                                        style: const TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: 11,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            )
-                                          : const SizedBox.shrink(),
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],

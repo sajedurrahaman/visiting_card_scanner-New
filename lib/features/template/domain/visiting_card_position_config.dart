@@ -168,7 +168,8 @@ class VisitingCardPositionConfig {
         top: 0.10,
         width: 0.48,
         fontSize: 14,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 0.4,
         maxLines: 2,
         uppercase: true,
         color: Color(0xFF1A1A1A),
@@ -181,13 +182,13 @@ class VisitingCardPositionConfig {
         top: 0.20,
         width: 0.48,
         fontSize: 10,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
         color: Color(0xFF6B6B6B),
       ),
       // Phone
       phone: VisitingCardFieldPosition(
         left: 0.14,
-        top: 0.445,
+        top: 0.44,
         width: 0.40,
         fontSize: 9,
         fontWeight: FontWeight.w500,
@@ -214,7 +215,7 @@ class VisitingCardPositionConfig {
       // Location
       address: VisitingCardFieldPosition(
         left: 0.14,
-        top: 0.74,
+        top: 0.745,
         width: 0.40,
         fontSize: 9,
         fontWeight: FontWeight.w500,
@@ -225,31 +226,21 @@ class VisitingCardPositionConfig {
     back: VisitingCardSidePositions(
       // Logo → Company → Tagline → QR (centered)
       logo: VisitingCardFieldPosition(
-        left: 0.43, // (1 - 0.14) / 2
-        top: 0.08,
-        size: 0.14,
-      ),
-      company: VisitingCardFieldPosition(
-        left: 0.10,
-        top: 0.36,
-        width: 0.80,
-        fontSize: 12,
-        fontWeight: FontWeight.w700,
-        uppercase: true,
-        color: Color(0xFF1A1A1A),
-        textAlign: TextAlign.center,
+        left: 0.35, // (1 - 0.14) / 2
+        top: 0.11,
+        size: 0.27,
       ),
       tagline: VisitingCardFieldPosition(
-        left: 0.10,
-        top: 0.48,
+        left: 0.09,
+        top: 0.465,
         width: 0.80,
-        fontSize: 11,
+        fontSize: 8,
         color: Color(0xFF404040),
         textAlign: TextAlign.center,
       ),
       qr: VisitingCardFieldPosition(
         left: 0.41, // (1 - 0.18) / 2
-        top: 0.56,
+        top: 0.54,
         size: 0.14,
       ),
     ),

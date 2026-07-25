@@ -31,7 +31,7 @@ class VisitingCardQrOptionDialog extends StatelessWidget {
         children: [
           Container(
             margin: EdgeInsets.only(top: 28.w),
-            padding: EdgeInsets.fromLTRB(16.w, 40.h, 16.w, 16.h),
+            padding: EdgeInsets.fromLTRB(16.w, 25.h, 16.w, 2.h),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16.r),
@@ -78,7 +78,7 @@ class VisitingCardQrOptionDialog extends StatelessWidget {
                   onTap: () =>
                       Navigator.pop(context, VisitingCardQrOption.customize),
                 ),
-                SizedBox(height: 14.h),
+                SizedBox(height: 6.h),
                 TextButton.icon(
                   onPressed: () => Navigator.pop(context),
                   icon: Icon(
@@ -112,9 +112,9 @@ class VisitingCardQrOptionDialog extends StatelessWidget {
                   ),
                 ],
               ),
-              padding: EdgeInsets.all(12.w),
-              child: Image.asset(
-                ui.AppAssets.templateVisitingCardQrCode2,
+              padding: EdgeInsets.all(6.w),
+              child: SvgPicture.asset(
+                ui.AppAssets.templateVisitingCardQrCodeDialogPlaceIcon,
                 fit: BoxFit.contain,
               ),
             ),

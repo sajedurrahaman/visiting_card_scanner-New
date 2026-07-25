@@ -130,3 +130,13 @@ flutter:
       fonts:
         - asset: assets/fonts/SF-Pro-Text-Regular.otf
           weight: 400
+        # No separate Text Medium/Bold files — map to Display cuts so
+        # FontWeight.w500–w800 resolve (otherwise Flutter stays on Regular).
+        - asset: assets/fonts/SFPRODISPLAYMEDIUM.OTF
+          weight: 500
+        - asset: assets/fonts/SFPRODISPLAYMEDIUM.OTF
+          weight: 600
+        - asset: assets/fonts/SFPRODISPLAYBOLD.OTF
+          weight: 700
+        - asset: assets/fonts/SFPRODISPLAYBOLD.OTF
+          weight: 800
