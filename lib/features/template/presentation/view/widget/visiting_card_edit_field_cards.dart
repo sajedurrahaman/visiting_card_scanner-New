@@ -306,7 +306,10 @@ class _VisitingTypedFieldCardState extends State<VisitingTypedFieldCard> {
                   Expanded(
                     child: TextField(
                       controller: _controllers[index],
+                      autofocus: false,
                       onChanged: (v) => widget.onValueChanged(index, v),
+                      onTapOutside: (_) =>
+                          FocusManager.instance.primaryFocus?.unfocus(),
                       style: TextStyle(
                         fontFamily: ui.AppFonts.sfPro,
                         fontSize: 14.sp,
@@ -411,7 +414,10 @@ class _UnderlinedInputRowState extends State<_UnderlinedInputRow> {
         Expanded(
           child: TextField(
             controller: _controller,
+            autofocus: false,
             onChanged: widget.onChanged,
+            onTapOutside: (_) =>
+                FocusManager.instance.primaryFocus?.unfocus(),
             style: TextStyle(
               fontFamily: ui.AppFonts.sfPro,
               fontSize: 14.sp,

@@ -277,10 +277,30 @@ class AppAssets {
   static const txtFileThumbIcon = 'assets/svg/TXT.svg';
 
 
+  // template visiting card qr code
+  static const templateVisitingCardQrCode1 = 'assets/icons/local_upload_icon.png';
+  static const templateVisitingCardQrCode2 = 'assets/icons/default_qrcode.png';
+  static const templateVisitingCardQrCode3 = 'assets/qrcode/qr_code_2.png';
+  static const templateVisitingCardQrCode4 = 'assets/qrcode/qr_code_5.png';
+  static const templateVisitingCardQrCode5 = 'assets/qrcode/qr_code_4.png';
+  static const templateVisitingCardQrCode6 = 'assets/qrcode/qr_code_10.png';
+  static const templateVisitingCardQrCode7 = 'assets/qrcode/qr_code_14.png';
+  static const templateVisitingCardQrCode8 = 'assets/qrcode/qr_code_6.png';
+  static const templateVisitingCardQrCode9 = 'assets/qrcode/qr_code_15.png';
+  static const templateVisitingCardQrCodeDialogPlaceIcon = 'assets/icons/visiting_qr_place_icon.svg';
+  static const templateVisitingCardQrCodeDialogCustomizeIcon = 'assets/icons/visiting_qr_customize_icon.svg';
+
+
+
+
+
 }
 
 class AppFonts {
   static const sfPro = 'SF Pro';
+  static const sfProText = 'SF Pro Text';
+  static const inter = 'Inter';
+  static const roboto = 'Roboto';
 }
 
 class AppTextStyles {

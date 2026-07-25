@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
+import 'package:visiting_card/features/template/presentation/helper/visiting_card_qr_payload.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_details_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_logo_picker_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_tempalte_qrcode_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_edit_field_cards.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
@@ -25,6 +28,54 @@ class VisitingCardEditContactInfoScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _clearFocus(BuildContext context) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    FocusScope.of(context).unfocus();
+    await Future<void>.delayed(Duration.zero);
+    if (!context.mounted) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusManager.instance.primaryFocus?.unfocus();
+    });
+  }
+
+  Future<void> _onChooseQr(
+    BuildContext context,
+    VisitingCardEditContactViewModel vm,
+  ) async {
+    if (!vm.canEditQr) return;
+    await _clearFocus(context);
+    final path = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => VisitingCardTempalteQrcodeScreen(
+          qrData: VisitingCardQrPayload.fromEditContact(vm),
+        ),
+      ),
+    );
+    if (!context.mounted) return;
+    await _clearFocus(context);
+    if (path == null || path.isEmpty) return;
+    vm.applyQrImage(path);
+    await _clearFocus(context);
+  }
+
+  Future<void> _onChooseLogo(
+    BuildContext context,
+    VisitingCardEditContactViewModel vm,
+  ) async {
+    if (!vm.canEditLogo) return;
+    await _clearFocus(context);
+    final file = await VisitingCardLogoPickerScreen.open(context);
+    if (!context.mounted) return;
+    await _clearFocus(context);
+    if (file == null) return;
+    final path = await vm.persistLogoFile(file);
+    if (!context.mounted) return;
+    vm.applyLogoImage(path);
+    await _clearFocus(context);
   }
 
   @override
@@ -74,13 +125,13 @@ class VisitingCardEditContactInfoScreen extends StatelessWidget {
             label: 'QR Code',
             buttonLabel: 'Choose QR Code',
             enabled: vm.canEditQr,
-            onTap: vm.chooseQrCode,
+            onTap: () => _onChooseQr(context, vm),
           ),
           VisitingSelectActionCard(
             label: 'Image Selected',
             buttonLabel: 'Choose logo',
             enabled: vm.canEditLogo,
-            onTap: vm.chooseLogo,
+            onTap: () => _onChooseLogo(context, vm),
           ),
           VisitingSimpleFieldCard(
             title: 'Name',

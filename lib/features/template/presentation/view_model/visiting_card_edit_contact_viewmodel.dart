@@ -129,11 +129,41 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void applyQrImage(String path) {
+    if (!canEditQr) return;
+    hasChosenQr = true;
+    qrAssetPath = path;
+    notifyListeners();
+  }
+
   void chooseLogo() {
     if (!canEditLogo) return;
     hasChosenLogo = true;
     logoAssetPath = ui.AppAssets.visitingTemplateLocalFileUploadIcon;
     notifyListeners();
+  }
+
+  void applyLogoImage(String path) {
+    if (!canEditLogo) return;
+    hasChosenLogo = true;
+    logoAssetPath = path;
+    notifyListeners();
+  }
+
+  Future<String> persistLogoFile(File source) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final logoDir = Directory('${dir.path}/visiting_card/logo_embed');
+    if (!await logoDir.exists()) {
+      await logoDir.create(recursive: true);
+    }
+    final ext = source.path.contains('.')
+        ? source.path.split('.').last
+        : 'jpg';
+    final dest = File(
+      '${logoDir.path}/logo_${DateTime.now().millisecondsSinceEpoch}.$ext',
+    );
+    await source.copy(dest.path);
+    return dest.path;
   }
 
   void updateSimpleField(

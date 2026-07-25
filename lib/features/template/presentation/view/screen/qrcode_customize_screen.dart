@@ -21,11 +21,15 @@ class QrcodeCustomizeScreen extends StatelessWidget {
     required this.qrData,
     required this.templateIndex,
     this.thumbnailAsset,
+    this.forVisitingCard = false,
   });
 
   final String qrData;
   final int templateIndex;
   final String? thumbnailAsset;
+
+  /// When true, Save only returns a local path (no gallery / recent / folder).
+  final bool forVisitingCard;
 
   @override
   Widget build(BuildContext context) {
@@ -35,13 +39,15 @@ class QrcodeCustomizeScreen extends StatelessWidget {
         initialTemplateIndex: templateIndex,
         thumbnailAsset: thumbnailAsset,
       ),
-      child: const _QrcodeCustomizeBody(),
+      child: _QrcodeCustomizeBody(forVisitingCard: forVisitingCard),
     );
   }
 }
 
 class _QrcodeCustomizeBody extends StatefulWidget {
-  const _QrcodeCustomizeBody();
+  const _QrcodeCustomizeBody({this.forVisitingCard = false});
+
+  final bool forVisitingCard;
 
   @override
   State<_QrcodeCustomizeBody> createState() => _QrcodeCustomizeBodyState();
@@ -68,6 +74,21 @@ class _QrcodeCustomizeBodyState extends State<_QrcodeCustomizeBody> {
 
   Future<void> _onSave() async {
     final vm = context.read<QrcodeCustomizeViewModel>();
+    if (widget.forVisitingCard) {
+      final path = await vm.saveForVisitingCard();
+      if (!mounted) return;
+      if (path == null) {
+        ui.AppToast.show(
+          context,
+          message: 'Save failed',
+          backgroundColor: const Color(0xFFE53935),
+        );
+        return;
+      }
+      Navigator.pop(context, path);
+      return;
+    }
+
     final ok = await vm.saveToGallery(
       homeViewModel: context.read<HomeViewModel>(),
       folderViewModel: context.read<FolderViewModel>(),

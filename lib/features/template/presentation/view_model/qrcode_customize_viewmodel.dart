@@ -562,6 +562,40 @@ class QrcodeCustomizeViewModel extends ChangeNotifier {
     }
   }
 
+  /// Capture QR to app documents only — no gallery / recent / folder.
+  Future<String?> saveForVisitingCard() async {
+    if (isSaving) return null;
+    isSaving = true;
+    notifyListeners();
+
+    try {
+      final bytes = await screenshotController.capture(pixelRatio: 3);
+      if (bytes == null) {
+        isSaving = false;
+        notifyListeners();
+        return null;
+      }
+
+      final dir = await getApplicationDocumentsDirectory();
+      final qrDir = Directory('${dir.path}/visiting_card/qr_embed');
+      if (!await qrDir.exists()) {
+        await qrDir.create(recursive: true);
+      }
+      final file = File(
+        '${qrDir.path}/vc_qr_${DateTime.now().millisecondsSinceEpoch}.png',
+      );
+      await file.writeAsBytes(bytes, flush: true);
+
+      isSaving = false;
+      notifyListeners();
+      return file.path;
+    } catch (_) {
+      isSaving = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
   Future<String> _persistBytes(Uint8List bytes) async {
     final dir = await getApplicationDocumentsDirectory();
     final qrDir = Directory('${dir.path}/qr_code');
