@@ -173,12 +173,6 @@ class _VisitingCardTempalteQrcodeScreenState
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10.r),
-                    border: selected
-                        ? Border.all(
-                            color: ui.Colors.parentIconSelectTextColor,
-                            width: 2,
-                          )
-                        : null,
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10.r),

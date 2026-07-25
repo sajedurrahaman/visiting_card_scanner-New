@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:visiting_card/app/storage/app_storage_service.dart';
+import 'package:visiting_card/app/storage/folder_record.dart';
 import 'package:visiting_card/features/folder/domain/model/sub_folder_item.dart';
 import 'package:visiting_card/features/folder/presentation/view/widget/folder_item_data.dart';
 import 'package:visiting_card/features/home/domain/model/recent_card_item.dart';
@@ -81,11 +82,64 @@ class FolderViewModel extends ChangeNotifier {
   bool canDeleteSelection(String folderId) => selectedCount(folderId) > 0;
 
   Future<void> loadFromStorage() async {
+    _restoreFoldersFromStorage();
+
     final files = AppStorageService().getAllFiles();
-    _cards[visitingCardFolderId] = _cardsForFolder(files, visitingCardFolderId);
-    _cards[qrCodeFolderId] = _cardsForFolder(files, qrCodeFolderId);
-    _cards[barcodeFolderId] = _cardsForFolder(files, barcodeFolderId);
+    final folderIds = <String>{
+      visitingCardFolderId,
+      qrCodeFolderId,
+      barcodeFolderId,
+      ..._parentIds.keys,
+      ..._subFolders.keys,
+    };
+
+    for (final id in folderIds) {
+      _cards[id] = _cardsForFolder(files, id);
+    }
     notifyListeners();
+  }
+
+  void _restoreFoldersFromStorage() {
+    _subFolders.clear();
+    _parentIds.clear();
+
+    final records = AppStorageService().getAllFolders();
+    for (final record in records) {
+      if (record.id.isEmpty || record.parentFolderId.isEmpty) continue;
+      _parentIds[record.id] = record.parentFolderId;
+      final list = _subFolders.putIfAbsent(record.parentFolderId, () => []);
+      list.add(
+        SubFolderItem(
+          id: record.id,
+          name: record.name,
+          dateTime: record.dateTime,
+        ),
+      );
+      _subFolders.putIfAbsent(record.id, () => []);
+    }
+
+    for (final entry in _subFolders.entries) {
+      entry.value.sort((a, b) => b.id.compareTo(a.id));
+    }
+  }
+
+  Future<void> _persistFolders() async {
+    final records = <FolderRecord>[];
+    for (final entry in _subFolders.entries) {
+      for (final sub in entry.value) {
+        final parentId = _parentIds[sub.id];
+        if (parentId == null) continue;
+        records.add(
+          FolderRecord(
+            id: sub.id,
+            name: sub.name,
+            dateTime: sub.dateTime,
+            parentFolderId: parentId,
+          ),
+        );
+      }
+    }
+    await AppStorageService().replaceAllFolders(records);
   }
 
   List<RecentCardItem> _cardsForFolder(
@@ -107,7 +161,6 @@ class FolderViewModel extends ChangeNotifier {
           ),
         )
         .toList();
-    // PDF Scanner folder parity: newest saved file on top.
     cards.sort((a, b) => _recencyKey(b).compareTo(_recencyKey(a)));
     return cards;
   }
@@ -169,6 +222,14 @@ class FolderViewModel extends ChangeNotifier {
       }
     }
 
+    final deletedFolderIds = <String>{};
+    for (final id in List<String>.from(selectedIds)) {
+      if (subFoldersFor(folderId).any((s) => s.id == id) ||
+          _parentIds.containsKey(id)) {
+        _collectFolderTreeIds(id, deletedFolderIds);
+      }
+    }
+
     _subFolders[folderId]?.removeWhere(
       (item) => selectedIds.contains(item.id),
     );
@@ -176,7 +237,7 @@ class FolderViewModel extends ChangeNotifier {
       (item) => selectedIds.contains(item.id),
     );
 
-    for (final id in List<String>.from(selectedIds)) {
+    for (final id in {...selectedIds, ...deletedFolderIds}) {
       _subFolders.remove(id);
       _cards.remove(id);
       _parentIds.remove(id);
@@ -187,9 +248,18 @@ class FolderViewModel extends ChangeNotifier {
     final remaining =
         allFiles.where((file) => !selectedIds.contains(file.id)).toList();
     await AppStorageService().replaceAllFiles(remaining);
+    await _persistFolders();
 
     selectedIds.clear();
     notifyListeners();
+  }
+
+  void _collectFolderTreeIds(String folderId, Set<String> out) {
+    out.add(folderId);
+    final nested = List<SubFolderItem>.from(_subFolders[folderId] ?? const []);
+    for (final child in nested) {
+      _collectFolderTreeIds(child.id, out);
+    }
   }
 
   String? parentIdFor(String folderId) => _parentIds[folderId];
@@ -315,11 +385,11 @@ class FolderViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void renameSubFolder({
+  Future<void> renameSubFolder({
     required String parentFolderId,
     required String subFolderId,
     required String newName,
-  }) {
+  }) async {
     final trimmedName = newName.trim();
     if (trimmedName.isEmpty) {
       return;
@@ -336,17 +406,19 @@ class FolderViewModel extends ChangeNotifier {
     }
 
     subFolders[index] = subFolders[index].copyWith(name: trimmedName);
+    await _persistFolders();
     notifyListeners();
   }
 
-  void deleteSubFolder({
+  Future<void> deleteSubFolder({
     required String parentFolderId,
     required String subFolderId,
-  }) {
+  }) async {
     _subFolders[parentFolderId]?.removeWhere(
       (item) => item.id == subFolderId,
     );
     _removeSubFolderTree(subFolderId);
+    await _persistFolders();
     notifyListeners();
   }
 
@@ -365,25 +437,34 @@ class FolderViewModel extends ChangeNotifier {
     _selectedItemIds.remove(folderId);
   }
 
-  void createSubFolder(String folderId, String name) {
+  Future<void> createSubFolder(String folderId, String name) async {
     final trimmedName = name.trim();
     if (trimmedName.isEmpty) {
       return;
     }
 
     final subFolderId = 'sub_${DateTime.now().millisecondsSinceEpoch}';
+    final dateTime = _formatDate(DateTime.now());
     final subFolders = _subFolders.putIfAbsent(folderId, () => []);
     subFolders.insert(
       0,
       SubFolderItem(
         id: subFolderId,
         name: trimmedName,
-        dateTime: _formatDate(DateTime.now()),
+        dateTime: dateTime,
       ),
     );
     _subFolders[subFolderId] = [];
     _cards[subFolderId] = [];
     _parentIds[subFolderId] = folderId;
+    await AppStorageService().saveFolder(
+      FolderRecord(
+        id: subFolderId,
+        name: trimmedName,
+        dateTime: dateTime,
+        parentFolderId: folderId,
+      ),
+    );
     notifyListeners();
   }
 

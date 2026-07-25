@@ -5,3 +5,4 @@ targets:
         generate_for:
           include:
             - lib/app/storage/saved_file_entity.dart
+            - lib/app/storage/folder_entity.dart
