@@ -74,10 +74,15 @@ class _VisitingCardScannedDetailsScreenState
       names: scan.names,
       designations: scan.designations,
       companies: scan.companies,
+      taglines: scan.taglines,
       phones: scan.phones,
       emails: scan.emails,
       websites: scan.websites,
       addresses: scan.addresses,
+      qrAssetPath: scan.qrAssetPath,
+      logoAssetPath: scan.logoAssetPath,
+      hasChosenQr: scan.hasChosenQr,
+      hasChosenLogo: scan.hasChosenLogo,
     );
   }
 
@@ -92,10 +97,15 @@ class _VisitingCardScannedDetailsScreenState
       names: scan.names,
       designations: scan.designations,
       companies: scan.companies,
+      taglines: scan.taglines,
       phones: scan.phones,
       emails: scan.emails,
       websites: scan.websites,
       addresses: scan.addresses,
+      qrAssetPath: scan.qrAssetPath,
+      logoAssetPath: scan.logoAssetPath,
+      hasChosenQr: scan.hasChosenQr,
+      hasChosenLogo: scan.hasChosenLogo,
     );
     setState(() {
       _previewVm.dispose();
@@ -297,6 +307,10 @@ class _VisitingCardScannedDetailsScreenState
     final vm = context.read<VisitingCardScanViewModel>();
     if (vm.isSaving) return;
 
+    _syncPreviewFromScan();
+    vm.selectedTemplateId = _selectedTemplateId;
+    final previousSide = _previewVm.sideIndex;
+
     final home = context.read<HomeViewModel>();
     final folder = context.read<FolderViewModel>();
     final isUpdate = vm.isUpdatingExisting;
@@ -305,8 +319,14 @@ class _VisitingCardScannedDetailsScreenState
     final ok = await vm.saveScannedCard(
       homeViewModel: home,
       folderViewModel: folder,
+      templateId: _selectedTemplateId,
+      captureTemplateSide: (side) async {
+        _syncPreviewFromScan();
+        return _captureTemplateSide(side);
+      },
     );
     if (!mounted) return;
+    _previewVm.setSide(previousSide);
 
     if (!ok) {
       ui.AppToast.show(
@@ -336,6 +356,8 @@ class _VisitingCardScannedDetailsScreenState
       context,
       contact: _previewVm.buildSavedContact(),
       fallbackName: 'Visiting Card',
+      onShareOldCard: _onShareScanImages,
+      onShareNewCard: _onShareTemplate,
     );
   }
 
@@ -418,6 +440,26 @@ class _VisitingCardScannedDetailsScreenState
     }
   }
 
+  Future<void> _onOpenEmail(String email) async {
+    final uri = Uri(scheme: 'mailto', path: email.trim());
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
+  Future<void> _onOpenWebsite(String url) async {
+    var value = url.trim();
+    if (value.isEmpty) return;
+    if (!value.startsWith('http://') && !value.startsWith('https://')) {
+      value = 'https://$value';
+    }
+    final uri = Uri.tryParse(value);
+    if (uri == null) return;
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   Future<void> _onOpenMap(String address) async {
     final encoded = Uri.encodeComponent(address.trim());
     if (encoded.isEmpty) return;
@@ -476,12 +518,14 @@ class _VisitingCardScannedDetailsScreenState
         ),
         centerTitle: true,
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),
-              children: [
+          Column(
+            children: [
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),
+                  children: [
                 /// Scanned image — swipe front/back (no 1/2 label)
                 if (images.isNotEmpty)
                   Container(
@@ -821,6 +865,7 @@ class _VisitingCardScannedDetailsScreenState
                               icon: ui.AppAssets.visitingTemplatePhoneIcon,
                               value: e.value,
                               subtitle: e.type.isEmpty ? 'Tel' : e.type,
+                              onTap: () => _onCall(e.value),
                             ),
                           ),
                       ...vm.emails
@@ -830,6 +875,7 @@ class _VisitingCardScannedDetailsScreenState
                               icon: ui.AppAssets.visitingTemplateMailIcon,
                               value: e.value,
                               subtitle: e.type.isEmpty ? 'Email' : e.type,
+                              onTap: () => _onOpenEmail(e.value),
                             ),
                           ),
                       ...vm.websites
@@ -839,6 +885,7 @@ class _VisitingCardScannedDetailsScreenState
                               icon: ui.AppAssets.visitingTemplateWebsiteIcon,
                               value: e.value,
                               subtitle: e.type.isEmpty ? 'Company' : e.type,
+                              onTap: () => _onOpenWebsite(e.value),
                             ),
                           ),
                       ...vm.addresses
@@ -848,6 +895,7 @@ class _VisitingCardScannedDetailsScreenState
                               icon: ui.AppAssets.visitingTemplateLocationIcon,
                               value: e.value,
                               subtitle: 'Address',
+                              onTap: () => _onOpenMap(e.value),
                             ),
                           ),
                     ],
@@ -878,6 +926,20 @@ class _VisitingCardScannedDetailsScreenState
               ),
             ),
           ),
+            ],
+          ),
+          if (vm.isSaving)
+            Positioned.fill(
+              child: ColoredBox(
+                color: Colors.black.withValues(alpha: 0.25),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    color: ui.Colors.parentIconSelectTextColor,
+                    strokeWidth: 3,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -905,13 +967,13 @@ class _SelectedCheck extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 22,
-      height: 22,
+      width: 15,
+      height: 15,
       decoration: const BoxDecoration(
         color: ui.Colors.parentIconSelectTextColor,
         shape: BoxShape.circle,
       ),
-      child: const Icon(Icons.check, size: 14, color: Colors.white),
+      child: const Icon(Icons.check, size: 12, color: Colors.white),
     );
   }
 }
@@ -1003,11 +1065,13 @@ class _ContactRow extends StatelessWidget {
     required this.icon,
     required this.value,
     required this.subtitle,
+    this.onTap,
   });
 
   final String icon;
   final String value;
   final String subtitle;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1016,26 +1080,36 @@ class _ContactRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SvgPicture.asset(icon, width: 22.w, height: 22.w),
+          InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(20.r),
+            child: Padding(
+              padding: EdgeInsets.all(2.w),
+              child: SvgPicture.asset(icon, width: 22.w, height: 22.w),
+            ),
+          ),
           SizedBox(width: 12.w),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: ui.AppTextStyles.helperText(
-                    color: const Color(0xFF1A1A1A),
-                  ).copyWith(fontWeight: FontWeight.w600),
-                ),
-                SizedBox(height: 2.h),
-                Text(
-                  subtitle,
-                  style: ui.AppTextStyles.iconUnderText(
-                    color: const Color(0xFF9E9E9E),
+            child: InkWell(
+              onTap: onTap,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    style: ui.AppTextStyles.helperText(
+                      color: const Color(0xFF1A1A1A),
+                    ).copyWith(fontWeight: FontWeight.w600),
                   ),
-                ),
-              ],
+                  SizedBox(height: 2.h),
+                  Text(
+                    subtitle,
+                    style: ui.AppTextStyles.iconUnderText(
+                      color: const Color(0xFF9E9E9E),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

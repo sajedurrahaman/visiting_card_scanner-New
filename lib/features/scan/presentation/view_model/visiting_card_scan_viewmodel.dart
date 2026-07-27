@@ -38,10 +38,17 @@ class VisitingCardScanViewModel extends ChangeNotifier {
   late List<ContactFieldEntry> names = draft.nameEntries();
   late List<ContactFieldEntry> designations = draft.designationEntries();
   late List<ContactFieldEntry> companies = draft.companyEntries();
+  List<ContactFieldEntry> taglines = [ContactFieldEntry()];
   late List<ContactFieldEntry> phones = draft.phoneEntries();
   late List<ContactFieldEntry> emails = draft.emailEntries();
   late List<ContactFieldEntry> websites = draft.websiteEntries();
   late List<ContactFieldEntry> addresses = draft.addressEntries();
+
+  String? qrAssetPath;
+  String? logoAssetPath;
+  bool hasChosenQr = false;
+  bool hasChosenLogo = false;
+  String? selectedTemplateId;
 
   int get maxShots => isBothSides ? 2 : 1;
   bool get canCaptureMore => images.length < maxShots;
@@ -90,6 +97,7 @@ class VisitingCardScanViewModel extends ChangeNotifier {
     names = [ContactFieldEntry(value: contact.name)];
     designations = [ContactFieldEntry(value: contact.designation)];
     companies = [ContactFieldEntry(value: contact.company)];
+    taglines = [ContactFieldEntry(value: contact.tagline)];
     phones = contact.phones.isEmpty
         ? [ContactFieldEntry(type: 'Cell')]
         : contact.phones
@@ -110,6 +118,13 @@ class VisitingCardScanViewModel extends ChangeNotifier {
         : contact.addresses
             .map((e) => ContactFieldEntry(value: e))
             .toList();
+    selectedTemplateId =
+        contact.templateId.isNotEmpty ? contact.templateId : null;
+    hasChosenQr = contact.hasChosenQr;
+    hasChosenLogo = contact.hasChosenLogo;
+    qrAssetPath = contact.qrImagePath.isNotEmpty ? contact.qrImagePath : null;
+    logoAssetPath =
+        contact.logoImagePath.isNotEmpty ? contact.logoImagePath : null;
     notifyListeners();
   }
 
@@ -190,6 +205,7 @@ class VisitingCardScanViewModel extends ChangeNotifier {
       names = draft.nameEntries();
       designations = draft.designationEntries();
       companies = draft.companyEntries();
+      taglines = [ContactFieldEntry()];
       phones = draft.phoneEntries();
       emails = draft.emailEntries();
       websites = draft.websiteEntries();
@@ -239,14 +255,51 @@ class VisitingCardScanViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void applyQrImage(String path) {
+    if (path.trim().isEmpty) return;
+    hasChosenQr = true;
+    qrAssetPath = path;
+    notifyListeners();
+  }
+
+  void applyLogoImage(String path) {
+    if (path.trim().isEmpty) return;
+    hasChosenLogo = true;
+    logoAssetPath = path;
+    notifyListeners();
+  }
+
+  Future<String> persistLogoFile(File source) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final logoDir = Directory(p.join(dir.path, 'visiting_card', 'logo_embed'));
+    if (!await logoDir.exists()) {
+      await logoDir.create(recursive: true);
+    }
+    final ext = source.path.contains('.')
+        ? source.path.split('.').last
+        : 'jpg';
+    final dest = File(
+      p.join(
+        logoDir.path,
+        'logo_${DateTime.now().millisecondsSinceEpoch}.$ext',
+      ),
+    );
+    await source.copy(dest.path);
+    return dest.path;
+  }
+
   Future<bool> saveScannedCard({
     required HomeViewModel homeViewModel,
     required FolderViewModel folderViewModel,
+    String? templateId,
+    Future<Uint8List?> Function(int side)? captureTemplateSide,
   }) async {
     if (isUpdatingExisting) {
       return updateScannedCard(
         homeViewModel: homeViewModel,
         folderViewModel: folderViewModel,
+        templateId: templateId,
+        captureTemplateSide: captureTemplateSide,
       );
     }
 
@@ -275,6 +328,13 @@ class VisitingCardScanViewModel extends ChangeNotifier {
       );
       await contactFolder.create(recursive: true);
 
+      final embedded = await _persistEmbeddedAssets(contactFolder);
+      // Ensure template capture uses the freshly persisted QR/logo paths.
+      final templatePaths = await _persistTemplateImages(
+        contactFolder,
+        captureTemplateSide,
+      );
+
       String? frontPath;
       final savedImagePaths = <String>[];
       for (var i = 0; i < images.length; i++) {
@@ -285,17 +345,15 @@ class VisitingCardScanViewModel extends ChangeNotifier {
         await out.writeAsBytes(images[i].bytes, flush: true);
         savedImagePaths.add(out.path);
         if (i == 0) frontPath = out.path;
-
-        // Gallery save disabled for scan → add contact → save flow.
-        // Keep contact create + recent + folder storage only.
-        // try {
-        //   final hasAccess = await Gal.hasAccess();
-        //   if (!hasAccess) await Gal.requestAccess();
-        //   await Gal.putImage(out.path, album: 'Visiting Card');
-        // } catch (_) {}
       }
 
-      final contact = _buildSavedContact(savedImagePaths);
+      final contact = _buildSavedContact(
+        savedImagePaths,
+        templateId: templateId ?? selectedTemplateId,
+        qrImagePath: embedded.qrPath,
+        logoImagePath: embedded.logoPath,
+        templateImagePaths: templatePaths,
+      );
       await SavedContactInfo.writeToFolder(contactFolder.path, contact);
       await File(p.join(contactFolder.path, 'contact_details.txt'))
           .writeAsString(_contactDetailsText());
@@ -333,6 +391,8 @@ class VisitingCardScanViewModel extends ChangeNotifier {
   Future<bool> updateScannedCard({
     required HomeViewModel homeViewModel,
     required FolderViewModel folderViewModel,
+    String? templateId,
+    Future<Uint8List?> Function(int side)? captureTemplateSide,
   }) async {
     if (isSaving || images.isEmpty) return false;
     final folderPath = editingContactFolderPath;
@@ -346,6 +406,13 @@ class VisitingCardScanViewModel extends ChangeNotifier {
       final contactFolder = Directory(folderPath);
       await contactFolder.create(recursive: true);
 
+      final embedded = await _persistEmbeddedAssets(contactFolder);
+      // Ensure template capture uses the freshly persisted QR/logo paths.
+      final templatePaths = await _persistTemplateImages(
+        contactFolder,
+        captureTemplateSide,
+      );
+
       String? frontPath;
       final savedImagePaths = <String>[];
       for (var i = 0; i < images.length; i++) {
@@ -358,7 +425,13 @@ class VisitingCardScanViewModel extends ChangeNotifier {
         if (i == 0) frontPath = out.path;
       }
 
-      final contact = _buildSavedContact(savedImagePaths);
+      final contact = _buildSavedContact(
+        savedImagePaths,
+        templateId: templateId ?? selectedTemplateId,
+        qrImagePath: embedded.qrPath,
+        logoImagePath: embedded.logoPath,
+        templateImagePaths: templatePaths,
+      );
       await SavedContactInfo.writeToFolder(contactFolder.path, contact);
       await File(p.join(contactFolder.path, 'contact_details.txt'))
           .writeAsString(_contactDetailsText());
@@ -393,11 +466,18 @@ class VisitingCardScanViewModel extends ChangeNotifier {
     }
   }
 
-  SavedContactInfo buildSavedContact({List<String>? imagePaths}) {
+  SavedContactInfo buildSavedContact({
+    List<String>? imagePaths,
+    String? templateId,
+    String? qrImagePath,
+    String? logoImagePath,
+    List<String>? templateImagePaths,
+  }) {
     return SavedContactInfo(
       name: names.first.value.trim(),
       designation: designations.first.value.trim(),
       company: companies.first.value.trim(),
+      tagline: taglines.isNotEmpty ? taglines.first.value.trim() : '',
       phones: phones
           .where((e) => e.value.trim().isNotEmpty)
           .map((e) => SavedTypedValue(value: e.value.trim(), type: e.type))
@@ -420,11 +500,145 @@ class VisitingCardScanViewModel extends ChangeNotifier {
               .whereType<String>()
               .where((e) => e.isNotEmpty)
               .toList(),
+      source: SavedContactInfo.sourceScan,
+      templateId: templateId ?? selectedTemplateId ?? '',
+      qrImagePath: qrImagePath ?? qrAssetPath ?? '',
+      logoImagePath: logoImagePath ?? logoAssetPath ?? '',
+      hasChosenQr: hasChosenQr,
+      hasChosenLogo: hasChosenLogo,
+      templateImagePaths: templateImagePaths ?? const [],
     );
   }
 
-  SavedContactInfo _buildSavedContact(List<String> savedImagePaths) {
-    return buildSavedContact(imagePaths: savedImagePaths);
+  SavedContactInfo _buildSavedContact(
+    List<String> savedImagePaths, {
+    String? templateId,
+    String? qrImagePath,
+    String? logoImagePath,
+    List<String> templateImagePaths = const [],
+  }) {
+    return buildSavedContact(
+      imagePaths: savedImagePaths,
+      templateId: templateId,
+      qrImagePath: qrImagePath,
+      logoImagePath: logoImagePath,
+      templateImagePaths: templateImagePaths,
+    );
+  }
+
+  Future<({String qrPath, String logoPath})> _persistEmbeddedAssets(
+    Directory contactFolder,
+  ) async {
+    final embeddedDir = Directory(p.join(contactFolder.path, 'embedded'));
+    if (!await embeddedDir.exists()) {
+      await embeddedDir.create(recursive: true);
+    }
+
+    var qrPath = '';
+    if (hasChosenQr && qrAssetPath != null && qrAssetPath!.isNotEmpty) {
+      qrPath = await _persistEmbeddedFile(
+            qrAssetPath!,
+            embeddedDir,
+            'qr',
+          ) ??
+          qrAssetPath!;
+      qrAssetPath = qrPath;
+    }
+
+    var logoPath = '';
+    if (hasChosenLogo && logoAssetPath != null && logoAssetPath!.isNotEmpty) {
+      logoPath = await _persistEmbeddedFile(
+            logoAssetPath!,
+            embeddedDir,
+            'logo',
+          ) ??
+          logoAssetPath!;
+      logoAssetPath = logoPath;
+    }
+
+    return (qrPath: qrPath, logoPath: logoPath);
+  }
+
+  /// Writes a fresh copy under [destDir] with a unique name so updates
+  /// overwrite safely and Flutter image cache does not keep the old file.
+  Future<String?> _persistEmbeddedFile(
+    String sourcePath,
+    Directory destDir,
+    String baseName,
+  ) async {
+    if (sourcePath.startsWith('assets/')) {
+      return sourcePath;
+    }
+    final src = File(sourcePath);
+    if (!await src.exists()) return null;
+
+    var ext = p.extension(sourcePath).toLowerCase();
+    if (ext.isEmpty) ext = '.png';
+
+    // Read FIRST — source may already live in [destDir] (e.g. previous
+    // embedded/qr_*.png). Deleting before read caused PathNotFoundException.
+    final bytes = await src.readAsBytes();
+
+    final stamp = DateTime.now().millisecondsSinceEpoch;
+    final dest = File(p.join(destDir.path, '${baseName}_$stamp$ext'));
+    await dest.writeAsBytes(bytes, flush: true);
+
+    // Remove older embedded copies (keep the new [dest]).
+    await for (final entity in destDir.list()) {
+      if (entity is! File) continue;
+      if (p.equals(entity.path, dest.path)) continue;
+      final name = p.basename(entity.path);
+      if (name.startsWith('$baseName.') || name.startsWith('${baseName}_')) {
+        try {
+          await entity.delete();
+        } catch (_) {}
+      }
+    }
+
+    return dest.path;
+  }
+
+  Future<List<String>> _persistTemplateImages(
+    Directory contactFolder,
+    Future<Uint8List?> Function(int side)? captureTemplateSide,
+  ) async {
+    if (captureTemplateSide == null) return const [];
+
+    final frontBytes = await captureTemplateSide(0);
+    final backBytes = await captureTemplateSide(1);
+    if (frontBytes == null || backBytes == null) return const [];
+
+    final stamp = DateTime.now().millisecondsSinceEpoch;
+    final frontPath =
+        p.join(contactFolder.path, 'template_front_$stamp.png');
+    final backPath = p.join(contactFolder.path, 'template_back_$stamp.png');
+
+    // Clean older template captures so folder stays tidy.
+    for (final name in [
+      'template_front.png',
+      'template_back.png',
+    ]) {
+      final old = File(p.join(contactFolder.path, name));
+      if (await old.exists()) {
+        try {
+          await old.delete();
+        } catch (_) {}
+      }
+    }
+    await for (final entity in contactFolder.list()) {
+      if (entity is! File) continue;
+      final name = p.basename(entity.path);
+      if (name.startsWith('template_front_') ||
+          name.startsWith('template_back_')) {
+        try {
+          await entity.delete();
+        } catch (_) {}
+      }
+    }
+
+    await File(frontPath).writeAsBytes(frontBytes, flush: true);
+    await File(backPath).writeAsBytes(backBytes, flush: true);
+    return [frontPath, backPath];
   }
 
   String _safeFolderName(String raw) {
@@ -445,6 +659,9 @@ class VisitingCardScanViewModel extends ChangeNotifier {
     addLine('Name', names.first.value);
     addLine('Designation', designations.first.value);
     addLine('Company', companies.first.value);
+    if (taglines.isNotEmpty) {
+      addLine('Tagline', taglines.first.value);
+    }
     for (final phone in phones) {
       if (phone.value.trim().isNotEmpty) {
         buffer.writeln('${phone.type}: ${phone.value.trim()}');

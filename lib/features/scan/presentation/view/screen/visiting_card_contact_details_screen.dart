@@ -4,8 +4,10 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:gal/gal.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/home/domain/model/recent_card_item.dart';
@@ -13,8 +15,15 @@ import 'package:visiting_card/features/scan/domain/saved_contact_info.dart';
 import 'package:visiting_card/features/scan/presentation/helper/visiting_card_share_helper.dart';
 import 'package:visiting_card/features/scan/presentation/view/screen/visiting_card_scanned_contact_screen.dart';
 import 'package:visiting_card/features/scan/presentation/view_model/visiting_card_scan_viewmodel.dart';
-import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_edit_field_cards.dart';
+import 'package:visiting_card/features/template/domain/visiting_card_export_utils.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_edit_contact_info_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
+import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
+import 'package:visiting_card/features/template/presentation/view_model/visiting_card_template_viewmodel.dart';
 
+/// Card Details opened from Recent / Folder thumbnail.
+/// Same layout as [VisitingCardScannedDetailsScreen] without Change Template
+/// and without Save / Back to Home.
 class VisitingCardContactDetailsScreen extends StatefulWidget {
   const VisitingCardContactDetailsScreen({super.key, required this.item});
 
@@ -27,35 +36,66 @@ class VisitingCardContactDetailsScreen extends StatefulWidget {
 
 class _VisitingCardContactDetailsScreenState
     extends State<VisitingCardContactDetailsScreen> {
+  static const _templates =
+      VisitingCardTemplateViewModel.horizontalTemplates;
+
+  final GlobalKey _templateCaptureKey = GlobalKey();
+  late VisitingCardEditContactViewModel _previewVm;
+  late final PageController _scanImagePageController;
+
   SavedContactInfo? _contact;
   List<File> _images = const [];
+  List<Uint8List> _imageBytes = const [];
   bool _loading = true;
-  late final PageController _pageController;
-  int _pageIndex = 0;
+  bool _isDownloadingTemplate = false;
+  bool _isDownloadingScan = false;
+  int _imagePageIndex = 0;
+  int _imageEpoch = 0;
 
-  List<BoxShadow> get _cardShadow => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.08),
-          blurRadius: 14,
-          offset: const Offset(0, 4),
-        ),
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.04),
-          blurRadius: 6,
-          offset: const Offset(0, 2),
-        ),
-      ];
+  bool get _isFromTemplate => _contact?.isFromTemplate == true;
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    _scanImagePageController = PageController();
+    final first = _templates.first;
+    _previewVm = VisitingCardEditContactViewModel.fromTemplate(
+      first,
+      isHorizontal: true,
+    );
     _load();
+  }
+
+  VisitingCardTemplateItem _templateForId(String? id) {
+    if (id == null || id.isEmpty) return _templates.first;
+    for (final item in VisitingCardTemplateViewModel.horizontalTemplates) {
+      if (item.id == id) return item;
+    }
+    for (final item in VisitingCardTemplateViewModel.verticalTemplates) {
+      if (item.id == id) return item;
+    }
+    return _templates.first;
+  }
+
+  bool _isHorizontalTemplate(String? id) {
+    if (id == null || id.isEmpty) return true;
+    return VisitingCardTemplateViewModel.horizontalTemplates
+        .any((item) => item.id == id);
+  }
+
+  void _initPreviewFromContact(SavedContactInfo? contact) {
+    final template = _templateForId(contact?.templateId);
+    _previewVm.dispose();
+    _previewVm = VisitingCardEditContactViewModel.fromTemplate(
+      template,
+      isHorizontal: _isHorizontalTemplate(contact?.templateId),
+    );
   }
 
   @override
   void dispose() {
-    _pageController.dispose();
+    _scanImagePageController.dispose();
+    _previewVm.dispose();
     super.dispose();
   }
 
@@ -89,22 +129,245 @@ class _VisitingCardContactDetailsScreenState
       images.add(File(thumb));
     }
 
+    // Bust Flutter FileImage cache — same path after Update otherwise
+    // keeps showing the pre-edit card.
+    final bytesList = <Uint8List>[];
+    for (final file in images) {
+      try {
+        await FileImage(file).evict();
+      } catch (_) {}
+      if (await file.exists()) {
+        bytesList.add(await file.readAsBytes());
+      }
+    }
+
     if (!mounted) return;
+    _initPreviewFromContact(contact);
     setState(() {
       _contact = contact;
       _images = images;
+      _imageBytes = bytesList;
+      _imageEpoch++;
+      _imagePageIndex = 0;
       _loading = false;
     });
+    if (_scanImagePageController.hasClients) {
+      _scanImagePageController.jumpToPage(0);
+    }
+    _syncPreviewFromContact();
   }
 
-  String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty || parts.first.isEmpty) return '?';
-    if (parts.length == 1) return parts.first[0].toUpperCase();
-    return (parts[0][0] + parts[1][0]).toUpperCase();
+  void _syncPreviewFromContact() {
+    final contact = _contact;
+    if (contact == null) {
+      _previewVm.applyContactLists(
+        names: [ContactFieldEntry(value: widget.item.name)],
+        designations: [ContactFieldEntry()],
+        companies: [ContactFieldEntry()],
+        phones: [ContactFieldEntry(type: 'Cell')],
+        emails: [ContactFieldEntry(type: 'Company')],
+        websites: [ContactFieldEntry(type: 'Company')],
+        addresses: [ContactFieldEntry()],
+      );
+      return;
+    }
+
+    _previewVm.applyContactLists(
+      names: [ContactFieldEntry(value: contact.name)],
+      designations: [ContactFieldEntry(value: contact.designation)],
+      companies: [ContactFieldEntry(value: contact.company)],
+      taglines: [ContactFieldEntry(value: contact.tagline)],
+      phones: contact.phones.isEmpty
+          ? [ContactFieldEntry(type: 'Cell')]
+          : contact.phones
+              .map((e) => ContactFieldEntry(value: e.value, type: e.type))
+              .toList(),
+      emails: contact.emails.isEmpty
+          ? [ContactFieldEntry(type: 'Company')]
+          : contact.emails
+              .map((e) => ContactFieldEntry(value: e.value, type: e.type))
+              .toList(),
+      websites: contact.websites.isEmpty
+          ? [ContactFieldEntry(type: 'Company')]
+          : contact.websites
+              .map((e) => ContactFieldEntry(value: e.value, type: e.type))
+              .toList(),
+      addresses: contact.addresses.isEmpty
+          ? [ContactFieldEntry()]
+          : contact.addresses
+              .map((e) => ContactFieldEntry(value: e))
+              .toList(),
+      qrAssetPath: contact.qrImagePath.isNotEmpty ? contact.qrImagePath : null,
+      logoAssetPath:
+          contact.logoImagePath.isNotEmpty ? contact.logoImagePath : null,
+      hasChosenQr: contact.hasChosenQr,
+      hasChosenLogo: contact.hasChosenLogo,
+    );
   }
 
-  Future<void> _call(String number) async {
+  Future<Uint8List?> _captureTemplateSide(int side) async {
+    _previewVm.setSide(side);
+    await Future<void>.delayed(const Duration(milliseconds: 80));
+    await WidgetsBinding.instance.endOfFrame;
+    await Future<void>.delayed(const Duration(milliseconds: 40));
+    try {
+      return await captureVisitingCardPngBytes(
+        _templateCaptureKey,
+        isHorizontal: _previewVm.isHorizontal,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _onDownloadScanImages() async {
+    if (_isDownloadingScan || _isDownloadingTemplate) return;
+    if (_images.isEmpty) return;
+
+    setState(() => _isDownloadingScan = true);
+    try {
+      final hasAccess = await Gal.hasAccess();
+      if (!hasAccess) await Gal.requestAccess();
+
+      for (final file in _images) {
+        if (await file.exists()) {
+          await Gal.putImage(file.path, album: 'Visiting Card');
+        }
+      }
+
+      if (!mounted) return;
+      ui.AppToast.success(context, 'Downloaded to gallery');
+    } catch (_) {
+      if (!mounted) return;
+      ui.AppToast.show(context, message: 'Failed to download scanned card');
+    } finally {
+      if (mounted) setState(() => _isDownloadingScan = false);
+    }
+  }
+
+  Future<void> _onDownloadTemplate() async {
+    if (_isDownloadingTemplate || _isDownloadingScan) return;
+    setState(() => _isDownloadingTemplate = true);
+
+    _syncPreviewFromContact();
+    final previous = _previewVm.sideIndex;
+
+    try {
+      final frontBytes = await _captureTemplateSide(0);
+      final backBytes = await _captureTemplateSide(1);
+      if (!mounted) return;
+      _previewVm.setSide(previous);
+
+      if (frontBytes == null || backBytes == null) {
+        ui.AppToast.show(context, message: 'Failed to download visiting card');
+        return;
+      }
+
+      final hasAccess = await Gal.hasAccess();
+      if (!hasAccess) await Gal.requestAccess();
+
+      final stamp = DateTime.now().millisecondsSinceEpoch;
+      final frontFile = File(
+        '${Directory.systemTemp.path}/vc_template_front_$stamp.png',
+      );
+      final backFile = File(
+        '${Directory.systemTemp.path}/vc_template_back_$stamp.png',
+      );
+      await frontFile.writeAsBytes(frontBytes, flush: true);
+      await backFile.writeAsBytes(backBytes, flush: true);
+      await Gal.putImage(frontFile.path, album: 'Visiting Card');
+      await Gal.putImage(backFile.path, album: 'Visiting Card');
+
+      if (!mounted) return;
+      ui.AppToast.success(context, 'Downloaded to gallery');
+    } catch (_) {
+      if (!mounted) return;
+      _previewVm.setSide(previous);
+      ui.AppToast.show(context, message: 'Failed to download visiting card');
+    } finally {
+      if (mounted) {
+        setState(() => _isDownloadingTemplate = false);
+      }
+    }
+  }
+
+  Future<void> _onShareScanImages() async {
+    if (_images.isEmpty) return;
+
+    try {
+      final files = <XFile>[];
+      for (final file in _images) {
+        if (await file.exists()) {
+          files.add(XFile(file.path));
+        }
+      }
+      if (files.isEmpty) return;
+      await Share.shareXFiles(files, text: 'Visiting Card');
+    } catch (_) {
+      if (!mounted) return;
+      ui.AppToast.show(context, message: 'Failed to share scanned card');
+    }
+  }
+
+  Future<void> _onShareTemplate() async {
+    if (_isDownloadingTemplate || _isDownloadingScan) return;
+    setState(() => _isDownloadingTemplate = true);
+
+    _syncPreviewFromContact();
+    final previous = _previewVm.sideIndex;
+
+    try {
+      final frontBytes = await _captureTemplateSide(0);
+      final backBytes = await _captureTemplateSide(1);
+      if (!mounted) return;
+      _previewVm.setSide(previous);
+
+      if (frontBytes == null || backBytes == null) {
+        ui.AppToast.show(context, message: 'Failed to share visiting card');
+        return;
+      }
+
+      final stamp = DateTime.now().millisecondsSinceEpoch;
+      final frontFile = File(
+        '${Directory.systemTemp.path}/vc_share_template_front_$stamp.png',
+      );
+      final backFile = File(
+        '${Directory.systemTemp.path}/vc_share_template_back_$stamp.png',
+      );
+      await frontFile.writeAsBytes(frontBytes, flush: true);
+      await backFile.writeAsBytes(backBytes, flush: true);
+      await Share.shareXFiles(
+        [XFile(frontFile.path), XFile(backFile.path)],
+        text: 'Visiting Card',
+      );
+    } catch (_) {
+      if (!mounted) return;
+      _previewVm.setSide(previous);
+      ui.AppToast.show(context, message: 'Failed to share visiting card');
+    } finally {
+      if (mounted) setState(() => _isDownloadingTemplate = false);
+    }
+  }
+
+  Future<void> _onShareContact() async {
+    _syncPreviewFromContact();
+    final contact = _contact ??
+        SavedContactInfo(
+          name: widget.item.name,
+          imagePaths: _images.map((e) => e.path).toList(),
+        );
+
+    await VisitingCardShareHelper.showShareViaDialog(
+      context,
+      contact: contact,
+      fallbackName: widget.item.name,
+      onShareOldCard: _isFromTemplate ? null : _onShareScanImages,
+      onShareNewCard:
+          _isFromTemplate ? _onShareScanImages : _onShareTemplate,
+    );
+  }
+
+  Future<void> _onCall(String number) async {
     final cleaned = number.trim();
     if (cleaned.isEmpty) return;
     final uri = Uri(scheme: 'tel', path: cleaned);
@@ -113,25 +376,14 @@ class _VisitingCardContactDetailsScreenState
     }
   }
 
-  Future<void> _openMap(String address) async {
-    final encoded = Uri.encodeComponent(address.trim());
-    if (encoded.isEmpty) return;
-    final uri = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=$encoded',
-    );
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  Future<void> _openEmail(String email) async {
+  Future<void> _onOpenEmail(String email) async {
     final uri = Uri(scheme: 'mailto', path: email.trim());
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     }
   }
 
-  Future<void> _openWebsite(String url) async {
+  Future<void> _onOpenWebsite(String url) async {
     var value = url.trim();
     if (value.isEmpty) return;
     if (!value.startsWith('http://') && !value.startsWith('https://')) {
@@ -144,10 +396,34 @@ class _VisitingCardContactDetailsScreenState
     }
   }
 
+  Future<void> _onOpenMap(String address) async {
+    final encoded = Uri.encodeComponent(address.trim());
+    if (encoded.isEmpty) return;
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$encoded',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   Future<void> _openEdit() async {
     final contact = _contact;
     if (contact == null && _images.isEmpty) {
       ui.AppToast.show(context, message: 'No contact data to edit');
+      return;
+    }
+
+    final editContact = contact ??
+        SavedContactInfo(
+          name: widget.item.name,
+          imagePaths: _images.map((e) => e.path).toList(),
+        );
+
+    // Template-generated cards → template edit flow (live preview).
+    // Scan cards → scan edit flow (scanned photos).
+    if (editContact.isFromTemplate) {
+      await _openTemplateEdit(editContact);
       return;
     }
 
@@ -157,12 +433,6 @@ class _VisitingCardContactDetailsScreenState
         bytesList.add(await file.readAsBytes());
       }
     }
-
-    final editContact = contact ??
-        SavedContactInfo(
-          name: widget.item.name,
-          imagePaths: _images.map((e) => e.path).toList(),
-        );
 
     final vm = VisitingCardScanViewModel();
     await vm.loadFromSavedContact(
@@ -187,411 +457,421 @@ class _VisitingCardContactDetailsScreenState
     if (mounted) await _load();
   }
 
-  Future<void> _shareCard() async {
-    final contact = _contact ??
-        SavedContactInfo(
-          name: widget.item.name,
-          imagePaths: _images.map((e) => e.path).toList(),
-        );
+  Future<void> _openTemplateEdit(SavedContactInfo contact) async {
+    final template = _templateForId(contact.templateId);
+    final vm = VisitingCardEditContactViewModel.fromTemplate(
+      template,
+      isHorizontal: _isHorizontalTemplate(contact.templateId),
+    );
+    vm.applyContactFromSaved(
+      contact,
+      savedFileId: widget.item.id,
+      contactFolderPath: widget.item.path,
+      folderId: widget.item.folderId,
+      dateTime: widget.item.dateTime,
+    );
+    if (!mounted) return;
 
-    await VisitingCardShareHelper.showShareViaDialog(
+    await Navigator.push(
       context,
-      contact: contact,
-      fallbackName: widget.item.name,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider.value(
+          value: vm,
+          child: const VisitingCardEditContactInfoScreen(),
+        ),
+      ),
+    );
+    if (mounted) await _load();
+  }
+
+  Widget _buildLivePreviewCard() {
+    return AnimatedBuilder(
+      animation: _previewVm,
+      builder: (context, _) {
+        return Stack(
+          children: [
+            RepaintBoundary(
+              key: _templateCaptureKey,
+              child: VisitingCardLivePreview(
+                key: ValueKey(
+                  'preview-$_imageEpoch-'
+                  '${_previewVm.qrAssetPath}-'
+                  '${_previewVm.logoAssetPath}',
+                ),
+                vm: _previewVm,
+                showPager: false,
+              ),
+            ),
+            Positioned(
+              top: 6.h,
+              left: 6.w,
+              child: _CornerActionButton(
+                onTap: _isDownloadingTemplate || _isDownloadingScan
+                    ? null
+                    : _onShareTemplate,
+                child: SvgPicture.asset(
+                  ui.AppAssets.visitingTemplateShareIcon,
+                  width: 15.w,
+                  height: 15.w,
+                ),
+              ),
+            ),
+            Positioned(
+              top: 6.h,
+              right: 6.w,
+              child: _CornerActionButton(
+                onTap: _isDownloadingTemplate || _isDownloadingScan
+                    ? null
+                    : _onDownloadTemplate,
+                child: Icon(
+                  Icons.download_outlined,
+                  size: 15.sp,
+                  color: ui.Colors.parentIconSelectTextColor,
+                ),
+              ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 2.h,
+              child: VisitingCardSidePager(
+                currentPage: _previewVm.sideIndex + 1,
+                canGoPrevious: _previewVm.sideIndex == 1,
+                canGoNext: _previewVm.sideIndex == 0,
+                onPrevious: _previewVm.showFront,
+                onNext: _previewVm.showBack,
+              ),
+            ),
+            if (_isDownloadingTemplate)
+              Positioned.fill(
+                child: ColoredBox(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      color: ui.Colors.parentIconSelectTextColor,
+                      strokeWidth: 3,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final contact = _contact;
-    final name =
-        (contact?.name.isNotEmpty == true) ? contact!.name : widget.item.name;
-    final designation = contact?.designation ?? '';
-    final company = contact?.company ?? '';
     final firstPhone = contact?.phones
             .where((e) => e.value.trim().isNotEmpty)
-            .map((e) => e.value)
-            .firstOrNull ??
-        '';
-    final firstAddress =
-        contact?.addresses.where((e) => e.trim().isNotEmpty).firstOrNull ?? '';
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
+            .map((e) => e.value.trim())
+            .firstOrNull;
+    final firstAddress = contact?.addresses
+            .where((e) => e.trim().isNotEmpty)
+            .map((e) => e.trim())
+            .firstOrNull;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF7F8FA),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        title: Text(
-          'Card Details',
-          style: ui.AppTextStyles.mainText().copyWith(
-            fontSize: 18.sp,
-            //color: ui.Colors.parentIconSelectTextColor,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new, size: 18.sp),
           onPressed: () => Navigator.pop(context),
         ),
+        title: Text(
+          'Card Details',
+          style: ui.AppTextStyles.mainText().copyWith(fontSize: 18.sp),
+        ),
+        centerTitle: true,
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
+          : ListView(
+              padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 24.h),
               children: [
-                Expanded(
-                  child: ListView(
-                    padding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 16.h),
-                    children: [
-                      if (_images.isNotEmpty) ...[
-                        SizedBox(
-                          height: 190.h,
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              PageView.builder(
-                                controller: _pageController,
-                                itemCount: _images.length,
+                // Template cards: live preview so Update → back shows new QR/logo
+                // immediately (avoids FileImage cache of card_front.jpg).
+                if (_isFromTemplate)
+                  _buildLivePreviewCard()
+                else ...[
+                  if (_imageBytes.isNotEmpty)
+                    Container(
+                      padding: EdgeInsets.all(12.w),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Stack(
+                        children: [
+                          AspectRatio(
+                            aspectRatio: 1.75,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(10.r),
+                              child: PageView.builder(
+                                key: ValueKey('scan-images-$_imageEpoch'),
+                                controller: _scanImagePageController,
+                                itemCount: _imageBytes.length,
                                 onPageChanged: (i) =>
-                                    setState(() => _pageIndex = i),
-                                itemBuilder: (_, i) => ClipRRect(
-                                  borderRadius: BorderRadius.circular(10.r),
-                                  child: Image.file(
-                                    _images[i],
+                                    setState(() => _imagePageIndex = i),
+                                physics: const BouncingScrollPhysics(
+                                  parent: AlwaysScrollableScrollPhysics(),
+                                ),
+                                itemBuilder: (_, index) {
+                                  return Image.memory(
+                                    _imageBytes[index],
+                                    key: ValueKey(
+                                      'scan-$_imageEpoch-$index-${_imageBytes[index].length}',
+                                    ),
                                     fit: BoxFit.contain,
-                                    alignment: Alignment.center,
+                                    gaplessPlayback: false,
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 6.h,
+                            left: 6.w,
+                            child: _CornerActionButton(
+                              onTap: _onShareScanImages,
+                              child: SvgPicture.asset(
+                                ui.AppAssets.visitingTemplateShareIcon,
+                                width: 15.w,
+                                height: 15.w,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 6.h,
+                            right: 6.w,
+                            child: _CornerActionButton(
+                              onTap: _isDownloadingScan ||
+                                      _isDownloadingTemplate
+                                  ? null
+                                  : _onDownloadScanImages,
+                              child: Icon(
+                                Icons.download_outlined,
+                                size: 15.sp,
+                                color: ui.Colors.parentIconSelectTextColor,
+                              ),
+                            ),
+                          ),
+                          if (_isDownloadingScan)
+                            Positioned.fill(
+                              child: ColoredBox(
+                                color: Colors.black.withValues(alpha: 0.25),
+                                child: const Center(
+                                  child: CircularProgressIndicator(
+                                    color:
+                                        ui.Colors.parentIconSelectTextColor,
+                                    strokeWidth: 3,
                                   ),
                                 ),
                               ),
-                              // if (_images.length > 1)
-                              //   Positioned(
-                              //     left: 0,
-                              //     right: 0,
-                              //     bottom: 16.h,
-                              //     child: Row(
-                              //       mainAxisAlignment: MainAxisAlignment.center,
-                              //       children: [
-                              //         GestureDetector(
-                              //           onTap: _pageIndex == 0
-                              //               ? null
-                              //               : () => _pageController.previousPage(
-                              //                     duration: const Duration(
-                              //                         milliseconds: 250),
-                              //                     curve: Curves.easeInOut,
-                              //                   ),
-                              //           child: SvgPicture.asset(
-                              //             _pageIndex == 0
-                              //                 ? ui.AppAssets
-                              //                     .inactiveLeftSideArrow
-                              //                 : ui.AppAssets
-                              //                     .activeLeftSideArrow,
-                              //             width: 28.w,
-                              //             height: 28.w,
-                              //           ),
-                              //         ),
-                              //         SizedBox(width: 1.w),
-                              //         Container(
-                              //           padding: EdgeInsets.symmetric(
-                              //             horizontal: 8.w,
-                              //             vertical: 3.h,
-                              //           ),
-                              //           decoration: BoxDecoration(
-                              //             color: Colors.white,
-                              //             borderRadius:
-                              //                 BorderRadius.circular(6.r),
-                              //             boxShadow: [
-                              //               BoxShadow(
-                              //                 color: Colors.black
-                              //                     .withValues(alpha: 0.12),
-                              //                 blurRadius: 6,
-                              //                 offset: const Offset(0, 2),
-                              //               ),
-                              //             ],
-                              //           ),
-                              //           child: Text(
-                              //             '${_pageIndex + 1}/${_images.length}',
-                              //             style: TextStyle(
-                              //               fontSize: 11.sp,
-                              //               fontWeight: FontWeight.w600,
-                              //               color: const Color(0xFF1A1A1A),
-                              //             ),
-                              //           ),
-                              //         ),
-                              //         SizedBox(width: 1.w),
-                              //         GestureDetector(
-                              //           onTap: _pageIndex >= _images.length - 1
-                              //               ? null
-                              //               : () => _pageController.nextPage(
-                              //                     duration: const Duration(
-                              //                         milliseconds: 250),
-                              //                     curve: Curves.easeInOut,
-                              //                   ),
-                              //           child: SvgPicture.asset(
-                              //             _pageIndex >= _images.length - 1
-                              //                 ? ui.AppAssets
-                              //                     .inactiveRightSideArrow
-                              //                 : ui.AppAssets
-                              //                     .activeRightSideArrow,
-                              //             width: 28.w,
-                              //             height: 28.w,
-                              //           ),
-                              //         ),
-                              //       ],
-                              //     ),
-                              //   ),
-                            ],
+                            ),
+                        ],
+                      ),
+                    ),
+                  SizedBox(height: 12.h),
+                  _buildLivePreviewCard(),
+                ],
+                SizedBox(height: 14.h),
+                Container(
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _ActionItem(
+                        asset: ui.AppAssets.visitingTemplatePhoneIcon,
+                        label: 'Tel',
+                        onTap: firstPhone == null
+                            ? null
+                            : () => _onCall(firstPhone),
+                      ),
+                      _ActionItem(
+                        asset: ui.AppAssets.visitingTemplateLocationIcon,
+                        label: 'Address',
+                        onTap: firstAddress == null
+                            ? null
+                            : () => _onOpenMap(firstAddress),
+                      ),
+                      _ActionItem(
+                        asset: ui.AppAssets.visitingTemplateEditIcon,
+                        label: 'Edit',
+                        onTap: _openEdit,
+                      ),
+                      _ActionItem(
+                        asset: ui.AppAssets.visitingTemplateShareIcon,
+                        label: 'Share',
+                        onTap: _onShareContact,
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                if (contact != null)
+                  Container(
+                    padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 10.h),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12.r),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 14,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Contact Information',
+                          style: ui.AppTextStyles.helperText(
+                            color: const Color(0xFF1A1A1A),
+                          ).copyWith(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15.sp,
                           ),
                         ),
+                        SizedBox(height: 4.h),
+                        Container(
+                          width: 72.w,
+                          height: 2.h,
+                          color: ui.Colors.parentIconSelectTextColor,
+                        ),
                         SizedBox(height: 12.h),
-                      ],
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.all(12.w),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10.r),
-                          boxShadow: _cardShadow,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 30.r,
-                                  backgroundColor:
-                                      ui.Colors.parentIconSelectTextColor,
-                                  child: Text(
-                                    _initials(name),
-                                    style: TextStyle(
-                                      fontSize: 22.sp,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: 10.w),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        name,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 18.sp,
-                                          fontWeight: FontWeight.w700,
-                                          color: const Color(0xFF1A1A1A),
-                                        ),
-                                      ),
-                                      if (designation.trim().isNotEmpty)
-                                        Text(
-                                          designation,
-                                          style: TextStyle(
-                                            fontSize: 13.sp,
-                                            color: const Color(0xFF1A1A1A),
-                                          ),
-                                        ),
-                                      if (company.trim().isNotEmpty)
-                                        Text(
-                                          company,
-                                          style: TextStyle(
-                                            fontSize: 13.sp,
-                                            color: const Color(0xFF1A1A1A),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 12.h),
-                            if (firstPhone.isNotEmpty)
-                              Row(
-                                children: [
-                                  SvgPicture.asset(
-                                    ui.AppAssets.visitingTemplatePhoneIcon,
-                                    width: 18.w,
-                                    height: 18.w,
-                                  ),
-                                  SizedBox(width: 8.w),
-                                  Expanded(
-                                    child: Text(
-                                      firstPhone,
-                                      style: TextStyle(fontSize: 13.sp),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            if (firstAddress.isNotEmpty) ...[
-                              SizedBox(height: 6.h),
-                              Row(
-                                children: [
-                                  SvgPicture.asset(
-                                    ui.AppAssets.visitingTemplateLocationIcon,
-                                    width: 18.w,
-                                    height: 18.w,
-                                  ),
-                                  SizedBox(width: 8.w),
-                                  Expanded(
-                                    child: Text(
-                                      firstAddress,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(fontSize: 13.sp),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 12.h),
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(vertical: 8.h),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10.r),
-                          boxShadow: _cardShadow,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _ActionColumn(
-                              icon: ui.AppAssets.visitingTemplatePhoneIcon,
-                              label: 'Tel',
-                              onTap: firstPhone.isEmpty
-                                  ? null
-                                  : () => _call(firstPhone),
-                            ),
-                            _ActionColumn(
-                              icon: ui.AppAssets.visitingTemplateLocationIcon,
-                              label: 'Location',
-                              onTap: firstAddress.isEmpty
-                                  ? null
-                                  : () => _openMap(firstAddress),
-                            ),
-                            _ActionColumn(
-                              icon: ui.AppAssets.visitingTemplateEditIcon,
-                              label: 'Edit',
-                              onTap: _openEdit,
-                            ),
-                            _ActionColumn(
-                              icon: ui.AppAssets.visitingTemplateShareIcon,
-                              label: 'Share',
-                              onTap: _shareCard,
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 16.h),
-                      if (contact != null) ...[
                         ...contact.phones
                             .where((e) => e.value.trim().isNotEmpty)
                             .map(
-                              (e) => _ContactLine(
+                              (e) => _ContactRow(
                                 icon: ui.AppAssets.visitingTemplatePhoneIcon,
                                 value: e.value,
-                                type: e.type.isEmpty ? 'Tel' : e.type,
-                                onTap: () => _call(e.value),
+                                subtitle: e.type.isEmpty ? 'Tel' : e.type,
+                                onTap: () => _onCall(e.value),
                               ),
                             ),
                         ...contact.emails
                             .where((e) => e.value.trim().isNotEmpty)
                             .map(
-                              (e) => _ContactLine(
+                              (e) => _ContactRow(
                                 icon: ui.AppAssets.visitingTemplateMailIcon,
                                 value: e.value,
-                                type: e.type.isEmpty ? 'Company' : e.type,
-                                onTap: () => _openEmail(e.value),
+                                subtitle: e.type.isEmpty ? 'Email' : e.type,
+                                onTap: () => _onOpenEmail(e.value),
                               ),
                             ),
-                        if (company.trim().isNotEmpty)
-                          _ContactLine(
-                            icon: ui.AppAssets.visitingTemplateIcon,
-                            value: company,
-                            type: 'Company',
-                          ),
                         ...contact.websites
                             .where((e) => e.value.trim().isNotEmpty)
                             .map(
-                              (e) => _ContactLine(
-                                icon: ui.AppAssets.visitingTemplateWebsiteIcon,
+                              (e) => _ContactRow(
+                                icon:
+                                    ui.AppAssets.visitingTemplateWebsiteIcon,
                                 value: e.value,
-                                type: e.type.isEmpty ? 'Website' : e.type,
-                                onTap: () => _openWebsite(e.value),
+                                subtitle:
+                                    e.type.isEmpty ? 'Company' : e.type,
+                                onTap: () => _onOpenWebsite(e.value),
                               ),
                             ),
                         ...contact.addresses
                             .where((e) => e.trim().isNotEmpty)
                             .map(
-                              (e) => _ContactLine(
+                              (e) => _ContactRow(
                                 icon:
                                     ui.AppAssets.visitingTemplateLocationIcon,
                                 value: e,
-                                type: 'Address',
-                                onTap: () => _openMap(e),
+                                subtitle: 'Address',
+                                onTap: () => _onOpenMap(e),
                               ),
                             ),
                       ],
-                    ],
+                    ),
                   ),
-                ),
-                Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    16.w,
-                    0,
-                    16.w,
-                    12.h + bottomInset,
-                  ),
-                  child: VisitingGradientButton(
-                    label: 'Share Card',
-                    onTap: _shareCard,
-                  ),
-                ),
               ],
             ),
     );
   }
 }
 
-class _ActionColumn extends StatelessWidget {
-  const _ActionColumn({
-    required this.icon,
+class _CornerActionButton extends StatelessWidget {
+  const _CornerActionButton({
+    required this.child,
+    this.onTap,
+  });
+
+  final Widget child;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.92),
+      shape: const CircleBorder(),
+      elevation: 2,
+      shadowColor: Colors.black26,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 22.w,
+          height: 22.w,
+          child: Center(child: child),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionItem extends StatelessWidget {
+  const _ActionItem({
+    required this.asset,
     required this.label,
     this.onTap,
   });
 
-  final String icon;
+  final String asset;
   final String label;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(40.r),
-      child: SizedBox(
-        width: 72.w,
+      behavior: HitTestBehavior.opaque,
+      child: Opacity(
+        opacity: onTap == null ? 0.4 : 1,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SvgPicture.asset(icon, width: 22.w, height: 22.w),
-            SizedBox(height: 4.h),
+            SvgPicture.asset(asset, width: 28.w, height: 28.w),
+            SizedBox(height: 6.h),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w500,
+              style: ui.AppTextStyles.iconUnderText(
                 color: const Color(0xFF1A1A1A),
-              ),
+              ).copyWith(fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -600,51 +880,56 @@ class _ActionColumn extends StatelessWidget {
   }
 }
 
-class _ContactLine extends StatelessWidget {
-  const _ContactLine({
+class _ContactRow extends StatelessWidget {
+  const _ContactRow({
     required this.icon,
     required this.value,
-    required this.type,
+    required this.subtitle,
     this.onTap,
   });
 
   final String icon;
   final String value;
-  final String type;
+  final String subtitle;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 6.h, horizontal: 6.w),
+      padding: EdgeInsets.only(bottom: 14.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
             onTap: onTap,
-            child: SvgPicture.asset(icon, width: 20.w, height: 20.w),
+            borderRadius: BorderRadius.circular(20.r),
+            child: Padding(
+              padding: EdgeInsets.all(2.w),
+              child: SvgPicture.asset(icon, width: 22.w, height: 22.w),
+            ),
           ),
-          SizedBox(width: 8.w),
+          SizedBox(width: 12.w),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    color: const Color(0xFF1A1A1A),
-                    fontWeight: FontWeight.w500,
+            child: InkWell(
+              onTap: onTap,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    style: ui.AppTextStyles.helperText(
+                      color: const Color(0xFF1A1A1A),
+                    ).copyWith(fontWeight: FontWeight.w600),
                   ),
-                ),
-                Text(
-                  type,
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    color: const Color(0xFF9E9E9E),
+                  SizedBox(height: 2.h),
+                  Text(
+                    subtitle,
+                    style: ui.AppTextStyles.iconUnderText(
+                      color: const Color(0xFF9E9E9E),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],

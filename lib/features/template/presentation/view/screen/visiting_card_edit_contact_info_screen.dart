@@ -13,13 +13,16 @@ import 'package:visiting_card/features/template/presentation/view_model/visiting
 class VisitingCardEditContactInfoScreen extends StatelessWidget {
   const VisitingCardEditContactInfoScreen({super.key});
 
-  void _onNext(BuildContext context, VisitingCardEditContactViewModel vm) {
+  Future<void> _onNext(
+    BuildContext context,
+    VisitingCardEditContactViewModel vm,
+  ) async {
     FocusScope.of(context).unfocus();
     if (vm.isFront) {
       vm.showBack();
       return;
     }
-    Navigator.push(
+    final updated = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (_) => ChangeNotifierProvider.value(
@@ -28,6 +31,10 @@ class VisitingCardEditContactInfoScreen extends StatelessWidget {
         ),
       ),
     );
+    // Update flow: details pop(true) → leave edit and return to saved card.
+    if (updated == true && context.mounted) {
+      Navigator.pop(context, true);
+    }
   }
 
   Future<void> _clearFocus(BuildContext context) async {

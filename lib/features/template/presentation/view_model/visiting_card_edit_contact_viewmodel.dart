@@ -52,6 +52,17 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
 
   final ScreenshotController screenshotController = ScreenshotController();
 
+  /// When editing an existing saved template card (details → Edit).
+  String? editingSavedFileId;
+  String? editingContactFolderPath;
+  String? editingFolderId;
+  String? editingDateTime;
+
+  bool get isUpdatingExisting =>
+      editingSavedFileId != null &&
+      editingContactFolderPath != null &&
+      editingContactFolderPath!.isNotEmpty;
+
   static const telTypes = [
     'Tel',
     'Fax',
@@ -150,6 +161,10 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     required List<ContactFieldEntry> websites,
     required List<ContactFieldEntry> addresses,
     List<ContactFieldEntry>? taglines,
+    String? qrAssetPath,
+    String? logoAssetPath,
+    bool? hasChosenQr,
+    bool? hasChosenLogo,
   }) {
     _replaceEntries(this.names, names);
     _replaceEntries(this.designations, designations);
@@ -159,6 +174,18 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     _replaceEntries(this.emails, emails, fallbackType: 'Company');
     _replaceEntries(this.websites, websites, fallbackType: 'Company');
     _replaceEntries(this.addresses, addresses);
+    if (qrAssetPath != null) {
+      this.qrAssetPath = qrAssetPath.isEmpty ? null : qrAssetPath;
+      this.hasChosenQr = hasChosenQr ?? qrAssetPath.isNotEmpty;
+    } else if (hasChosenQr != null) {
+      this.hasChosenQr = hasChosenQr;
+    }
+    if (logoAssetPath != null) {
+      this.logoAssetPath = logoAssetPath.isEmpty ? null : logoAssetPath;
+      this.hasChosenLogo = hasChosenLogo ?? logoAssetPath.isNotEmpty;
+    } else if (hasChosenLogo != null) {
+      this.hasChosenLogo = hasChosenLogo;
+    }
     notifyListeners();
   }
 
@@ -187,7 +214,6 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   }
 
   void applyQrImage(String path) {
-    if (!canEditQr) return;
     hasChosenQr = true;
     qrAssetPath = path;
     notifyListeners();
@@ -201,7 +227,6 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   }
 
   void applyLogoImage(String path) {
-    if (!canEditLogo) return;
     hasChosenLogo = true;
     logoAssetPath = path;
     notifyListeners();
@@ -269,12 +294,83 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void applyContactFromSaved(
+    SavedContactInfo contact, {
+    String? savedFileId,
+    String? contactFolderPath,
+    String? folderId,
+    String? dateTime,
+  }) {
+    editingSavedFileId = savedFileId;
+    editingContactFolderPath = contactFolderPath;
+    editingFolderId = folderId;
+    editingDateTime = dateTime;
+
+    _replaceEntries(names, [ContactFieldEntry(value: contact.name)]);
+    _replaceEntries(
+      designations,
+      [ContactFieldEntry(value: contact.designation)],
+    );
+    _replaceEntries(companies, [ContactFieldEntry(value: contact.company)]);
+    _replaceEntries(taglines, [ContactFieldEntry(value: contact.tagline)]);
+    _replaceEntries(
+      phones,
+      contact.phones.isEmpty
+          ? [ContactFieldEntry(type: 'Cell')]
+          : contact.phones
+              .map((e) => ContactFieldEntry(value: e.value, type: e.type))
+              .toList(),
+      fallbackType: 'Cell',
+    );
+    _replaceEntries(
+      emails,
+      contact.emails.isEmpty
+          ? [ContactFieldEntry(type: 'Company')]
+          : contact.emails
+              .map((e) => ContactFieldEntry(value: e.value, type: e.type))
+              .toList(),
+      fallbackType: 'Company',
+    );
+    _replaceEntries(
+      websites,
+      contact.websites.isEmpty
+          ? [ContactFieldEntry(type: 'Company')]
+          : contact.websites
+              .map((e) => ContactFieldEntry(value: e.value, type: e.type))
+              .toList(),
+      fallbackType: 'Company',
+    );
+    _replaceEntries(
+      addresses,
+      contact.addresses.isEmpty
+          ? [ContactFieldEntry()]
+          : contact.addresses.map((e) => ContactFieldEntry(value: e)).toList(),
+    );
+
+    hasChosenQr = contact.hasChosenQr;
+    hasChosenLogo = contact.hasChosenLogo;
+    qrAssetPath = contact.qrImagePath.isNotEmpty
+        ? contact.qrImagePath
+        : (hasChosenQr ? ui.AppAssets.defaultQrcodeIcon : qrAssetPath);
+    logoAssetPath =
+        contact.logoImagePath.isNotEmpty ? contact.logoImagePath : null;
+    notifyListeners();
+  }
+
+  void clearEditingState() {
+    editingSavedFileId = null;
+    editingContactFolderPath = null;
+    editingFolderId = null;
+    editingDateTime = null;
+  }
+
   /// Same shape as scanner [SavedContactInfo] for share / phone contacts.
   SavedContactInfo buildSavedContact({List<String> imagePaths = const []}) {
     return SavedContactInfo(
       name: names.first.value.trim(),
       designation: designations.first.value.trim(),
       company: companies.first.value.trim(),
+      tagline: taglines.isNotEmpty ? taglines.first.value.trim() : '',
       phones: phones
           .where((e) => e.value.trim().isNotEmpty)
           .map((e) => SavedTypedValue(value: e.value.trim(), type: e.type))
@@ -292,6 +388,12 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
           .where((e) => e.isNotEmpty)
           .toList(),
       imagePaths: imagePaths,
+      source: SavedContactInfo.sourceTemplate,
+      templateId: templateId,
+      qrImagePath: qrAssetPath ?? '',
+      logoImagePath: logoAssetPath ?? '',
+      hasChosenQr: hasChosenQr,
+      hasChosenLogo: hasChosenLogo,
     );
   }
 
@@ -301,6 +403,14 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     required FolderViewModel folderViewModel,
     required Future<Uint8List?> Function(int side) captureSide,
   }) async {
+    if (isUpdatingExisting) {
+      return updateCard(
+        homeViewModel: homeViewModel,
+        folderViewModel: folderViewModel,
+        captureSide: captureSide,
+      );
+    }
+
     if (isSaving) return false;
     isSaving = true;
     notifyListeners();
@@ -340,19 +450,48 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       );
       await contactFolder.create(recursive: true);
 
+      final embedded = await _persistEmbeddedAssets(contactFolder);
       final frontPath = p.join(contactFolder.path, 'card_front.jpg');
       final backPath = p.join(contactFolder.path, 'card_back.jpg');
       await File(frontPath).writeAsBytes(_toJpeg(frontBytes), flush: true);
       await File(backPath).writeAsBytes(_toJpeg(backBytes), flush: true);
 
       final imagePaths = [frontPath, backPath];
-      final contact = buildSavedContact(imagePaths: imagePaths);
-      await SavedContactInfo.writeToFolder(contactFolder.path, contact);
+      final savedContact = SavedContactInfo(
+        name: names.first.value.trim(),
+        designation: designations.first.value.trim(),
+        company: companies.first.value.trim(),
+        tagline: taglines.isNotEmpty ? taglines.first.value.trim() : '',
+        phones: phones
+            .where((e) => e.value.trim().isNotEmpty)
+            .map((e) => SavedTypedValue(value: e.value.trim(), type: e.type))
+            .toList(),
+        emails: emails
+            .where((e) => e.value.trim().isNotEmpty)
+            .map((e) => SavedTypedValue(value: e.value.trim(), type: e.type))
+            .toList(),
+        websites: websites
+            .where((e) => e.value.trim().isNotEmpty)
+            .map((e) => SavedTypedValue(value: e.value.trim(), type: e.type))
+            .toList(),
+        addresses: addresses
+            .map((e) => e.value.trim())
+            .where((e) => e.isNotEmpty)
+            .toList(),
+        imagePaths: imagePaths,
+        source: SavedContactInfo.sourceTemplate,
+        templateId: templateId,
+        qrImagePath: embedded.qrPath,
+        logoImagePath: embedded.logoPath,
+        hasChosenQr: hasChosenQr,
+        hasChosenLogo: hasChosenLogo,
+      );
+      await SavedContactInfo.writeToFolder(contactFolder.path, savedContact);
       await File(p.join(contactFolder.path, 'contact_details.txt'))
           .writeAsString(_contactDetailsText());
 
       final displayName =
-          contact.name.isNotEmpty ? contact.name : 'Visiting Card';
+          savedContact.name.isNotEmpty ? savedContact.name : 'Visiting Card';
       final model = SavedFileModel(
         id: '${now.millisecondsSinceEpoch}',
         name: displayName,
@@ -377,6 +516,163 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  Future<bool> updateCard({
+    required HomeViewModel homeViewModel,
+    required FolderViewModel folderViewModel,
+    required Future<Uint8List?> Function(int side) captureSide,
+  }) async {
+    if (isSaving) return false;
+    final folderPath = editingContactFolderPath;
+    final fileId = editingSavedFileId;
+    if (folderPath == null || fileId == null) return false;
+
+    isSaving = true;
+    notifyListeners();
+    final previousSide = sideIndex;
+
+    try {
+      final frontBytes = await captureSide(0);
+      final backBytes = await captureSide(1);
+      sideIndex = previousSide;
+      notifyListeners();
+
+      if (frontBytes == null || backBytes == null) {
+        isSaving = false;
+        notifyListeners();
+        return false;
+      }
+
+      final contactFolder = Directory(folderPath);
+      await contactFolder.create(recursive: true);
+
+      final embedded = await _persistEmbeddedAssets(contactFolder);
+      final frontPath = p.join(contactFolder.path, 'card_front.jpg');
+      final backPath = p.join(contactFolder.path, 'card_back.jpg');
+      await File(frontPath).writeAsBytes(_toJpeg(frontBytes), flush: true);
+      await File(backPath).writeAsBytes(_toJpeg(backBytes), flush: true);
+
+      final savedContact = SavedContactInfo(
+        name: names.first.value.trim(),
+        designation: designations.first.value.trim(),
+        company: companies.first.value.trim(),
+        tagline: taglines.isNotEmpty ? taglines.first.value.trim() : '',
+        phones: phones
+            .where((e) => e.value.trim().isNotEmpty)
+            .map((e) => SavedTypedValue(value: e.value.trim(), type: e.type))
+            .toList(),
+        emails: emails
+            .where((e) => e.value.trim().isNotEmpty)
+            .map((e) => SavedTypedValue(value: e.value.trim(), type: e.type))
+            .toList(),
+        websites: websites
+            .where((e) => e.value.trim().isNotEmpty)
+            .map((e) => SavedTypedValue(value: e.value.trim(), type: e.type))
+            .toList(),
+        addresses: addresses
+            .map((e) => e.value.trim())
+            .where((e) => e.isNotEmpty)
+            .toList(),
+        imagePaths: [frontPath, backPath],
+        source: SavedContactInfo.sourceTemplate,
+        templateId: templateId,
+        qrImagePath: embedded.qrPath,
+        logoImagePath: embedded.logoPath,
+        hasChosenQr: hasChosenQr,
+        hasChosenLogo: hasChosenLogo,
+      );
+      await SavedContactInfo.writeToFolder(contactFolder.path, savedContact);
+      await File(p.join(contactFolder.path, 'contact_details.txt'))
+          .writeAsString(_contactDetailsText());
+
+      final displayName =
+          savedContact.name.isNotEmpty ? savedContact.name : 'Visiting Card';
+      final model = SavedFileModel(
+        id: fileId,
+        name: displayName,
+        dateTime: editingDateTime ??
+            DateFormat('dd-MMM-yyyy HH:mm').format(DateTime.now()),
+        path: contactFolder.path,
+        pathImage: frontPath,
+        fileType: 'visiting_card',
+        folderId: editingFolderId ?? FolderViewModel.visitingCardFolderId,
+        isTextFile: false,
+      );
+      await AppStorageService().updateFile(model);
+
+      await homeViewModel.loadRecentFromStorage();
+      await folderViewModel.loadFromStorage();
+      clearEditingState();
+
+      isSaving = false;
+      notifyListeners();
+      return true;
+    } catch (_) {
+      sideIndex = previousSide;
+      isSaving = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<({String qrPath, String logoPath})> _persistEmbeddedAssets(
+    Directory contactFolder,
+  ) async {
+    final embeddedDir = Directory(p.join(contactFolder.path, 'embedded'));
+    if (!await embeddedDir.exists()) {
+      await embeddedDir.create(recursive: true);
+    }
+
+    var qrPath = '';
+    if (hasChosenQr && qrAssetPath != null && qrAssetPath!.isNotEmpty) {
+      qrPath = await _persistEmbeddedFile(qrAssetPath!, embeddedDir, 'qr') ??
+          qrAssetPath!;
+      qrAssetPath = qrPath;
+    }
+
+    var logoPath = '';
+    if (hasChosenLogo && logoAssetPath != null && logoAssetPath!.isNotEmpty) {
+      logoPath =
+          await _persistEmbeddedFile(logoAssetPath!, embeddedDir, 'logo') ??
+              logoAssetPath!;
+      logoAssetPath = logoPath;
+    }
+
+    return (qrPath: qrPath, logoPath: logoPath);
+  }
+
+  Future<String?> _persistEmbeddedFile(
+    String sourcePath,
+    Directory destDir,
+    String baseName,
+  ) async {
+    if (sourcePath.startsWith('assets/')) return sourcePath;
+    final src = File(sourcePath);
+    if (!await src.exists()) return null;
+
+    var ext = p.extension(sourcePath).toLowerCase();
+    if (ext.isEmpty) ext = '.png';
+
+    // Read FIRST — source may already live in [destDir] (previous update).
+    final bytes = await src.readAsBytes();
+
+    final stamp = DateTime.now().millisecondsSinceEpoch;
+    final dest = File(p.join(destDir.path, '${baseName}_$stamp$ext'));
+    await dest.writeAsBytes(bytes, flush: true);
+
+    await for (final entity in destDir.list()) {
+      if (entity is! File) continue;
+      if (p.equals(entity.path, dest.path)) continue;
+      final name = p.basename(entity.path);
+      if (name.startsWith('$baseName.') || name.startsWith('${baseName}_')) {
+        try {
+          await entity.delete();
+        } catch (_) {}
+      }
+    }
+
+    return dest.path;
   }
 
   Uint8List _toJpeg(Uint8List bytes) {

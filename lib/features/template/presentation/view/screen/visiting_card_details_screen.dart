@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/folder/presentation/view_model/folder_viewmodel.dart';
@@ -25,6 +27,7 @@ class VisitingCardDetailsScreen extends StatefulWidget {
 
 class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
   final GlobalKey _cardCaptureKey = GlobalKey();
+  bool _isSharingCard = false;
 
   Future<Uint8List?> _captureSide(
     VisitingCardEditContactViewModel vm,
@@ -52,6 +55,7 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
     final home = context.read<HomeViewModel>();
     final folder = context.read<FolderViewModel>();
     final previous = vm.sideIndex;
+    final isUpdate = vm.isUpdatingExisting;
     final phoneContact = vm.buildSavedContact();
 
     final ok = await vm.saveCard(
@@ -64,7 +68,18 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
     vm.setSide(previous);
 
     if (!ok) {
-      ui.AppToast.show(context, message: 'Failed to save visiting card');
+      ui.AppToast.show(
+        context,
+        message: isUpdate
+            ? 'Failed to update visiting card'
+            : 'Failed to save visiting card',
+      );
+      return;
+    }
+
+    if (isUpdate) {
+      ui.AppToast.success(context, 'Contact update Successfully');
+      Navigator.pop(context, true);
       return;
     }
 
@@ -74,6 +89,47 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
     _backToHome();
   }
 
+  /// Template front/back image share (New Card).
+  Future<void> _onShareNewCard() async {
+    if (_isSharingCard) return;
+    setState(() => _isSharingCard = true);
+
+    final vm = context.read<VisitingCardEditContactViewModel>();
+    final previous = vm.sideIndex;
+
+    try {
+      final frontBytes = await _captureSide(vm, 0);
+      final backBytes = await _captureSide(vm, 1);
+      if (!mounted) return;
+      vm.setSide(previous);
+
+      if (frontBytes == null || backBytes == null) {
+        ui.AppToast.show(context, message: 'Failed to share visiting card');
+        return;
+      }
+
+      final stamp = DateTime.now().millisecondsSinceEpoch;
+      final frontFile = File(
+        '${Directory.systemTemp.path}/vc_share_template_front_$stamp.png',
+      );
+      final backFile = File(
+        '${Directory.systemTemp.path}/vc_share_template_back_$stamp.png',
+      );
+      await frontFile.writeAsBytes(frontBytes, flush: true);
+      await backFile.writeAsBytes(backBytes, flush: true);
+      await Share.shareXFiles(
+        [XFile(frontFile.path), XFile(backFile.path)],
+        text: 'Visiting Card',
+      );
+    } catch (_) {
+      if (!mounted) return;
+      vm.setSide(previous);
+      ui.AppToast.show(context, message: 'Failed to share visiting card');
+    } finally {
+      if (mounted) setState(() => _isSharingCard = false);
+    }
+  }
+
   /// Scanner visiting-card Share Via dialog.
   Future<void> _onShare() async {
     final vm = context.read<VisitingCardEditContactViewModel>();
@@ -81,6 +137,7 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
       context,
       contact: vm.buildSavedContact(),
       fallbackName: 'Visiting Card',
+      onShareNewCard: _onShareNewCard,
     );
   }
 
@@ -90,6 +147,26 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
     final uri = Uri(scheme: 'tel', path: cleaned);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
+    }
+  }
+
+  Future<void> _onOpenEmail(String email) async {
+    final uri = Uri(scheme: 'mailto', path: email.trim());
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
+  Future<void> _onOpenWebsite(String url) async {
+    var value = url.trim();
+    if (value.isEmpty) return;
+    if (!value.startsWith('http://') && !value.startsWith('https://')) {
+      value = 'https://$value';
+    }
+    final uri = Uri.tryParse(value);
+    if (uri == null) return;
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 
@@ -137,12 +214,14 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
         ),
         centerTitle: true,
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),
-              children: [
+          Column(
+            children: [
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),
+                  children: [
                 Container(
                   padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 8.h),
                   decoration: BoxDecoration(
@@ -288,6 +367,7 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
                               icon: ui.AppAssets.visitingTemplatePhoneIcon,
                               value: e.value,
                               subtitle: e.type.isEmpty ? 'Phone' : e.type,
+                              onTap: () => _onCall(e.value),
                             ),
                           ),
                       ...vm.emails
@@ -297,6 +377,7 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
                               icon: ui.AppAssets.visitingTemplateMailIcon,
                               value: e.value,
                               subtitle: e.type.isEmpty ? 'Email' : e.type,
+                              onTap: () => _onOpenEmail(e.value),
                             ),
                           ),
                       ...vm.websites
@@ -306,6 +387,7 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
                               icon: ui.AppAssets.visitingTemplateWebsiteIcon,
                               value: e.value,
                               subtitle: e.type.isEmpty ? 'Website' : e.type,
+                              onTap: () => _onOpenWebsite(e.value),
                             ),
                           ),
                       ...vm.addresses
@@ -315,6 +397,7 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
                               icon: ui.AppAssets.visitingTemplateLocationIcon,
                               value: e.value,
                               subtitle: 'Address',
+                              onTap: () => _onOpenMap(e.value),
                             ),
                           ),
                     ],
@@ -330,7 +413,9 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
               child: Column(
                 children: [
                   VisitingGradientButton(
-                    label: vm.isSaving ? 'Saving...' : 'Save',
+                    label: vm.isSaving
+                        ? (vm.isUpdatingExisting ? 'Updating...' : 'Saving...')
+                        : (vm.isUpdatingExisting ? 'Update' : 'Save'),
                     enabled: !vm.isSaving,
                     onTap: _onSave,
                   ),
@@ -343,6 +428,20 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
               ),
             ),
           ),
+            ],
+          ),
+          if (vm.isSaving)
+            Positioned.fill(
+              child: ColoredBox(
+                color: Colors.black.withValues(alpha: 0.25),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    color: ui.Colors.parentIconSelectTextColor,
+                    strokeWidth: 3,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -418,11 +517,13 @@ class _ContactRow extends StatelessWidget {
     required this.icon,
     required this.value,
     required this.subtitle,
+    this.onTap,
   });
 
   final String icon;
   final String value;
   final String subtitle;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -431,26 +532,36 @@ class _ContactRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SvgPicture.asset(icon, width: 22.w, height: 22.w),
+          InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(20.r),
+            child: Padding(
+              padding: EdgeInsets.all(2.w),
+              child: SvgPicture.asset(icon, width: 22.w, height: 22.w),
+            ),
+          ),
           SizedBox(width: 12.w),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: ui.AppTextStyles.helperText(
-                    color: const Color(0xFF1A1A1A),
-                  ).copyWith(fontWeight: FontWeight.w600),
-                ),
-                SizedBox(height: 2.h),
-                Text(
-                  subtitle,
-                  style: ui.AppTextStyles.iconUnderText(
-                    color: const Color(0xFF9E9E9E),
+            child: InkWell(
+              onTap: onTap,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    style: ui.AppTextStyles.helperText(
+                      color: const Color(0xFF1A1A1A),
+                    ).copyWith(fontWeight: FontWeight.w600),
                   ),
-                ),
-              ],
+                  SizedBox(height: 2.h),
+                  Text(
+                    subtitle,
+                    style: ui.AppTextStyles.iconUnderText(
+                      color: const Color(0xFF9E9E9E),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

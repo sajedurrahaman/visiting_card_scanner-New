@@ -69,19 +69,30 @@ class VisitingCardShareHelper {
     BuildContext context, {
     required SavedContactInfo contact,
     String fallbackName = '',
+    Future<void> Function()? onShareOldCard,
+    Future<void> Function()? onShareNewCard,
   }) async {
     final data = contact.name.trim().isEmpty && fallbackName.trim().isNotEmpty
         ? SavedContactInfo(
             name: fallbackName,
             designation: contact.designation,
             company: contact.company,
+            tagline: contact.tagline,
             phones: contact.phones,
             emails: contact.emails,
             websites: contact.websites,
             addresses: contact.addresses,
             imagePaths: contact.imagePaths,
+            source: contact.source,
+            templateId: contact.templateId,
           )
         : contact;
+
+    final itemCount = 5 +
+        (onShareOldCard != null ? 1 : 0) +
+        (onShareNewCard != null ? 1 : 0);
+    final rowCount = (itemCount / 3).ceil();
+    final dialogHeight = (rowCount * 88.0).clamp(190.0, 280.0);
 
     await showDialog<void>(
       context: context,
@@ -89,7 +100,7 @@ class VisitingCardShareHelper {
         return AlertDialog(
           title: const Text('Share Via..'),
           content: SizedBox(
-            height: 190,
+            height: dialogHeight,
             width: MediaQuery.sizeOf(dialogContext).width,
             child: GridView.count(
               shrinkWrap: true,
@@ -140,6 +151,26 @@ class VisitingCardShareHelper {
                     );
                   },
                 ),
+                if (onShareOldCard != null)
+                  _ShareViaItem(
+                    icon: Icons.credit_card_outlined,
+                    label: 'Old Card',
+                    onTap: () async {
+                      Navigator.pop(dialogContext);
+                      if (!context.mounted) return;
+                      await onShareOldCard();
+                    },
+                  ),
+                if (onShareNewCard != null)
+                  _ShareViaItem(
+                    icon: Icons.style_outlined,
+                    label: 'New Card',
+                    onTap: () async {
+                      Navigator.pop(dialogContext);
+                      if (!context.mounted) return;
+                      await onShareNewCard();
+                    },
+                  ),
                 _ShareViaItem(
                   icon: Icons.share,
                   label: 'More Share',

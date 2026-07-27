@@ -8,7 +8,7 @@ import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/template/domain/visiting_card_position_config.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
 
-class VisitingCardLivePreview extends StatelessWidget {
+class VisitingCardLivePreview extends StatefulWidget {
   const VisitingCardLivePreview({
     super.key,
     required this.vm,
@@ -28,29 +28,84 @@ class VisitingCardLivePreview extends StatelessWidget {
   final VoidCallback? onShowFront;
   final VoidCallback? onShowBack;
 
-  int get _sideIndex => sideOverride ?? vm.sideIndex;
+  @override
+  State<VisitingCardLivePreview> createState() =>
+      _VisitingCardLivePreviewState();
+}
+
+class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
+  late final PageController _pageController;
+  bool _ignorePageCallback = false;
+
+  int get _sideIndex => widget.sideOverride ?? widget.vm.sideIndex;
   bool get _isFront => _sideIndex == 0;
+
+  VoidCallback get _showFront => widget.onShowFront ?? widget.vm.showFront;
+  VoidCallback get _showBack => widget.onShowBack ?? widget.vm.showBack;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: _sideIndex);
+    widget.vm.addListener(_onVmChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant VisitingCardLivePreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.vm != widget.vm) {
+      oldWidget.vm.removeListener(_onVmChanged);
+      widget.vm.addListener(_onVmChanged);
+      _jumpTo(_sideIndex);
+    } else if (oldWidget.sideOverride != widget.sideOverride) {
+      _jumpTo(_sideIndex);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.vm.removeListener(_onVmChanged);
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onVmChanged() {
+    if (!mounted) return;
+    _jumpTo(widget.sideOverride ?? widget.vm.sideIndex);
+    setState(() {});
+  }
+
+  void _jumpTo(int page) {
+    if (!_pageController.hasClients) return;
+    final current = _pageController.page?.round() ?? _pageController.initialPage;
+    if (current == page) return;
+    _ignorePageCallback = true;
+    _pageController.jumpToPage(page);
+    _ignorePageCallback = false;
+  }
+
+  void _onPageChanged(int page) {
+    if (_ignorePageCallback || widget.sideOverride != null) return;
+    if (page == 0) {
+      _showFront();
+    } else {
+      _showBack();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (pagerOnly) {
+    if (widget.pagerOnly) {
       return VisitingCardSidePager(
         currentPage: _sideIndex + 1,
         canGoPrevious: !_isFront,
         canGoNext: _isFront,
-        onPrevious: onShowFront ?? vm.showFront,
-        onNext: onShowBack ?? vm.showBack,
+        onPrevious: _showFront,
+        onNext: _showBack,
       );
     }
 
-    final aspectRatio = vm.isHorizontal ? 1.75 : 0.63;
-    final layout = VisitingCardPositionConfig.forTemplate(
-      templateId: vm.templateId,
-      isHorizontal: vm.isHorizontal,
-    );
-    final side = _isFront ? layout.front : layout.back;
-    final backgroundAsset =
-        _isFront ? vm.frontAssetWithoutData : vm.backAssetWithoutData;
+    final aspectRatio = widget.vm.isHorizontal ? 1.75 : 0.63;
 
     return Column(
       children: [
@@ -75,43 +130,65 @@ class VisitingCardLivePreview extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12.r),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final size = Size(constraints.maxWidth, constraints.maxHeight);
-                  return Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.asset(
-                        backgroundAsset,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => const ColoredBox(
-                          color: Color(0xFFF5F5F5),
-                          child: Center(child: Icon(Icons.broken_image_outlined)),
-                        ),
-                      ),
-                      ..._buildOverlayChildren(
-                        size: size,
-                        side: side,
-                        fontFamily: layout.fontFamily,
-                      ),
-                    ],
-                  );
-                },
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: 2,
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
+                onPageChanged: _onPageChanged,
+                itemBuilder: (_, index) => _buildCardFace(sideIndex: index),
               ),
             ),
           ),
         ),
-        if (showPager) ...[
+        if (widget.showPager) ...[
           SizedBox(height: 8.h),
           VisitingCardSidePager(
             currentPage: _sideIndex + 1,
             canGoPrevious: !_isFront,
             canGoNext: _isFront,
-            onPrevious: onShowFront ?? vm.showFront,
-            onNext: onShowBack ?? vm.showBack,
+            onPrevious: _showFront,
+            onNext: _showBack,
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildCardFace({required int sideIndex}) {
+    final isFront = sideIndex == 0;
+    final layout = VisitingCardPositionConfig.forTemplate(
+      templateId: widget.vm.templateId,
+      isHorizontal: widget.vm.isHorizontal,
+    );
+    final side = isFront ? layout.front : layout.back;
+    final backgroundAsset = isFront
+        ? widget.vm.frontAssetWithoutData
+        : widget.vm.backAssetWithoutData;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = Size(constraints.maxWidth, constraints.maxHeight);
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.asset(
+              backgroundAsset,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => const ColoredBox(
+                color: Color(0xFFF5F5F5),
+                child: Center(child: Icon(Icons.broken_image_outlined)),
+              ),
+            ),
+            ..._buildOverlayChildren(
+              size: size,
+              side: side,
+              fontFamily: layout.fontFamily,
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -120,6 +197,7 @@ class VisitingCardLivePreview extends StatelessWidget {
     required VisitingCardSidePositions side,
     required String fontFamily,
   }) {
+    final vm = widget.vm;
     final children = <Widget>[];
 
     TextStyle styleFor(VisitingCardFieldPosition pos) {
@@ -172,10 +250,43 @@ class VisitingCardLivePreview extends StatelessWidget {
       );
     }
 
+    TextStyle nameStyleFor(VisitingCardFieldPosition pos, String rawName) {
+      final sizeSp = pos.resolvedNameFontSize(rawName).sp;
+      if (fontFamily == VisitingCardFonts.inter) {
+        return GoogleFonts.inter(
+          fontSize: sizeSp,
+          fontWeight: pos.fontWeight,
+          fontStyle: pos.fontStyle,
+          color: pos.color,
+          letterSpacing: pos.letterSpacing,
+          height: pos.heightFactor,
+        );
+      }
+      if (fontFamily == VisitingCardFonts.roboto) {
+        return GoogleFonts.roboto(
+          fontSize: sizeSp,
+          fontWeight: pos.fontWeight,
+          fontStyle: pos.fontStyle,
+          color: pos.color,
+          letterSpacing: pos.letterSpacing,
+          height: pos.heightFactor,
+        );
+      }
+      return TextStyle(
+        fontFamily: fontFamily,
+        fontSize: sizeSp,
+        fontWeight: pos.fontWeight,
+        fontStyle: pos.fontStyle,
+        color: pos.color,
+        letterSpacing: pos.letterSpacing,
+        height: pos.heightFactor,
+      );
+    }
+
     void addName(VisitingCardFieldPosition? pos, String value) {
       if (pos == null || value.trim().isEmpty) return;
       final display = pos.uppercase ? value.toUpperCase() : value;
-      final baseStyle = styleFor(pos);
+      final baseStyle = nameStyleFor(pos, value);
 
       final Widget child;
       if (pos.hasSplitNameColors) {
@@ -221,13 +332,24 @@ class VisitingCardLivePreview extends StatelessWidget {
     void addImage(VisitingCardFieldPosition? pos, String? assetPath) {
       if (pos == null || assetPath == null || assetPath.isEmpty) return;
       final isAsset = assetPath.startsWith('assets/');
+      if (!isAsset && !File(assetPath).existsSync()) return;
       children.add(
         _PositionedField(
           cardSize: size,
           position: pos,
           child: isAsset
-              ? Image.asset(assetPath, fit: BoxFit.contain)
-              : Image.file(File(assetPath), fit: BoxFit.contain),
+              ? Image.asset(
+                  assetPath,
+                  key: ValueKey(assetPath),
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                )
+              : Image.file(
+                  File(assetPath),
+                  key: ValueKey(assetPath),
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                ),
         ),
       );
     }

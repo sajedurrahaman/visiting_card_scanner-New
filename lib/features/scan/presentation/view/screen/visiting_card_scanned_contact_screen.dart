@@ -7,6 +7,9 @@ import 'package:provider/provider.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/scan/presentation/view/screen/visiting_card_scanned_details_screen.dart';
 import 'package:visiting_card/features/scan/presentation/view_model/visiting_card_scan_viewmodel.dart';
+import 'package:visiting_card/features/template/presentation/helper/visiting_card_qr_payload.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_logo_picker_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_tempalte_qrcode_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_edit_field_cards.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
 
@@ -35,9 +38,62 @@ class _VisitingCardScannedContactScreenState
     super.dispose();
   }
 
+  Future<void> _clearFocus() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    FocusScope.of(context).unfocus();
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusManager.instance.primaryFocus?.unfocus();
+    });
+  }
+
+  Future<void> _onChooseQr() async {
+    final vm = context.read<VisitingCardScanViewModel>();
+    await _clearFocus();
+    final path = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => VisitingCardTempalteQrcodeScreen(
+          qrData: VisitingCardQrPayload.fromScanContact(vm),
+        ),
+      ),
+    );
+    if (!mounted) return;
+    await _clearFocus();
+    if (path == null || path.isEmpty) return;
+    vm.applyQrImage(path);
+    await _clearFocus();
+  }
+
+  Future<void> _onChooseLogo() async {
+    final vm = context.read<VisitingCardScanViewModel>();
+    await _clearFocus();
+    final file = await VisitingCardLogoPickerScreen.open(context);
+    if (!mounted) return;
+    await _clearFocus();
+    if (file == null) return;
+    final path = await vm.persistLogoFile(file);
+    if (!mounted) return;
+    vm.applyLogoImage(path);
+    await _clearFocus();
+  }
+
   Future<void> _onNext() async {
     FocusScope.of(context).unfocus();
     final vm = context.read<VisitingCardScanViewModel>();
+    final images = vm.images;
+
+    // 1/2 → go to 2/2 first; only then open Card Details.
+    if (images.length > 1 && _currentIndex < images.length - 1) {
+      await _pageController.nextPage(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+      );
+      return;
+    }
+
     final saved = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
@@ -59,6 +115,8 @@ class _VisitingCardScannedContactScreenState
     final images = vm.images;
     final isFirst = _currentIndex == 0;
     final isLast = images.isEmpty || _currentIndex >= images.length - 1;
+    // QR / logo only on back side (2/2), same as template edit flow.
+    final canEditMedia = _currentIndex == 1;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),
@@ -155,6 +213,18 @@ class _VisitingCardScannedContactScreenState
             child: ListView(
               padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 24.h),
               children: [
+                VisitingSelectActionCard(
+                  label: 'QR Code',
+                  buttonLabel: 'Choose QR Code',
+                  enabled: canEditMedia,
+                  onTap: _onChooseQr,
+                ),
+                VisitingSelectActionCard(
+                  label: 'Image Selected',
+                  buttonLabel: 'Choose logo',
+                  enabled: canEditMedia,
+                  onTap: _onChooseLogo,
+                ),
                 VisitingSimpleFieldCard(
                   title: 'Name',
                   entries: vm.names,
@@ -176,6 +246,14 @@ class _VisitingCardScannedContactScreenState
                   showAddIcon: false,
                   onChanged: (i, v) =>
                       vm.updateSimpleField(vm.companies, i, v),
+                  onClear: (_) {},
+                ),
+                VisitingSimpleFieldCard(
+                  title: 'Tagline',
+                  entries: vm.taglines,
+                  showAddIcon: false,
+                  onChanged: (i, v) =>
+                      vm.updateSimpleField(vm.taglines, i, v),
                   onClear: (_) {},
                 ),
                 VisitingTypedFieldCard(
