@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:gal/gal.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -28,6 +29,7 @@ class VisitingCardDetailsScreen extends StatefulWidget {
 class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
   final GlobalKey _cardCaptureKey = GlobalKey();
   bool _isSharingCard = false;
+  bool _isDownloading = false;
 
   Future<Uint8List?> _captureSide(
     VisitingCardEditContactViewModel vm,
@@ -44,6 +46,51 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
       );
     } catch (_) {
       return null;
+    }
+  }
+
+  /// Top-right download → gallery only (not folder / Save).
+  Future<void> _onDownload() async {
+    if (_isDownloading || _isSharingCard) return;
+    setState(() => _isDownloading = true);
+
+    final vm = context.read<VisitingCardEditContactViewModel>();
+    final previous = vm.sideIndex;
+
+    try {
+      final frontBytes = await _captureSide(vm, 0);
+      final backBytes = await _captureSide(vm, 1);
+      if (!mounted) return;
+      vm.setSide(previous);
+
+      if (frontBytes == null || backBytes == null) {
+        ui.AppToast.show(context, message: 'Failed to download visiting card');
+        return;
+      }
+
+      final hasAccess = await Gal.hasAccess();
+      if (!hasAccess) await Gal.requestAccess();
+
+      final stamp = DateTime.now().millisecondsSinceEpoch;
+      final frontFile = File(
+        '${Directory.systemTemp.path}/vc_template_front_$stamp.png',
+      );
+      final backFile = File(
+        '${Directory.systemTemp.path}/vc_template_back_$stamp.png',
+      );
+      await frontFile.writeAsBytes(frontBytes, flush: true);
+      await backFile.writeAsBytes(backBytes, flush: true);
+      await Gal.putImage(frontFile.path, album: 'Visiting Card');
+      await Gal.putImage(backFile.path, album: 'Visiting Card');
+
+      if (!mounted) return;
+      ui.AppToast.success(context, 'Downloaded to gallery');
+    } catch (_) {
+      if (!mounted) return;
+      vm.setSide(previous);
+      ui.AppToast.show(context, message: 'Failed to download visiting card');
+    } finally {
+      if (mounted) setState(() => _isDownloading = false);
     }
   }
 
@@ -253,7 +300,9 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
                             top: 6.h,
                             left: 6.w,
                             child: _CornerActionButton(
-                              onTap: _onShare,
+                              onTap: _isSharingCard || _isDownloading
+                                  ? null
+                                  : _onShareNewCard,
                               child: SvgPicture.asset(
                                 ui.AppAssets.visitingTemplateShareIcon,
                                 width: 15.w,
@@ -265,7 +314,11 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
                             top: 6.h,
                             right: 6.w,
                             child: _CornerActionButton(
-                              onTap: vm.isSaving ? null : _onSave,
+                              onTap: _isDownloading ||
+                                      _isSharingCard ||
+                                      vm.isSaving
+                                  ? null
+                                  : _onDownload,
                               child: Icon(
                                 Icons.download_outlined,
                                 size: 15.sp,
@@ -273,6 +326,23 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
                               ),
                             ),
                           ),
+                          if (_isDownloading || _isSharingCard)
+                            Positioned.fill(
+                              child: ColoredBox(
+                                color: Colors.black.withValues(alpha: 0.18),
+                                child: Center(
+                                  child: SizedBox(
+                                    width: 22.w,
+                                    height: 22.w,
+                                    child: const CircularProgressIndicator(
+                                      color:
+                                          ui.Colors.parentIconSelectTextColor,
+                                      strokeWidth: 2.5,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                       SizedBox(height: 8.h),
