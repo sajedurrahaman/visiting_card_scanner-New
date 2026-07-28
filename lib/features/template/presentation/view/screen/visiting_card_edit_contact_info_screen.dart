@@ -106,6 +106,11 @@ class VisitingCardEditContactInfoScreen extends StatelessWidget {
         centerTitle: true,
       ),
       body: ListView(
+        // One scroll for card + fields. Lock only while an overlay is selected
+        // so finger move/resize is not stolen by page scroll.
+        physics: vm.selectedOverlay != null
+            ? const NeverScrollableScrollPhysics()
+            : const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 24.h),
         children: [
           Container(
@@ -123,6 +128,7 @@ class VisitingCardEditContactInfoScreen extends StatelessWidget {
             ),
             child: VisitingCardLivePreview(
               vm: vm,
+              enableFieldTransform: true,
               onShowFront: vm.showFront,
               onShowBack: vm.showBack,
             ),

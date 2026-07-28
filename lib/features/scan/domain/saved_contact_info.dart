@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
+
 class SavedContactInfo {
   const SavedContactInfo({
     this.name = '',
@@ -19,6 +21,7 @@ class SavedContactInfo {
     this.hasChosenQr = false,
     this.hasChosenLogo = false,
     this.templateImagePaths = const [],
+    this.fieldTransforms = const VisitingCardFieldTransforms(),
   });
 
   static const sourceScan = 'scan';
@@ -42,6 +45,7 @@ class SavedContactInfo {
   final bool hasChosenQr;
   final bool hasChosenLogo;
   final List<String> templateImagePaths;
+  final VisitingCardFieldTransforms fieldTransforms;
 
   bool get isFromTemplate =>
       source == sourceTemplate ||
@@ -64,6 +68,8 @@ class SavedContactInfo {
         'hasChosenQr': hasChosenQr,
         'hasChosenLogo': hasChosenLogo,
         'templateImagePaths': templateImagePaths,
+        if (!fieldTransforms.isEmpty)
+          'fieldTransforms': fieldTransforms.toJson(),
       };
 
   factory SavedContactInfo.fromJson(Map<String, dynamic> json) {
@@ -99,6 +105,11 @@ class SavedContactInfo {
       hasChosenQr: json['hasChosenQr'] as bool? ?? false,
       hasChosenLogo: json['hasChosenLogo'] as bool? ?? false,
       templateImagePaths: strings('templateImagePaths'),
+      fieldTransforms: VisitingCardFieldTransforms.fromJson(
+        json['fieldTransforms'] is Map
+            ? Map<String, dynamic>.from(json['fieldTransforms'] as Map)
+            : null,
+      ),
     );
   }
 

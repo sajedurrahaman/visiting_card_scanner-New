@@ -13,6 +13,8 @@ import 'package:visiting_card/features/folder/presentation/view_model/folder_vie
 import 'package:visiting_card/features/home/domain/model/saved_file_model.dart';
 import 'package:visiting_card/features/home/presentation/view_model/home_view_model.dart';
 import 'package:visiting_card/features/scan/domain/saved_contact_info.dart';
+import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
+import 'package:visiting_card/features/template/domain/visiting_card_position_config.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_template_viewmodel.dart';
 
 class ContactFieldEntry {
@@ -82,6 +84,11 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   bool hasChosenQr = false;
   bool hasChosenLogo = false;
 
+  /// Runtime finger placement overrides (merged over template defaults).
+  final Map<String, VisitingCardFieldTransform> frontOverlays = {};
+  final Map<String, VisitingCardFieldTransform> backOverlays = {};
+  VisitingCardOverlayField? selectedOverlay;
+
   final List<ContactFieldEntry> names = [ContactFieldEntry()];
   final List<ContactFieldEntry> designations = [ContactFieldEntry()];
   final List<ContactFieldEntry> companies = [ContactFieldEntry()];
@@ -129,11 +136,146 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   void setSide(int index) {
     if (index < 0 || index > 1 || index == sideIndex) return;
     sideIndex = index;
+    selectedOverlay = null;
     notifyListeners();
   }
 
   void showFront() => setSide(0);
   void showBack() => setSide(1);
+
+  Map<String, VisitingCardFieldTransform> get currentOverlays =>
+      isFront ? frontOverlays : backOverlays;
+
+  VisitingCardFieldTransforms get fieldTransformsSnapshot =>
+      VisitingCardFieldTransforms(
+        front: Map<String, VisitingCardFieldTransform>.from(frontOverlays),
+        back: Map<String, VisitingCardFieldTransform>.from(backOverlays),
+      );
+
+  void applyFieldTransforms(VisitingCardFieldTransforms transforms) {
+    frontOverlays
+      ..clear()
+      ..addAll(transforms.front);
+    backOverlays
+      ..clear()
+      ..addAll(transforms.back);
+    selectedOverlay = null;
+    notifyListeners();
+  }
+
+  VisitingCardFieldTransform? overlayFor(
+    VisitingCardOverlayField field, {
+    bool? isFront,
+  }) {
+    final map = (isFront ?? this.isFront) ? frontOverlays : backOverlays;
+    return map[VisitingCardFieldTransform.keyOf(field)];
+  }
+
+  /// Default transform from template position config for [field] on a side.
+  VisitingCardFieldTransform? defaultTransformFor(
+    VisitingCardOverlayField field, {
+    bool? isFront,
+  }) {
+    final useFront = isFront ?? this.isFront;
+    final layout = VisitingCardPositionConfig.forTemplate(
+      templateId: templateId,
+      isHorizontal: isHorizontal,
+    );
+    final side = useFront ? layout.front : layout.back;
+    final pos = switch (field) {
+      VisitingCardOverlayField.logo => side.logo,
+      VisitingCardOverlayField.qr => side.qr,
+      VisitingCardOverlayField.company => side.company,
+      VisitingCardOverlayField.tagline => side.tagline,
+    };
+    if (pos == null) return null;
+    final left = pos.left ?? 0;
+    final top = pos.top ??
+        (pos.bottom != null ? (1.0 - (pos.bottom! + (pos.size ?? 0.14))) : 0.0);
+    final size = field == VisitingCardOverlayField.logo ||
+            field == VisitingCardOverlayField.qr
+        ? (pos.size ?? 0.14)
+        : pos.fontSize;
+    return VisitingCardFieldTransform(
+      left: left,
+      top: top.clamp(0.0, 1.0),
+      size: size,
+      width: pos.width,
+    );
+  }
+
+  VisitingCardFieldTransform resolvedTransform(
+    VisitingCardOverlayField field, {
+    bool? isFront,
+  }) {
+    return overlayFor(field, isFront: isFront) ??
+        defaultTransformFor(field, isFront: isFront) ??
+        const VisitingCardFieldTransform(left: 0.4, top: 0.1, size: 0.14);
+  }
+
+  void selectOverlay(VisitingCardOverlayField field) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    _ensureOverlay(field);
+    selectedOverlay = field;
+    notifyListeners();
+  }
+
+  void clearOverlaySelection() {
+    if (selectedOverlay == null) return;
+    selectedOverlay = null;
+    notifyListeners();
+  }
+
+  void _ensureOverlay(VisitingCardOverlayField field) {
+    final key = VisitingCardFieldTransform.keyOf(field);
+    currentOverlays.putIfAbsent(
+      key,
+      () => resolvedTransform(field),
+    );
+  }
+
+  void moveOverlay(
+    VisitingCardOverlayField field,
+    double pixelDx,
+    double pixelDy,
+    Size cardSize,
+  ) {
+    if (cardSize.width <= 0 || cardSize.height <= 0) return;
+    _ensureOverlay(field);
+    final key = VisitingCardFieldTransform.keyOf(field);
+    final current = currentOverlays[key]!;
+    currentOverlays[key] = current.copyWith(
+      left: (current.left + pixelDx / cardSize.width).clamp(-0.2, 0.95),
+      top: (current.top + pixelDy / cardSize.height).clamp(-0.2, 0.95),
+    );
+    notifyListeners();
+  }
+
+  void resizeOverlay(
+    VisitingCardOverlayField field,
+    double pixelDeltaY,
+    Size cardSize,
+  ) {
+    if (cardSize.width <= 0) return;
+    _ensureOverlay(field);
+    final key = VisitingCardFieldTransform.keyOf(field);
+    final current = currentOverlays[key]!;
+    final isImage = field == VisitingCardOverlayField.logo ||
+        field == VisitingCardOverlayField.qr;
+    final next = isImage
+        ? (current.size + pixelDeltaY / cardSize.width).clamp(0.06, 0.55)
+        : (current.size + pixelDeltaY * 0.08).clamp(4.0, 28.0);
+    currentOverlays[key] = current.copyWith(size: next);
+    notifyListeners();
+  }
+
+  void rotateOverlay(VisitingCardOverlayField field, double absoluteRadians) {
+    _ensureOverlay(field);
+    final key = VisitingCardFieldTransform.keyOf(field);
+    currentOverlays[key] =
+        currentOverlays[key]!.copyWith(rotation: absoluteRadians);
+    notifyListeners();
+  }
 
   /// Copy editable contact fields from scanner / another edit VM.
   void applyContactFrom(VisitingCardEditContactViewModel other) {
@@ -149,6 +291,13 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     logoAssetPath = other.logoAssetPath;
     hasChosenQr = other.hasChosenQr;
     hasChosenLogo = other.hasChosenLogo;
+    frontOverlays
+      ..clear()
+      ..addAll(other.frontOverlays);
+    backOverlays
+      ..clear()
+      ..addAll(other.backOverlays);
+    selectedOverlay = null;
     notifyListeners();
   }
 
@@ -165,6 +314,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     String? logoAssetPath,
     bool? hasChosenQr,
     bool? hasChosenLogo,
+    VisitingCardFieldTransforms? fieldTransforms,
   }) {
     _replaceEntries(this.names, names);
     _replaceEntries(this.designations, designations);
@@ -185,6 +335,15 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       this.hasChosenLogo = hasChosenLogo ?? logoAssetPath.isNotEmpty;
     } else if (hasChosenLogo != null) {
       this.hasChosenLogo = hasChosenLogo;
+    }
+    if (fieldTransforms != null) {
+      frontOverlays
+        ..clear()
+        ..addAll(fieldTransforms.front);
+      backOverlays
+        ..clear()
+        ..addAll(fieldTransforms.back);
+      selectedOverlay = null;
     }
     notifyListeners();
   }
@@ -354,7 +513,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         : (hasChosenQr ? ui.AppAssets.defaultQrcodeIcon : qrAssetPath);
     logoAssetPath =
         contact.logoImagePath.isNotEmpty ? contact.logoImagePath : null;
-    notifyListeners();
+    applyFieldTransforms(contact.fieldTransforms);
   }
 
   void clearEditingState() {
@@ -394,6 +553,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       logoImagePath: logoAssetPath ?? '',
       hasChosenQr: hasChosenQr,
       hasChosenLogo: hasChosenLogo,
+      fieldTransforms: fieldTransformsSnapshot,
     );
   }
 
@@ -485,6 +645,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         logoImagePath: embedded.logoPath,
         hasChosenQr: hasChosenQr,
         hasChosenLogo: hasChosenLogo,
+        fieldTransforms: fieldTransformsSnapshot,
       );
       await SavedContactInfo.writeToFolder(contactFolder.path, savedContact);
       await File(p.join(contactFolder.path, 'contact_details.txt'))
@@ -581,6 +742,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         logoImagePath: embedded.logoPath,
         hasChosenQr: hasChosenQr,
         hasChosenLogo: hasChosenLogo,
+        fieldTransforms: fieldTransformsSnapshot,
       );
       await SavedContactInfo.writeToFolder(contactFolder.path, savedContact);
       await File(p.join(contactFolder.path, 'contact_details.txt'))

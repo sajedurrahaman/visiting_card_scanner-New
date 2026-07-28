@@ -5,7 +5,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
+import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_position_config.dart';
+import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_transform_overlay.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
 
 class VisitingCardLivePreview extends StatefulWidget {
@@ -17,6 +19,7 @@ class VisitingCardLivePreview extends StatefulWidget {
     this.sideOverride,
     this.onShowFront,
     this.onShowBack,
+    this.enableFieldTransform = false,
   });
 
   final VisitingCardEditContactViewModel vm;
@@ -27,6 +30,9 @@ class VisitingCardLivePreview extends StatefulWidget {
   final int? sideOverride;
   final VoidCallback? onShowFront;
   final VoidCallback? onShowBack;
+
+  /// Edit mode: finger drag / resize / rotate for logo, qr, company, tagline.
+  final bool enableFieldTransform;
 
   @override
   State<VisitingCardLivePreview> createState() =>
@@ -133,9 +139,14 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
               child: PageView.builder(
                 controller: _pageController,
                 itemCount: 2,
-                physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics(),
-                ),
+                // Allow finger swipe 1/2 ↔ 2/2; lock only while an overlay
+                // is selected so move/rotate/resize keep winning gestures.
+                physics: widget.enableFieldTransform &&
+                        widget.vm.selectedOverlay != null
+                    ? const NeverScrollableScrollPhysics()
+                    : const BouncingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics(),
+                      ),
                 onPageChanged: _onPageChanged,
                 itemBuilder: (_, index) => _buildCardFace(sideIndex: index),
               ),
@@ -170,6 +181,8 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final size = Size(constraints.maxWidth, constraints.maxHeight);
+        final interactive = widget.enableFieldTransform &&
+            sideIndex == widget.vm.sideIndex;
         return Stack(
           fit: StackFit.expand,
           children: [
@@ -181,10 +194,19 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
                 child: Center(child: Icon(Icons.broken_image_outlined)),
               ),
             ),
+            if (interactive)
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: widget.vm.clearOverlaySelection,
+                ),
+              ),
             ..._buildOverlayChildren(
               size: size,
               side: side,
               fontFamily: layout.fontFamily,
+              isFront: isFront,
+              interactive: interactive,
             ),
           ],
         );
@@ -196,12 +218,14 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     required Size size,
     required VisitingCardSidePositions side,
     required String fontFamily,
+    required bool isFront,
+    required bool interactive,
   }) {
     final vm = widget.vm;
     final children = <Widget>[];
 
-    TextStyle styleFor(VisitingCardFieldPosition pos) {
-      final sizeSp = pos.fontSize.sp;
+    TextStyle styleFor(VisitingCardFieldPosition pos, {double? fontSize}) {
+      final sizeSp = (fontSize ?? pos.fontSize).sp;
       if (fontFamily == VisitingCardFonts.inter) {
         return GoogleFonts.inter(
           fontSize: sizeSp,
@@ -329,35 +353,140 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       );
     }
 
-    void addImage(VisitingCardFieldPosition? pos, String? assetPath) {
-      if (pos == null || assetPath == null || assetPath.isEmpty) return;
+    void addTransformText({
+      required VisitingCardOverlayField field,
+      required VisitingCardFieldPosition? configPos,
+      required String value,
+    }) {
+      if (configPos == null || value.trim().isEmpty) return;
+      final t = vm.resolvedTransform(field, isFront: isFront);
+      final maxW = size.width * (t.width ?? configPos.width ?? 0.4);
+      final fontSize = t.size;
+      final style = styleFor(configPos, fontSize: fontSize);
+      final display = configPos.uppercase ? value.toUpperCase() : value;
+
+      // Tight box = actual painted text (no extra green-border padding).
+      final painter = TextPainter(
+        text: TextSpan(text: display, style: style),
+        maxLines: configPos.maxLines,
+        ellipsis: '…',
+        textAlign: configPos.textAlign,
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: maxW);
+      final boxW = painter.width.clamp(1.0, maxW);
+      final boxH = painter.height.clamp(1.0, size.height);
+
+      final text = Text(
+        display,
+        maxLines: configPos.maxLines,
+        overflow: TextOverflow.ellipsis,
+        textAlign: configPos.textAlign,
+        style: style,
+      );
+
+      if (!interactive) {
+        children.add(
+          Positioned(
+            left: size.width * t.left,
+            top: size.height * t.top,
+            width: boxW,
+            height: boxH,
+            child: Transform.rotate(angle: t.rotation, child: text),
+          ),
+        );
+        return;
+      }
+
+      children.add(
+        VisitingCardTransformOverlay(
+          cardSize: size,
+          left: size.width * t.left,
+          top: size.height * t.top,
+          boxWidth: boxW,
+          boxHeight: boxH,
+          rotation: t.rotation,
+          selected: vm.selectedOverlay == field,
+          tightBorder: true,
+          onSelect: () => vm.selectOverlay(field),
+          onDeselect: vm.clearOverlaySelection,
+          onMove: (dx, dy) => vm.moveOverlay(field, dx, dy, size),
+          onResize: (d) => vm.resizeOverlay(field, d, size),
+          onRotate: (r) => vm.rotateOverlay(field, r),
+          child: text,
+        ),
+      );
+    }
+
+    void addTransformImage({
+      required VisitingCardOverlayField field,
+      required VisitingCardFieldPosition? configPos,
+      required String? assetPath,
+    }) {
+      if (configPos == null || assetPath == null || assetPath.isEmpty) return;
       final isAsset = assetPath.startsWith('assets/');
       if (!isAsset && !File(assetPath).existsSync()) return;
+
+      final t = vm.resolvedTransform(field, isFront: isFront);
+      final box = size.width * t.size;
+      final image = isAsset
+          ? Image.asset(
+              assetPath,
+              key: ValueKey(assetPath),
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            )
+          : Image.file(
+              File(assetPath),
+              key: ValueKey(assetPath),
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            );
+
+      if (!interactive) {
+        children.add(
+          Positioned(
+            left: size.width * t.left,
+            top: size.height * t.top,
+            width: box,
+            height: box,
+            child: Transform.rotate(angle: t.rotation, child: image),
+          ),
+        );
+        return;
+      }
+
       children.add(
-        _PositionedField(
+        VisitingCardTransformOverlay(
           cardSize: size,
-          position: pos,
-          child: isAsset
-              ? Image.asset(
-                  assetPath,
-                  key: ValueKey(assetPath),
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                )
-              : Image.file(
-                  File(assetPath),
-                  key: ValueKey(assetPath),
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                ),
+          left: size.width * t.left,
+          top: size.height * t.top,
+          boxWidth: box,
+          boxHeight: box,
+          rotation: t.rotation,
+          selected: vm.selectedOverlay == field,
+          onSelect: () => vm.selectOverlay(field),
+          onDeselect: vm.clearOverlaySelection,
+          onMove: (dx, dy) => vm.moveOverlay(field, dx, dy, size),
+          onResize: (d) => vm.resizeOverlay(field, d, size),
+          onRotate: (r) => vm.rotateOverlay(field, r),
+          child: image,
         ),
       );
     }
 
     addName(side.name, vm.displayName);
     addText(side.designation, vm.displayDesignation);
-    addText(side.company, vm.displayCompany);
-    addText(side.tagline, vm.displayTagline);
+
+    addTransformText(
+      field: VisitingCardOverlayField.company,
+      configPos: side.company,
+      value: vm.displayCompany,
+    );
+    addTransformText(
+      field: VisitingCardOverlayField.tagline,
+      configPos: side.tagline,
+      value: vm.displayTagline,
+    );
 
     final phones =
         vm.phones.where((e) => e.value.trim().isNotEmpty).toList();
@@ -372,10 +501,18 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     addText(side.address, vm.displayAddress);
 
     if (vm.hasChosenLogo) {
-      addImage(side.logo, vm.logoAssetPath);
+      addTransformImage(
+        field: VisitingCardOverlayField.logo,
+        configPos: side.logo,
+        assetPath: vm.logoAssetPath,
+      );
     }
     if (vm.hasChosenQr) {
-      addImage(side.qr, vm.qrAssetPath);
+      addTransformImage(
+        field: VisitingCardOverlayField.qr,
+        configPos: side.qr,
+        assetPath: vm.qrAssetPath,
+      );
     }
 
     return children;

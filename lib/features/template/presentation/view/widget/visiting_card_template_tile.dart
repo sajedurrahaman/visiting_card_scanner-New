@@ -4,7 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_template_viewmodel.dart';
 
-class VisitingCardTemplateTile extends StatelessWidget {
+class VisitingCardTemplateTile extends StatefulWidget {
   const VisitingCardTemplateTile({
     super.key,
     required this.item,
@@ -27,60 +27,122 @@ class VisitingCardTemplateTile extends StatelessWidget {
   static const _totalSides = 2;
 
   @override
-  Widget build(BuildContext context) {
-    final aspectRatio = isHorizontal ? 1.75 : 0.63;
-    final isFront = sideIndex == 0;
-    final imageAsset = isFront ? item.frontAsset : item.backAsset;
+  State<VisitingCardTemplateTile> createState() =>
+      _VisitingCardTemplateTileState();
+}
 
+class _VisitingCardTemplateTileState extends State<VisitingCardTemplateTile> {
+  late final PageController _pageController;
+  bool _ignorePageCallback = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: widget.sideIndex);
+  }
+
+  @override
+  void didUpdateWidget(covariant VisitingCardTemplateTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.sideIndex != widget.sideIndex) {
+      _jumpTo(widget.sideIndex);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _jumpTo(int page) {
+    if (!_pageController.hasClients) return;
+    final current =
+        _pageController.page?.round() ?? _pageController.initialPage;
+    if (current == page) return;
+    _ignorePageCallback = true;
+    _pageController.jumpToPage(page);
+    _ignorePageCallback = false;
+  }
+
+  void _onPageChanged(int page) {
+    if (_ignorePageCallback) return;
+    if (page == 0) {
+      widget.onShowFront();
+    } else {
+      widget.onShowBack();
+    }
+  }
+
+  Widget _sideImage(String asset) {
     return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12.r),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
+      onTap: widget.onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Image.asset(
+        asset,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => ColoredBox(
+          color: const Color(0xFFF5F5F5),
+          child: Center(
+            child: Icon(
+              Icons.broken_image_outlined,
+              size: 28.sp,
+              color: const Color(0xFF9E9E9E),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final aspectRatio = widget.isHorizontal ? 1.75 : 0.63;
+    final isFront = widget.sideIndex == 0;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: AspectRatio(
+        aspectRatio: aspectRatio,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            PageView(
+              controller: _pageController,
+              onPageChanged: _onPageChanged,
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              children: [
+                _sideImage(widget.item.frontAsset),
+                _sideImage(widget.item.backAsset),
+              ],
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 2.h,
+              child: _TemplateSidePager(
+                currentPage: widget.sideIndex + 1,
+                totalPages: VisitingCardTemplateTile._totalSides,
+                canGoPrevious: !isFront,
+                canGoNext: isFront,
+                onPrevious: widget.onShowFront,
+                onNext: widget.onShowBack,
+              ),
             ),
           ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: AspectRatio(
-          aspectRatio: aspectRatio,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Image.asset(
-                imageAsset,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => ColoredBox(
-                  color: const Color(0xFFF5F5F5),
-                  child: Center(
-                    child: Icon(
-                      Icons.broken_image_outlined,
-                      size: 28.sp,
-                      color: const Color(0xFF9E9E9E),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 2.h,
-                child: _TemplateSidePager(
-                  currentPage: sideIndex + 1,
-                  totalPages: _totalSides,
-                  canGoPrevious: !isFront,
-                  canGoNext: isFront,
-                  onPrevious: onShowFront,
-                  onNext: onShowBack,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );

@@ -202,6 +202,7 @@ class _VisitingCardContactDetailsScreenState
           contact.logoImagePath.isNotEmpty ? contact.logoImagePath : null,
       hasChosenQr: contact.hasChosenQr,
       hasChosenLogo: contact.hasChosenLogo,
+      fieldTransforms: contact.fieldTransforms,
     );
   }
 
