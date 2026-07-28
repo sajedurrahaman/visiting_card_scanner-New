@@ -38,12 +38,6 @@ class VisitingCardTemplateTile extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(
-            color: isSelected
-                ? ui.Colors.parentIconSelectTextColor
-                : const Color(0xFFE8E8E8),
-            width: isSelected ? 2.5 : 1,
-          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.06),

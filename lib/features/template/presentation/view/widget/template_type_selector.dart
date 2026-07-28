@@ -115,7 +115,7 @@ class _TemplateTypeChip extends StatelessWidget {
                 : null,
           ),
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+            padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 6.h),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
@@ -133,7 +133,7 @@ class _TemplateTypeChip extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: ui.AppTextStyles.iconUnderText(color: textColor)
-                        .copyWith(fontWeight: FontWeight.w500,fontSize: 10.sp),
+                        .copyWith(fontWeight: FontWeight.w500,fontSize: 10.sp,letterSpacing: 0.2),
                   ),
                 ),
               ],

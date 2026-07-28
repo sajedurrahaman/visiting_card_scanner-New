@@ -34,12 +34,12 @@ class SettingsScreen extends StatelessWidget {
                     SettingsItemData(
                       icon: ui.AppAssets.shareIcon,
                       label: 'Share with Friend',
-                      onTap: viewModel.onShareWithFriendTap,
+                      onTap: () => viewModel.onShareWithFriendTap(context),
                     ),
                     SettingsItemData(
                       icon: ui.AppAssets.ratingIcon,
                       label: 'Rate Us',
-                      onTap: viewModel.onRateUsTap,
+                      onTap: () => viewModel.onRateUsTap(context),
                     ),
                   ],
                 ),
@@ -50,17 +50,17 @@ class SettingsScreen extends StatelessWidget {
                     SettingsItemData(
                       icon: ui.AppAssets.contactIcon,
                       label: 'Contact Us',
-                      onTap: viewModel.onContactUsTap,
+                      onTap: () => viewModel.onContactUsTap(context),
                     ),
                     SettingsItemData(
                       icon: ui.AppAssets.privacyIcon,
                       label: 'Privacy Policy',
-                      onTap: viewModel.onPrivacyPolicyTap,
+                      onTap: () => viewModel.onPrivacyPolicyTap(context),
                     ),
                     SettingsItemData(
                       icon: ui.AppAssets.termsIcon,
                       label: 'Terms & Conditions',
-                      onTap: viewModel.onTermsAndConditionsTap,
+                      onTap: () => viewModel.onTermsAndConditionsTap(context),
                     ),
                   ],
                 ),

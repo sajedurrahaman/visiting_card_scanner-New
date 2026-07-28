@@ -1,15 +1,121 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 
 class SettingsViewModel extends ChangeNotifier {
+  // TODO: Replace these placeholders with your real production values.
+  static const String _appName = 'Visiting Card';
+  static const String _androidAppId = 'com.example.visiting_card';
+  static const String _supportEmail = 'sajedurrahamanapp@gmail.com';
+  static const String _privacyPolicyUrl = '';
+  static const String _termsAndConditionsUrl = '';
+
   void onUpgradePremiumTap() {}
 
-  void onShareWithFriendTap() {}
+  Future<void> onShareWithFriendTap(BuildContext context) async {
+    try {
+      await Share.share('Check out $_appName');
+    } catch (_) {
+      if (!context.mounted) return;
+      ui.AppToast.show(context, message: 'Failed to share app');
+    }
+  }
 
-  void onRateUsTap() {}
+  // Future<void> onShareWithFriendTap(BuildContext context) async {
+  //   final message =
+  //       'Check out $_appName\n'
+  //       'https://play.google.com/store/apps/details?id=$_androidAppId';
+  //
+  //   try {
+  //     await Share.share(message);
+  //   } catch (_) {
+  //     if (!context.mounted) return;
+  //     ui.AppToast.show(context, message: 'Failed to share app');
+  //   }
+  // }
 
-  void onContactUsTap() {}
+  Future<void> onRateUsTap(BuildContext context) async {
+    if (_androidAppId.isEmpty) {
+      ui.AppToast.show(context, message: 'Add app id to enable Rate Us');
+      return;
+    }
 
-  void onPrivacyPolicyTap() {}
+    final marketUri = Uri.parse('market://details?id=$_androidAppId');
+    final webUri = Uri.parse(
+      'https://play.google.com/store/apps/details?id=$_androidAppId',
+    );
 
-  void onTermsAndConditionsTap() {}
+    final launched = await launchUrl(
+      marketUri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (launched) return;
+
+    final launchedWeb = await launchUrl(
+      webUri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launchedWeb && context.mounted) {
+      ui.AppToast.show(context, message: 'Failed to open store page');
+    }
+  }
+
+  Future<void> onContactUsTap(BuildContext context) async {
+    if (_supportEmail.isEmpty) {
+      ui.AppToast.show(context, message: 'Add support email to enable Contact Us');
+      return;
+    }
+
+    final uri = Uri(
+      scheme: 'mailto',
+      path: _supportEmail,
+      queryParameters: {
+        'subject': 'Support Request - $_appName',
+      },
+    );
+
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!launched && context.mounted) {
+      ui.AppToast.show(context, message: 'Failed to open email app');
+    }
+  }
+
+  Future<void> onPrivacyPolicyTap(BuildContext context) async {
+    await _openUrl(
+      context,
+      url: _privacyPolicyUrl,
+      missingMessage: 'Add privacy policy URL to open this page',
+      failureMessage: 'Failed to open Privacy Policy',
+    );
+  }
+
+  Future<void> onTermsAndConditionsTap(BuildContext context) async {
+    await _openUrl(
+      context,
+      url: _termsAndConditionsUrl,
+      missingMessage: 'Add terms URL to open this page',
+      failureMessage: 'Failed to open Terms & Conditions',
+    );
+  }
+
+  Future<void> _openUrl(
+    BuildContext context, {
+    required String url,
+    required String missingMessage,
+    required String failureMessage,
+  }) async {
+    if (url.isEmpty) {
+      ui.AppToast.show(context, message: missingMessage);
+      return;
+    }
+
+    final launched = await launchUrl(
+      Uri.parse(url),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched && context.mounted) {
+      ui.AppToast.show(context, message: failureMessage);
+    }
+  }
 }

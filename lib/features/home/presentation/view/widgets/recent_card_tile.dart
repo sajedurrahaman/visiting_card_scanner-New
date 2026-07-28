@@ -30,6 +30,32 @@ class RecentCardTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final menuViewModel = context.read<RecentCardMenuViewModel>();
+    final isVisitingCard = item.fileType == 'visiting_card';
+    final isScanQrOrBarcode = QrBarcodeScanStorage.isScanTextItem(item);
+    final menuItems = <PopupMenuEntry<RecentCardMenuAction>>[
+      _buildMenuItem(
+        value: RecentCardMenuAction.rename,
+        icon: Icons.edit_outlined,
+        label: 'Rename',
+      ),
+      if (!isVisitingCard && !isScanQrOrBarcode)
+        _buildMenuItem(
+          value: RecentCardMenuAction.download,
+          icon: Icons.download_outlined,
+          label: 'Download',
+        ),
+      if (!isVisitingCard)
+        _buildMenuItem(
+          value: RecentCardMenuAction.share,
+          icon: Icons.share_outlined,
+          label: 'Share',
+        ),
+      _buildMenuItem(
+        value: RecentCardMenuAction.delete,
+        icon: Icons.delete_outline,
+        label: 'Delete',
+      ),
+    ];
 
     return GestureDetector(
       onTap: onTap ??
@@ -136,28 +162,7 @@ class RecentCardTile extends StatelessWidget {
                   item: item,
                   action: action,
                 ),
-                itemBuilder: (context) => [
-                  _buildMenuItem(
-                    value: RecentCardMenuAction.rename,
-                    icon: Icons.edit_outlined,
-                    label: 'Rename',
-                  ),
-                  _buildMenuItem(
-                    value: RecentCardMenuAction.download,
-                    icon: Icons.download_outlined,
-                    label: 'Download',
-                  ),
-                  _buildMenuItem(
-                    value: RecentCardMenuAction.share,
-                    icon: Icons.share_outlined,
-                    label: 'Share',
-                  ),
-                  _buildMenuItem(
-                    value: RecentCardMenuAction.delete,
-                    icon: Icons.delete_outline,
-                    label: 'Delete',
-                  ),
-                ],
+                itemBuilder: (context) => menuItems,
                 child: Icon(
                   Icons.more_vert,
                   size: 22.sp,
