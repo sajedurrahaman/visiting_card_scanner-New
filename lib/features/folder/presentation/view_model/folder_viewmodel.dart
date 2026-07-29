@@ -8,6 +8,7 @@ import 'package:visiting_card/features/folder/domain/model/sub_folder_item.dart'
 import 'package:visiting_card/features/folder/presentation/view/widget/folder_item_data.dart';
 import 'package:visiting_card/features/home/domain/model/recent_card_item.dart';
 import 'package:visiting_card/features/home/domain/model/saved_file_model.dart';
+import 'package:visiting_card/features/scan/domain/visiting_card_folder_paths.dart';
 
 class FolderViewModel extends ChangeNotifier {
   FolderViewModel() {
@@ -149,16 +150,28 @@ class FolderViewModel extends ChangeNotifier {
     final cards = files
         .where((file) => file.folderId == folderId)
         .map(
-          (file) => RecentCardItem(
-            id: file.id,
-            name: file.name,
-            dateTime: file.dateTime,
-            thumbnailPath: file.pathImage.isNotEmpty ? file.pathImage : null,
-            path: file.path.isNotEmpty ? file.path : null,
-            fileType: file.fileType,
-            folderId: file.folderId,
-            isTextFile: file.isTextFile,
-          ),
+          (file) {
+            var thumb =
+                file.pathImage.isNotEmpty ? file.pathImage : null;
+            if (file.fileType == 'visiting_card') {
+              final resolved = VisitingCardFolderPaths.resolveThumbnail(
+                thumbnailPath: thumb,
+                folderOrFilePath:
+                    file.path.isNotEmpty ? file.path : null,
+              );
+              if (resolved != null) thumb = resolved.path;
+            }
+            return RecentCardItem(
+              id: file.id,
+              name: file.name,
+              dateTime: file.dateTime,
+              thumbnailPath: thumb,
+              path: file.path.isNotEmpty ? file.path : null,
+              fileType: file.fileType,
+              folderId: file.folderId,
+              isTextFile: file.isTextFile,
+            );
+          },
         )
         .toList();
     cards.sort((a, b) => _recencyKey(b).compareTo(_recencyKey(a)));
@@ -213,6 +226,13 @@ class FolderViewModel extends ChangeNotifier {
     for (final file in allFiles.where((f) => selectedIds.contains(f.id))) {
       for (final path in {file.path, file.pathImage}) {
         if (path.isEmpty) continue;
+        final dir = Directory(path);
+        if (await dir.exists()) {
+          try {
+            await dir.delete(recursive: true);
+          } catch (_) {}
+          continue;
+        }
         final disk = File(path);
         if (await disk.exists()) {
           try {

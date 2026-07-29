@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
+import 'package:visiting_card/features/scan/presentation/view/screen/visiting_card_scanned_details_screen.dart';
 import 'package:visiting_card/features/scan/presentation/view_model/visiting_card_scan_viewmodel.dart';
 import 'package:visiting_card/features/template/presentation/helper/visiting_card_qr_payload.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_logo_picker_screen.dart';
@@ -20,10 +21,16 @@ class VisitingCardScanTemplateEditScreen extends StatefulWidget {
     super.key,
     required this.template,
     this.isHorizontal = true,
+    this.popOnDone = false,
   });
 
   final VisitingCardTemplateItem template;
   final bool isHorizontal;
+
+  /// When `true`, Next just pops back (called from ScannedDetailsScreen
+  /// which already has Save/Update). When `false`, Next opens
+  /// ScannedDetailsScreen with Update/Save buttons.
+  final bool popOnDone;
 
   @override
   State<VisitingCardScanTemplateEditScreen> createState() =>
@@ -56,6 +63,10 @@ class _VisitingCardScanTemplateEditScreenState
   }
 
   void _syncFromScan() {
+    // Only apply saved transforms if the template matches; otherwise use
+    // the new template's default positions.
+    final sameTemplate =
+        _scanVm.selectedTemplateId == widget.template.id;
     _editVm.applyContactLists(
       names: _scanVm.names,
       designations: _scanVm.designations,
@@ -69,7 +80,7 @@ class _VisitingCardScanTemplateEditScreenState
       logoAssetPath: _scanVm.logoAssetPath,
       hasChosenQr: _scanVm.hasChosenQr,
       hasChosenLogo: _scanVm.hasChosenLogo,
-      fieldTransforms: _scanVm.fieldTransforms,
+      fieldTransforms: sameTemplate ? _scanVm.fieldTransforms : null,
     );
   }
 
@@ -146,7 +157,7 @@ class _VisitingCardScanTemplateEditScreenState
     ui.AppToast.success(context, 'Logo uploaded successfully');
   }
 
-  void _onDone() {
+  Future<void> _onDone() async {
     FocusScope.of(context).unfocus();
     _editVm.clearOverlaySelection();
     if (_editVm.isFront) {
@@ -154,7 +165,29 @@ class _VisitingCardScanTemplateEditScreenState
       return;
     }
     _syncToScan();
-    Navigator.pop(context, true);
+
+    if (widget.popOnDone) {
+      // Called from ScannedDetailsScreen — just pop back, it already
+      // has Save/Update.
+      Navigator.pop(context, true);
+      return;
+    }
+
+    // Called from ContactDetailsScreen (saved card edit) — open details
+    // screen with Update / Back to Home.
+    final saved = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider.value(
+          value: _scanVm,
+          child: const VisitingCardScannedDetailsScreen(),
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (saved == true) {
+      Navigator.pop(context, true);
+    }
   }
 
   @override
@@ -175,10 +208,7 @@ class _VisitingCardScanTemplateEditScreenState
             centerTitle: true,
             leading: IconButton(
               icon: Icon(Icons.arrow_back_ios_new, size: 18.sp),
-              onPressed: () {
-                _syncToScan();
-                Navigator.pop(context, true);
-              },
+              onPressed: () => Navigator.pop(context),
             ),
           ),
           body: ListView(

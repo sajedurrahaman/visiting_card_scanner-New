@@ -27,6 +27,9 @@ class AppStorageService {
   static const String _migratedKey = 'isar_saved_files_migrated_v1';
   static const String _legacyFoldersKey = 'sub_folders_v1';
   static const String _foldersMigratedKey = 'isar_folders_migrated_v1';
+  static const String _contactBackupMigratedKey =
+      'isar_contact_json_from_prefs_v1';
+  static const String _legacyContactBackupPrefix = 'vc_contact_backup_v1_';
 
   List<SavedFileModel> _cache = const [];
   List<FolderRecord> _folderCache = const [];
@@ -45,6 +48,7 @@ class AppStorageService {
     await instance._migrateFoldersFromSharedPreferencesIfNeeded();
     instance._reloadCache();
     instance._reloadFolderCache();
+    await instance._migrateLegacyContactBackupPrefsIfNeeded();
   }
 
   Isar get _db {
@@ -69,6 +73,13 @@ class AppStorageService {
 
   List<SavedFileModel> getAllFiles() =>
       List<SavedFileModel>.unmodifiable(_cache);
+
+  SavedFileModel? getFileById(String fileId) {
+    for (final file in _cache) {
+      if (file.id == fileId) return file;
+    }
+    return null;
+  }
 
   List<FolderRecord> getAllFolders() =>
       List<FolderRecord>.unmodifiable(_folderCache);
@@ -224,7 +235,8 @@ class AppStorageService {
             ..pathImage = file.pathImage
             ..fileType = file.fileType
             ..folderId = file.folderId
-            ..isTextFile = file.isTextFile,
+            ..isTextFile = file.isTextFile
+            ..contactJson = file.contactJson,
         );
       }
       isar.savedFiles.putAll(entities);
@@ -292,7 +304,8 @@ class AppStorageService {
                     ..pathImage = file.pathImage
                     ..fileType = file.fileType
                     ..folderId = file.folderId
-                    ..isTextFile = file.isTextFile,
+                    ..isTextFile = file.isTextFile
+                    ..contactJson = file.contactJson,
                 );
               }
               isar.savedFiles.putAll(entities);
@@ -308,6 +321,32 @@ class AppStorageService {
     await _storage.remove(_legacyAllFilesKey);
   }
 
+  /// One-shot: move early SharedPreferences contact backups into Isar
+  /// [SavedFileEntity.contactJson], then delete the prefs keys.
+  Future<void> _migrateLegacyContactBackupPrefsIfNeeded() async {
+    if (_storage.getBool(_contactBackupMigratedKey) == true) return;
+
+    final keys = _storage
+        .getKeys()
+        .where((k) => k.startsWith(_legacyContactBackupPrefix))
+        .toList();
+    for (final key in keys) {
+      final fileId = key.substring(_legacyContactBackupPrefix.length);
+      final raw = _storage.getString(key);
+      if (fileId.isEmpty || raw == null || raw.isEmpty) {
+        await _storage.remove(key);
+        continue;
+      }
+      final existing = getFileById(fileId);
+      if (existing != null && existing.contactJson.isEmpty) {
+        await updateFile(existing.copyWith(contactJson: raw));
+      }
+      await _storage.remove(key);
+    }
+
+    await _storage.setBool(_contactBackupMigratedKey, true);
+  }
+
   SavedFileEntity _toEntity(SavedFileModel model, {int? existingId}) {
     return SavedFileEntity()
       ..id = existingId ?? _db.savedFiles.autoIncrement()
@@ -318,7 +357,8 @@ class AppStorageService {
       ..pathImage = model.pathImage
       ..fileType = model.fileType
       ..folderId = model.folderId
-      ..isTextFile = model.isTextFile;
+      ..isTextFile = model.isTextFile
+      ..contactJson = model.contactJson;
   }
 
   SavedFileModel _toModel(SavedFileEntity entity) {
@@ -331,6 +371,7 @@ class AppStorageService {
       fileType: entity.fileType,
       folderId: entity.folderId,
       isTextFile: entity.isTextFile,
+      contactJson: entity.contactJson,
     );
   }
 }

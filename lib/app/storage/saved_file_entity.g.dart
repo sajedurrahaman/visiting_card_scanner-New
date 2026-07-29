@@ -28,6 +28,7 @@ final SavedFileEntitySchema = IsarGeneratedSchema(
       IsarPropertySchema(name: 'fileType', type: IsarType.string),
       IsarPropertySchema(name: 'folderId', type: IsarType.string),
       IsarPropertySchema(name: 'isTextFile', type: IsarType.bool),
+      IsarPropertySchema(name: 'contactJson', type: IsarType.string),
     ],
     indexes: [
       IsarIndexSchema(
@@ -62,6 +63,7 @@ int serializeSavedFileEntity(IsarWriter writer, SavedFileEntity object) {
   IsarCore.writeString(writer, 6, object.fileType);
   IsarCore.writeString(writer, 7, object.folderId);
   IsarCore.writeBool(writer, 8, value: object.isTextFile);
+  IsarCore.writeString(writer, 9, object.contactJson);
   return object.id;
 }
 
@@ -77,6 +79,7 @@ SavedFileEntity deserializeSavedFileEntity(IsarReader reader) {
   object.fileType = IsarCore.readString(reader, 6) ?? '';
   object.folderId = IsarCore.readString(reader, 7) ?? '';
   object.isTextFile = IsarCore.readBool(reader, 8);
+  object.contactJson = IsarCore.readString(reader, 9) ?? '';
   return object;
 }
 
@@ -101,6 +104,8 @@ dynamic deserializeSavedFileEntityProp(IsarReader reader, int property) {
       return IsarCore.readString(reader, 7) ?? '';
     case 8:
       return IsarCore.readBool(reader, 8);
+    case 9:
+      return IsarCore.readString(reader, 9) ?? '';
     default:
       throw ArgumentError('Unknown property: $property');
   }
@@ -117,6 +122,7 @@ sealed class _SavedFileEntityUpdate {
     String? fileType,
     String? folderId,
     bool? isTextFile,
+    String? contactJson,
   });
 }
 
@@ -136,6 +142,7 @@ class _SavedFileEntityUpdateImpl implements _SavedFileEntityUpdate {
     Object? fileType = ignore,
     Object? folderId = ignore,
     Object? isTextFile = ignore,
+    Object? contactJson = ignore,
   }) {
     return collection.updateProperties(
           [id],
@@ -148,6 +155,7 @@ class _SavedFileEntityUpdateImpl implements _SavedFileEntityUpdate {
             if (fileType != ignore) 6: fileType as String?,
             if (folderId != ignore) 7: folderId as String?,
             if (isTextFile != ignore) 8: isTextFile as bool?,
+            if (contactJson != ignore) 9: contactJson as String?,
           },
         ) >
         0;
@@ -165,6 +173,7 @@ sealed class _SavedFileEntityUpdateAll {
     String? fileType,
     String? folderId,
     bool? isTextFile,
+    String? contactJson,
   });
 }
 
@@ -184,6 +193,7 @@ class _SavedFileEntityUpdateAllImpl implements _SavedFileEntityUpdateAll {
     Object? fileType = ignore,
     Object? folderId = ignore,
     Object? isTextFile = ignore,
+    Object? contactJson = ignore,
   }) {
     return collection.updateProperties(id, {
       if (fileId != ignore) 1: fileId as String?,
@@ -194,6 +204,7 @@ class _SavedFileEntityUpdateAllImpl implements _SavedFileEntityUpdateAll {
       if (fileType != ignore) 6: fileType as String?,
       if (folderId != ignore) 7: folderId as String?,
       if (isTextFile != ignore) 8: isTextFile as bool?,
+      if (contactJson != ignore) 9: contactJson as String?,
     });
   }
 }
@@ -215,6 +226,7 @@ sealed class _SavedFileEntityQueryUpdate {
     String? fileType,
     String? folderId,
     bool? isTextFile,
+    String? contactJson,
   });
 }
 
@@ -234,6 +246,7 @@ class _SavedFileEntityQueryUpdateImpl implements _SavedFileEntityQueryUpdate {
     Object? fileType = ignore,
     Object? folderId = ignore,
     Object? isTextFile = ignore,
+    Object? contactJson = ignore,
   }) {
     return query.updateProperties(limit: limit, {
       if (fileId != ignore) 1: fileId as String?,
@@ -244,6 +257,7 @@ class _SavedFileEntityQueryUpdateImpl implements _SavedFileEntityQueryUpdate {
       if (fileType != ignore) 6: fileType as String?,
       if (folderId != ignore) 7: folderId as String?,
       if (isTextFile != ignore) 8: isTextFile as bool?,
+      if (contactJson != ignore) 9: contactJson as String?,
     });
   }
 }
@@ -273,6 +287,7 @@ class _SavedFileEntityQueryBuilderUpdateImpl
     Object? fileType = ignore,
     Object? folderId = ignore,
     Object? isTextFile = ignore,
+    Object? contactJson = ignore,
   }) {
     final q = query.build();
     try {
@@ -285,6 +300,7 @@ class _SavedFileEntityQueryBuilderUpdateImpl
         if (fileType != ignore) 6: fileType as String?,
         if (folderId != ignore) 7: folderId as String?,
         if (isTextFile != ignore) 8: isTextFile as bool?,
+        if (contactJson != ignore) 9: contactJson as String?,
       });
     } finally {
       q.close();
@@ -1350,6 +1366,147 @@ extension SavedFileEntityQueryFilter
       );
     });
   }
+
+  QueryBuilder<SavedFileEntity, SavedFileEntity, QAfterFilterCondition>
+  contactJsonEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        EqualCondition(property: 9, value: value, caseSensitive: caseSensitive),
+      );
+    });
+  }
+
+  QueryBuilder<SavedFileEntity, SavedFileEntity, QAfterFilterCondition>
+  contactJsonGreaterThan(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterCondition(
+          property: 9,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SavedFileEntity, SavedFileEntity, QAfterFilterCondition>
+  contactJsonGreaterThanOrEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        GreaterOrEqualCondition(
+          property: 9,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SavedFileEntity, SavedFileEntity, QAfterFilterCondition>
+  contactJsonLessThan(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessCondition(property: 9, value: value, caseSensitive: caseSensitive),
+      );
+    });
+  }
+
+  QueryBuilder<SavedFileEntity, SavedFileEntity, QAfterFilterCondition>
+  contactJsonLessThanOrEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        LessOrEqualCondition(
+          property: 9,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SavedFileEntity, SavedFileEntity, QAfterFilterCondition>
+  contactJsonBetween(String lower, String upper, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        BetweenCondition(
+          property: 9,
+          lower: lower,
+          upper: upper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SavedFileEntity, SavedFileEntity, QAfterFilterCondition>
+  contactJsonStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        StartsWithCondition(
+          property: 9,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SavedFileEntity, SavedFileEntity, QAfterFilterCondition>
+  contactJsonEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        EndsWithCondition(
+          property: 9,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SavedFileEntity, SavedFileEntity, QAfterFilterCondition>
+  contactJsonContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        ContainsCondition(
+          property: 9,
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SavedFileEntity, SavedFileEntity, QAfterFilterCondition>
+  contactJsonMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        MatchesCondition(
+          property: 9,
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SavedFileEntity, SavedFileEntity, QAfterFilterCondition>
+  contactJsonIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const EqualCondition(property: 9, value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<SavedFileEntity, SavedFileEntity, QAfterFilterCondition>
+  contactJsonIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const GreaterCondition(property: 9, value: ''),
+      );
+    });
+  }
 }
 
 extension SavedFileEntityQueryObject
@@ -1489,6 +1646,20 @@ extension SavedFileEntityQuerySortBy
       return query.addSortBy(8, sort: Sort.desc);
     });
   }
+
+  QueryBuilder<SavedFileEntity, SavedFileEntity, QAfterSortBy>
+  sortByContactJson({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(9, caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<SavedFileEntity, SavedFileEntity, QAfterSortBy>
+  sortByContactJsonDesc({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(9, sort: Sort.desc, caseSensitive: caseSensitive);
+    });
+  }
 }
 
 extension SavedFileEntityQuerySortThenBy
@@ -1625,6 +1796,20 @@ extension SavedFileEntityQuerySortThenBy
       return query.addSortBy(8, sort: Sort.desc);
     });
   }
+
+  QueryBuilder<SavedFileEntity, SavedFileEntity, QAfterSortBy>
+  thenByContactJson({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(9, caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<SavedFileEntity, SavedFileEntity, QAfterSortBy>
+  thenByContactJsonDesc({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(9, sort: Sort.desc, caseSensitive: caseSensitive);
+    });
+  }
 }
 
 extension SavedFileEntityQueryWhereDistinct
@@ -1684,6 +1869,13 @@ extension SavedFileEntityQueryWhereDistinct
       return query.addDistinctBy(8);
     });
   }
+
+  QueryBuilder<SavedFileEntity, SavedFileEntity, QAfterDistinct>
+  distinctByContactJson({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(9, caseSensitive: caseSensitive);
+    });
+  }
 }
 
 extension SavedFileEntityQueryProperty1
@@ -1739,6 +1931,12 @@ extension SavedFileEntityQueryProperty1
   QueryBuilder<SavedFileEntity, bool, QAfterProperty> isTextFileProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addProperty(8);
+    });
+  }
+
+  QueryBuilder<SavedFileEntity, String, QAfterProperty> contactJsonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(9);
     });
   }
 }
@@ -1803,6 +2001,13 @@ extension SavedFileEntityQueryProperty2<R>
       return query.addProperty(8);
     });
   }
+
+  QueryBuilder<SavedFileEntity, (R, String), QAfterProperty>
+  contactJsonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(9);
+    });
+  }
 }
 
 extension SavedFileEntityQueryProperty3<R1, R2>
@@ -1864,6 +2069,13 @@ extension SavedFileEntityQueryProperty3<R1, R2>
   isTextFileProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addProperty(8);
+    });
+  }
+
+  QueryBuilder<SavedFileEntity, (R1, R2, String), QOperations>
+  contactJsonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(9);
     });
   }
 }

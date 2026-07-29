@@ -648,13 +648,14 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         fieldTransforms: fieldTransformsSnapshot,
       );
       await SavedContactInfo.writeToFolder(contactFolder.path, savedContact);
+      final modelId = '${now.millisecondsSinceEpoch}';
       await File(p.join(contactFolder.path, 'contact_details.txt'))
-          .writeAsString(_contactDetailsText());
+          .writeAsString(_contactDetailsText(), flush: true);
 
       final displayName =
           savedContact.name.isNotEmpty ? savedContact.name : 'Visiting Card';
       final model = SavedFileModel(
-        id: '${now.millisecondsSinceEpoch}',
+        id: modelId,
         name: displayName,
         dateTime: dateLabel,
         path: contactFolder.path,
@@ -662,6 +663,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         fileType: 'visiting_card',
         folderId: FolderViewModel.visitingCardFolderId,
         isTextFile: false,
+        contactJson: savedContact.toJsonString(),
       );
       await AppStorageService().storeAllFiles(model);
 
@@ -671,7 +673,8 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       isSaving = false;
       notifyListeners();
       return true;
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('saveCard failed: $e\n$st');
       sideIndex = previousSide;
       isSaving = false;
       notifyListeners();
@@ -746,7 +749,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       );
       await SavedContactInfo.writeToFolder(contactFolder.path, savedContact);
       await File(p.join(contactFolder.path, 'contact_details.txt'))
-          .writeAsString(_contactDetailsText());
+          .writeAsString(_contactDetailsText(), flush: true);
 
       final displayName =
           savedContact.name.isNotEmpty ? savedContact.name : 'Visiting Card';
@@ -760,6 +763,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         fileType: 'visiting_card',
         folderId: editingFolderId ?? FolderViewModel.visitingCardFolderId,
         isTextFile: false,
+        contactJson: savedContact.toJsonString(),
       );
       await AppStorageService().updateFile(model);
 
@@ -770,7 +774,8 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       isSaving = false;
       notifyListeners();
       return true;
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('updateCard failed: $e\n$st');
       sideIndex = previousSide;
       isSaving = false;
       notifyListeners();

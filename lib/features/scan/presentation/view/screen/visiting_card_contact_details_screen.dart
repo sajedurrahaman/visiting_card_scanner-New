@@ -5,15 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gal/gal.dart';
-import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
-import 'package:visiting_card/features/folder/presentation/view_model/folder_viewmodel.dart';
+
 import 'package:visiting_card/features/home/domain/model/recent_card_item.dart';
-import 'package:visiting_card/features/home/presentation/view_model/home_view_model.dart';
+
 import 'package:visiting_card/features/scan/domain/saved_contact_info.dart';
+import 'package:visiting_card/features/scan/domain/saved_contact_info_backup.dart';
+import 'package:visiting_card/features/scan/domain/visiting_card_folder_paths.dart';
 import 'package:visiting_card/features/scan/presentation/helper/visiting_card_share_helper.dart';
 import 'package:visiting_card/features/scan/presentation/view/screen/visiting_card_scan_template_edit_screen.dart';
 import 'package:visiting_card/features/scan/presentation/view_model/visiting_card_scan_viewmodel.dart';
@@ -22,14 +23,23 @@ import 'package:visiting_card/features/template/presentation/view/screen/visitin
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_template_viewmodel.dart';
+import 'package:visiting_card/app/storage/app_storage_service.dart';
+import 'package:visiting_card/features/home/domain/model/saved_file_model.dart';
+
+enum VisitingCardInitialAction { share }
 
 /// Card Details opened from Recent / Folder thumbnail.
 /// Same layout as [VisitingCardScannedDetailsScreen] without Change Template
 /// and without Save / Back to Home.
 class VisitingCardContactDetailsScreen extends StatefulWidget {
-  const VisitingCardContactDetailsScreen({super.key, required this.item});
+  const VisitingCardContactDetailsScreen({
+    super.key,
+    required this.item,
+    this.initialAction,
+  });
 
   final RecentCardItem item;
+  final VisitingCardInitialAction? initialAction;
 
   @override
   State<VisitingCardContactDetailsScreen> createState() =>
@@ -53,6 +63,7 @@ class _VisitingCardContactDetailsScreenState
   bool _isDownloadingScan = false;
   int _imagePageIndex = 0;
   int _imageEpoch = 0;
+  bool _handledInitialAction = false;
 
   bool get _isFromTemplate => _contact?.isFromTemplate == true;
 
@@ -102,7 +113,9 @@ class _VisitingCardContactDetailsScreenState
   }
 
   Future<void> _load() async {
-    final folderPath = widget.item.path;
+    final storedPath = widget.item.path;
+    final folderPath =
+        await VisitingCardFolderPaths.resolveContactFolder(storedPath);
     final images = <File>[];
     SavedContactInfo? contact;
 
@@ -110,15 +123,41 @@ class _VisitingCardContactDetailsScreenState
       final dir = Directory(folderPath);
       if (dir.existsSync()) {
         contact = await SavedContactInfo.readFromFolder(folderPath);
-        final front = File(p.join(folderPath, 'card_front.jpg'));
-        final back = File(p.join(folderPath, 'card_back.jpg'));
-        if (front.existsSync()) images.add(front);
-        if (back.existsSync()) images.add(back);
-        if (images.isEmpty && contact != null) {
-          for (final path in contact.imagePaths) {
-            final f = File(path);
-            if (f.existsSync()) images.add(f);
+
+        // Folder readable but contact.json missing/corrupt → prefs backup.
+        if (contact == null || !contact.hasAnyFieldData) {
+          final backup = await SavedContactInfoBackup.load(widget.item.id);
+          if (backup != null && backup.hasAnyFieldData) {
+            contact = backup;
           }
+        }
+
+        // Persist healed contact.json + prefs whenever we recovered fields.
+        if (contact != null && contact.hasAnyFieldData) {
+          try {
+            await SavedContactInfo.writeToFolder(folderPath, contact);
+          } catch (e, st) {
+            debugPrint('Failed to rewrite contact.json: $e\n$st');
+          }
+          await SavedContactInfoBackup.save(widget.item.id, contact);
+        }
+
+        images.addAll(
+          VisitingCardFolderPaths.resolveSideImages(
+            folderPath: folderPath,
+            contact: contact,
+            thumbnailPath: widget.item.thumbnailPath,
+          ),
+        );
+
+        // Heal Isar absolute path if Documents container UUID changed.
+        if (storedPath != null &&
+            storedPath.isNotEmpty &&
+            storedPath != folderPath) {
+          await _healStoredPaths(
+            folderPath: folderPath,
+            thumbPath: images.isNotEmpty ? images.first.path : null,
+          );
         }
       } else {
         final file = File(folderPath);
@@ -126,9 +165,20 @@ class _VisitingCardContactDetailsScreenState
       }
     }
 
-    final thumb = widget.item.thumbnailPath;
-    if (images.isEmpty && thumb != null && File(thumb).existsSync()) {
-      images.add(File(thumb));
+    // Still no contact fields — try backup even if folder missing.
+    if ((contact == null || !contact.hasAnyFieldData)) {
+      final backup = await SavedContactInfoBackup.load(widget.item.id);
+      if (backup != null && backup.hasAnyFieldData) {
+        contact = backup;
+      }
+    }
+
+    if (images.isEmpty) {
+      final thumb = VisitingCardFolderPaths.resolveThumbnail(
+        thumbnailPath: widget.item.thumbnailPath,
+        folderOrFilePath: folderPath,
+      );
+      if (thumb != null) images.add(thumb);
     }
 
     // Bust Flutter FileImage cache — same path after Update otherwise
@@ -157,6 +207,45 @@ class _VisitingCardContactDetailsScreenState
       _scanImagePageController.jumpToPage(0);
     }
     _syncPreviewFromContact();
+    _runInitialActionIfNeeded();
+  }
+
+  Future<void> _healStoredPaths({
+    required String folderPath,
+    String? thumbPath,
+  }) async {
+    try {
+      final files = AppStorageService().getAllFiles();
+      SavedFileModel? target;
+      for (final file in files) {
+        if (file.id == widget.item.id) {
+          target = file;
+          break;
+        }
+      }
+      if (target == null) return;
+      final healed = target.copyWith(
+        path: folderPath,
+        pathImage: thumbPath ?? target.pathImage,
+      );
+      await AppStorageService().updateFile(healed);
+    } catch (e, st) {
+      debugPrint('Failed to heal stored visiting-card paths: $e\n$st');
+    }
+  }
+
+  void _runInitialActionIfNeeded() {
+    if (_handledInitialAction || !mounted || _loading) return;
+    final action = widget.initialAction;
+    if (action == null) return;
+    _handledInitialAction = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      switch (action) {
+        case VisitingCardInitialAction.share:
+          _onShareContact();
+      }
+    });
   }
 
   void _syncPreviewFromContact() {
@@ -429,7 +518,8 @@ class _VisitingCardContactDetailsScreenState
       return;
     }
 
-    // Scan cards → edit on the selected template (not raw scan photos).
+    // Scan cards → template edit screen (move logo/QR/company/tagline).
+    // Next saves + shows Update toast. Back discards.
     final bytesList = <Uint8List>[];
     for (final file in _images) {
       if (await file.exists()) {
@@ -449,7 +539,7 @@ class _VisitingCardContactDetailsScreenState
     if (!mounted) return;
 
     final template = _templateForId(editContact.templateId);
-    final updated = await Navigator.push<bool>(
+    final saved = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (_) => ChangeNotifierProvider.value(
@@ -461,21 +551,9 @@ class _VisitingCardContactDetailsScreenState
         ),
       ),
     );
-    if (!mounted || updated != true) return;
-
-    // Persist field / logo / QR / transform changes back to storage.
-    _applyScanVmToPreview(vm);
-    final home = context.read<HomeViewModel>();
-    final folder = context.read<FolderViewModel>();
-    final ok = await vm.saveScannedCard(
-      homeViewModel: home,
-      folderViewModel: folder,
-      templateId: template.id,
-      captureTemplateSide: _captureTemplateSide,
-    );
     if (!mounted) return;
-    if (ok) {
-      ui.AppToast.success(context, 'Contact update Successfully');
+    if (saved == true) {
+      _applyScanVmToPreview(vm);
     }
     await _load();
   }

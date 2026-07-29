@@ -553,36 +553,42 @@ class _VisitingCardCameraScreenState extends State<VisitingCardCameraScreen> {
                         color: Colors.black,
                         child: Column(
                           children: [
-                            if (widget.showScanModeStrip)
-                              ParentScanModeStrip(
-                                selected: widget.scanMode,
-                                onChanged: (mode) =>
-                                    ParentScanNavigator.switchMode(
-                                  context,
-                                  mode,
-                                ),
-                              ),
+                            // PDF Scanner parity: top 50px is either mode strip
+                            // OR Done (strip/triangle hide after first capture).
+                            SizedBox(
+                              height: 50,
+                              child: (widget.showScanModeStrip &&
+                                      vm.images.isEmpty &&
+                                      !widget.isRetakeMode)
+                                  ? ParentScanModeStrip(
+                                      selected: widget.scanMode,
+                                      onChanged: (mode) =>
+                                          ParentScanNavigator.switchMode(
+                                        context,
+                                        mode,
+                                      ),
+                                    )
+                                  : (vm.images.isNotEmpty &&
+                                          !widget.isRetakeMode)
+                                      ? Align(
+                                          alignment: Alignment.topRight,
+                                          child: TextButton(
+                                            onPressed: _openPreview,
+                                            child: const Text(
+                                              'Done',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      : const SizedBox.shrink(),
+                            ),
                             Expanded(
                               child: Stack(
                                 children: [
-                                  /// Done above bottom-right thumbnail (PDF Scanner)
-                                  if (vm.images.isNotEmpty &&
-                                      !widget.isRetakeMode)
-                                    Positioned(
-                                      top: 0,
-                                      right: 8,
-                                      child: TextButton(
-                                        onPressed: _openPreview,
-                                        child: const Text(
-                                          'Done',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
                                   Positioned(
                                     bottom: widget.showScanModeStrip ? 8 : 16,
                                     left: 0,

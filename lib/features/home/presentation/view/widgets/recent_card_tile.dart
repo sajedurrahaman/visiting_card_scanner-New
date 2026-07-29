@@ -8,6 +8,7 @@ import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/home/domain/model/recent_card_item.dart';
 import 'package:visiting_card/features/home/presentation/view/screen/saved_image_preview_screen.dart';
 import 'package:visiting_card/features/home/presentation/view_model/recent_card_menu_view_model.dart';
+import 'package:visiting_card/features/scan/domain/visiting_card_folder_paths.dart';
 import 'package:visiting_card/features/scan/presentation/helper/qr_barcode_scan_storage.dart';
 import 'package:visiting_card/features/scan/presentation/view/screen/visiting_card_contact_details_screen.dart';
 
@@ -30,7 +31,6 @@ class RecentCardTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final menuViewModel = context.read<RecentCardMenuViewModel>();
-    final isVisitingCard = item.fileType == 'visiting_card';
     final isScanQrOrBarcode = QrBarcodeScanStorage.isScanTextItem(item);
     final menuItems = <PopupMenuEntry<RecentCardMenuAction>>[
       _buildMenuItem(
@@ -38,14 +38,13 @@ class RecentCardTile extends StatelessWidget {
         icon: Icons.edit_outlined,
         label: 'Rename',
       ),
-      if (!isVisitingCard && !isScanQrOrBarcode)
+      if (!isScanQrOrBarcode)
         _buildMenuItem(
           value: RecentCardMenuAction.download,
           icon: Icons.download_outlined,
           label: 'Download',
         ),
-      if (!isVisitingCard)
-        _buildMenuItem(
+      _buildMenuItem(
           value: RecentCardMenuAction.share,
           icon: Icons.share_outlined,
           label: 'Share',
@@ -157,11 +156,8 @@ class RecentCardTile extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14.r),
                 ),
-                onSelected: (action) => menuViewModel.handleMenuAction(
-                  context,
-                  item: item,
-                  action: action,
-                ),
+                onSelected: (action) =>
+                    _handleMenuAction(context, menuViewModel, action),
                 itemBuilder: (context) => menuItems,
                 child: Icon(
                   Icons.more_vert,
@@ -196,6 +192,45 @@ class RecentCardTile extends StatelessWidget {
       ),
     );
   }
+
+  Future<void> _handleMenuAction(
+    BuildContext context,
+    RecentCardMenuViewModel menuViewModel,
+    RecentCardMenuAction action,
+  ) async {
+    if (item.fileType == 'visiting_card') {
+      switch (action) {
+        case RecentCardMenuAction.download:
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => VisitingCardContactDetailsScreen(item: item),
+            ),
+          );
+          return;
+        case RecentCardMenuAction.share:
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => VisitingCardContactDetailsScreen(
+                item: item,
+                initialAction: VisitingCardInitialAction.share,
+              ),
+            ),
+          );
+          return;
+        case RecentCardMenuAction.rename:
+        case RecentCardMenuAction.delete:
+          break;
+      }
+    }
+
+    await menuViewModel.handleMenuAction(
+      context,
+      item: item,
+      action: action,
+    );
+  }
 }
 
 class _RecentThumbnail extends StatelessWidget {
@@ -212,10 +247,20 @@ class _RecentThumbnail extends StatelessWidget {
     // Scan .txt files are not images — never load them via Image.file.
     if (item.isTextFile) return null;
 
+    // Visiting-card [path] is a contact folder — never pass a Directory to
+    // Image.file (common after restart when pathImage is stale/missing).
+    if (item.fileType == 'visiting_card') {
+      return VisitingCardFolderPaths.resolveThumbnail(
+        thumbnailPath: item.thumbnailPath,
+        folderOrFilePath: item.path,
+      );
+    }
+
     for (final path in [item.thumbnailPath, item.path]) {
       if (path == null || path.isEmpty) continue;
       final lower = path.toLowerCase();
       if (lower.endsWith('.txt') || lower.endsWith('.json')) continue;
+      if (Directory(path).existsSync()) continue;
       final file = File(path);
       if (file.existsSync()) return file;
     }

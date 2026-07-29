@@ -361,15 +361,16 @@ class VisitingCardScanViewModel extends ChangeNotifier {
         logoImagePath: embedded.logoPath,
         templateImagePaths: templatePaths,
       );
+      final modelId = '${now.millisecondsSinceEpoch}';
       await SavedContactInfo.writeToFolder(contactFolder.path, contact);
       await File(p.join(contactFolder.path, 'contact_details.txt'))
-          .writeAsString(_contactDetailsText());
+          .writeAsString(_contactDetailsText(), flush: true);
 
       final displayName =
           contact.name.isNotEmpty ? contact.name : 'Visiting Card';
       final thumbPath = frontPath ?? p.join(contactFolder.path, 'card_front.jpg');
       final model = SavedFileModel(
-        id: '${now.millisecondsSinceEpoch}',
+        id: modelId,
         name: displayName,
         dateTime: dateLabel,
         path: contactFolder.path,
@@ -377,6 +378,7 @@ class VisitingCardScanViewModel extends ChangeNotifier {
         fileType: 'visiting_card',
         folderId: FolderViewModel.visitingCardFolderId,
         isTextFile: false,
+        contactJson: contact.toJsonString(),
       );
       await AppStorageService().storeAllFiles(model);
 
@@ -387,7 +389,8 @@ class VisitingCardScanViewModel extends ChangeNotifier {
       isSaving = false;
       notifyListeners();
       return true;
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('saveScannedCard failed: $e\n$st');
       isSaving = false;
       notifyListeners();
       return false;
@@ -441,7 +444,7 @@ class VisitingCardScanViewModel extends ChangeNotifier {
       );
       await SavedContactInfo.writeToFolder(contactFolder.path, contact);
       await File(p.join(contactFolder.path, 'contact_details.txt'))
-          .writeAsString(_contactDetailsText());
+          .writeAsString(_contactDetailsText(), flush: true);
 
       final displayName =
           contact.name.isNotEmpty ? contact.name : 'Visiting Card';
@@ -456,6 +459,7 @@ class VisitingCardScanViewModel extends ChangeNotifier {
         fileType: 'visiting_card',
         folderId: editingFolderId ?? FolderViewModel.visitingCardFolderId,
         isTextFile: false,
+        contactJson: contact.toJsonString(),
       );
       await AppStorageService().updateFile(model);
 
@@ -466,7 +470,8 @@ class VisitingCardScanViewModel extends ChangeNotifier {
       isSaving = false;
       notifyListeners();
       return true;
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('updateScannedCard failed: $e\n$st');
       isSaving = false;
       notifyListeners();
       return false;

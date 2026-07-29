@@ -25,4 +25,8 @@ class SavedFileEntity {
   late String folderId;
 
   late bool isTextFile;
+
+  /// Serialized [SavedContactInfo] JSON for visiting cards.
+  /// Empty for QR / Barcode. Survives iOS Documents path churn.
+  String contactJson = '';
 }

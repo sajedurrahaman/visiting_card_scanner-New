@@ -8,6 +8,7 @@ class SavedFileModel {
     required this.fileType,
     required this.folderId,
     this.isTextFile = false,
+    this.contactJson = '',
   });
 
   final String id;
@@ -21,6 +22,10 @@ class SavedFileModel {
   final String folderId;
   final bool isTextFile;
 
+  /// JSON payload of [SavedContactInfo] for visiting cards (Isar-backed).
+  /// Empty for QR/Barcode rows.
+  final String contactJson;
+
   SavedFileModel copyWith({
     String? id,
     String? name,
@@ -30,6 +35,7 @@ class SavedFileModel {
     String? fileType,
     String? folderId,
     bool? isTextFile,
+    String? contactJson,
   }) {
     return SavedFileModel(
       id: id ?? this.id,
@@ -40,6 +46,7 @@ class SavedFileModel {
       fileType: fileType ?? this.fileType,
       folderId: folderId ?? this.folderId,
       isTextFile: isTextFile ?? this.isTextFile,
+      contactJson: contactJson ?? this.contactJson,
     );
   }
 
@@ -53,6 +60,7 @@ class SavedFileModel {
       fileType: json['fileType'] as String? ?? '',
       folderId: json['folderId'] as String? ?? '',
       isTextFile: json['isTextFile'] as bool? ?? false,
+      contactJson: json['contactJson'] as String? ?? '',
     );
   }
 
@@ -65,5 +73,6 @@ class SavedFileModel {
         'fileType': fileType,
         'folderId': folderId,
         'isTextFile': isTextFile,
+        'contactJson': contactJson,
       };
 }

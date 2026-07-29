@@ -17,6 +17,7 @@ import 'package:visiting_card/features/scan/presentation/helper/visiting_card_sh
 import 'package:visiting_card/features/scan/presentation/view/screen/visiting_card_scan_template_edit_screen.dart';
 import 'package:visiting_card/features/scan/presentation/view_model/visiting_card_scan_viewmodel.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_export_utils.dart';
+import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_edit_field_cards.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
@@ -105,6 +106,7 @@ class _VisitingCardScannedDetailsScreenState
       isHorizontal: true,
     );
     final scan = context.read<VisitingCardScanViewModel>();
+    // New template → fresh default positions (no old transforms carried over).
     next.applyContactLists(
       names: scan.names,
       designations: scan.designations,
@@ -118,18 +120,14 @@ class _VisitingCardScannedDetailsScreenState
       logoAssetPath: scan.logoAssetPath,
       hasChosenQr: scan.hasChosenQr,
       hasChosenLogo: scan.hasChosenLogo,
-      // Keep moves only when staying on the same layout family; new template
-      // uses its own default positions.
-      fieldTransforms: item.id == (scan.selectedTemplateId ?? '')
-          ? scan.fieldTransforms
-          : null,
     );
+    scan.selectedTemplateId = item.id;
+    scan.fieldTransforms = const VisitingCardFieldTransforms();
     setState(() {
       _previewVm.dispose();
       _previewVm = next;
       _selectedTemplateId = item.id;
     });
-    scan.selectedTemplateId = item.id;
   }
 
   Future<void> _onEditSelectedTemplate() async {
@@ -144,6 +142,7 @@ class _VisitingCardScannedDetailsScreenState
           child: VisitingCardScanTemplateEditScreen(
             template: template,
             isHorizontal: true,
+            popOnDone: true,
           ),
         ),
       ),

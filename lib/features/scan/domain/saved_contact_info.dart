@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:path/path.dart' as p;
 import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
 
 class SavedContactInfo {
@@ -47,9 +48,19 @@ class SavedContactInfo {
   final List<String> templateImagePaths;
   final VisitingCardFieldTransforms fieldTransforms;
 
-  bool get isFromTemplate =>
-      source == sourceTemplate ||
-      (source.isEmpty && templateId.isNotEmpty);
+  /// True when at least one contact field has a non-empty value.
+  bool get hasAnyFieldData =>
+      name.trim().isNotEmpty ||
+      designation.trim().isNotEmpty ||
+      company.trim().isNotEmpty ||
+      tagline.trim().isNotEmpty ||
+      phones.any((e) => e.value.trim().isNotEmpty) ||
+      emails.any((e) => e.value.trim().isNotEmpty) ||
+      websites.any((e) => e.value.trim().isNotEmpty) ||
+      addresses.any((e) => e.trim().isNotEmpty);
+
+  /// True only for cards created from the template designer (not scan + template).
+  bool get isFromTemplate => source == sourceTemplate;
 
   Map<String, dynamic> toJson() => {
         'name': name,
@@ -71,6 +82,8 @@ class SavedContactInfo {
         if (!fieldTransforms.isEmpty)
           'fieldTransforms': fieldTransforms.toJson(),
       };
+
+  String toJsonString() => jsonEncode(toJson());
 
   factory SavedContactInfo.fromJson(Map<String, dynamic> json) {
     List<SavedTypedValue> typed(String key) {
@@ -117,17 +130,104 @@ class SavedContactInfo {
     String folderPath,
     SavedContactInfo contact,
   ) async {
-    final file = File('$folderPath/contact.json');
+    final file = File(p.join(folderPath, 'contact.json'));
     await file.writeAsString(jsonEncode(contact.toJson()), flush: true);
   }
 
   static Future<SavedContactInfo?> readFromFolder(String folderPath) async {
-    final file = File('$folderPath/contact.json');
+    final file = File(p.join(folderPath, 'contact.json'));
+    if (await file.exists()) {
+      try {
+        final decoded = jsonDecode(await file.readAsString());
+        if (decoded is Map) {
+          final contact =
+              SavedContactInfo.fromJson(Map<String, dynamic>.from(decoded));
+          if (contact.hasAnyFieldData) return contact;
+        }
+      } catch (e, st) {
+        assert(() {
+          // ignore: avoid_print
+          print('SavedContactInfo.readFromFolder failed: $e\n$st');
+          return true;
+        }());
+      }
+    }
+
+    // Older saves / corrupt json — fall back to contact_details.txt.
+    return readFromDetailsTxt(folderPath);
+  }
+
+  /// Best-effort parse of `contact_details.txt` written beside contact.json.
+  static Future<SavedContactInfo?> readFromDetailsTxt(String folderPath) async {
+    final file = File(p.join(folderPath, 'contact_details.txt'));
     if (!await file.exists()) return null;
     try {
-      final decoded = jsonDecode(await file.readAsString());
-      if (decoded is! Map) return null;
-      return SavedContactInfo.fromJson(Map<String, dynamic>.from(decoded));
+      final lines = (await file.readAsString())
+          .split(RegExp(r'\r?\n'))
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+      if (lines.isEmpty) return null;
+
+      var name = '';
+      var designation = '';
+      var company = '';
+      var tagline = '';
+      final phones = <SavedTypedValue>[];
+      final emails = <SavedTypedValue>[];
+      final websites = <SavedTypedValue>[];
+      final addresses = <String>[];
+
+      for (final line in lines) {
+        final sep = line.indexOf(':');
+        if (sep <= 0) continue;
+        final label = line.substring(0, sep).trim();
+        final value = line.substring(sep + 1).trim();
+        if (value.isEmpty) continue;
+        final lower = label.toLowerCase();
+        if (lower == 'name') {
+          name = value;
+        } else if (lower == 'designation') {
+          designation = value;
+        } else if (lower == 'company') {
+          company = value;
+        } else if (lower == 'tagline') {
+          tagline = value;
+        } else if (lower.startsWith('email')) {
+          final typeMatch = RegExp(r'\(([^)]+)\)').firstMatch(label);
+          emails.add(
+            SavedTypedValue(
+              value: value,
+              type: typeMatch?.group(1)?.trim() ?? 'Company',
+            ),
+          );
+        } else if (lower.startsWith('website')) {
+          final typeMatch = RegExp(r'\(([^)]+)\)').firstMatch(label);
+          websites.add(
+            SavedTypedValue(
+              value: value,
+              type: typeMatch?.group(1)?.trim() ?? 'Company',
+            ),
+          );
+        } else if (lower == 'address') {
+          addresses.add(value);
+        } else {
+          // Phone rows are written as "<type>: <number>" (Cell/Work/…).
+          phones.add(SavedTypedValue(value: value, type: label));
+        }
+      }
+
+      final contact = SavedContactInfo(
+        name: name,
+        designation: designation,
+        company: company,
+        tagline: tagline,
+        phones: phones,
+        emails: emails,
+        websites: websites,
+        addresses: addresses,
+      );
+      return contact.hasAnyFieldData ? contact : null;
     } catch (_) {
       return null;
     }
