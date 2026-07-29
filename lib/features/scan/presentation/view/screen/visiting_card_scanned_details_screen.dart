@@ -14,6 +14,7 @@ import 'package:visiting_card/features/home/presentation/view_model/home_view_mo
 import 'package:visiting_card/features/parent/presentation/view_model/parent_view_model.dart';
 import 'package:visiting_card/features/scan/domain/scanned_image_model.dart';
 import 'package:visiting_card/features/scan/presentation/helper/visiting_card_share_helper.dart';
+import 'package:visiting_card/features/scan/presentation/view/screen/visiting_card_scan_template_edit_screen.dart';
 import 'package:visiting_card/features/scan/presentation/view_model/visiting_card_scan_viewmodel.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_export_utils.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_edit_field_cards.dart';
@@ -48,16 +49,26 @@ class _VisitingCardScannedDetailsScreenState
     super.initState();
     _templateScrollController = ScrollController();
     _scanImagePageController = PageController();
-    final first = _templates.first;
-    _selectedTemplateId = first.id;
+    final scan = context.read<VisitingCardScanViewModel>();
+    final initial = _templateFor(scan.selectedTemplateId);
+    _selectedTemplateId = initial.id;
     _previewVm = VisitingCardEditContactViewModel.fromTemplate(
-      first,
+      initial,
       isHorizontal: true,
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _syncPreviewFromScan();
     });
+  }
+
+  VisitingCardTemplateItem _templateFor(String? id) {
+    if (id != null && id.isNotEmpty) {
+      for (final t in _templates) {
+        if (t.id == id) return t;
+      }
+    }
+    return _templates.first;
   }
 
   @override
@@ -83,6 +94,7 @@ class _VisitingCardScannedDetailsScreenState
       logoAssetPath: scan.logoAssetPath,
       hasChosenQr: scan.hasChosenQr,
       hasChosenLogo: scan.hasChosenLogo,
+      fieldTransforms: scan.fieldTransforms,
     );
   }
 
@@ -106,12 +118,39 @@ class _VisitingCardScannedDetailsScreenState
       logoAssetPath: scan.logoAssetPath,
       hasChosenQr: scan.hasChosenQr,
       hasChosenLogo: scan.hasChosenLogo,
+      // Keep moves only when staying on the same layout family; new template
+      // uses its own default positions.
+      fieldTransforms: item.id == (scan.selectedTemplateId ?? '')
+          ? scan.fieldTransforms
+          : null,
     );
     setState(() {
       _previewVm.dispose();
       _previewVm = next;
       _selectedTemplateId = item.id;
     });
+    scan.selectedTemplateId = item.id;
+  }
+
+  Future<void> _onEditSelectedTemplate() async {
+    final scan = context.read<VisitingCardScanViewModel>();
+    scan.selectedTemplateId = _selectedTemplateId;
+    final template = _templateFor(_selectedTemplateId);
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider.value(
+          value: scan,
+          child: VisitingCardScanTemplateEditScreen(
+            template: template,
+            isHorizontal: true,
+          ),
+        ),
+      ),
+    );
+    if (!mounted || updated != true) return;
+    _syncPreviewFromScan();
+    setState(() {});
   }
 
   Future<void> _onViewAll() async {
@@ -309,6 +348,7 @@ class _VisitingCardScannedDetailsScreenState
 
     _syncPreviewFromScan();
     vm.selectedTemplateId = _selectedTemplateId;
+    vm.fieldTransforms = _previewVm.fieldTransformsSnapshot;
     final previousSide = _previewVm.sideIndex;
 
     final home = context.read<HomeViewModel>();
@@ -815,7 +855,7 @@ class _VisitingCardScannedDetailsScreenState
                       _ActionItem(
                         asset: ui.AppAssets.visitingTemplateEditIcon,
                         label: 'Edit',
-                        onTap: () => Navigator.pop(context),
+                        onTap: _onEditSelectedTemplate,
                       ),
                       _ActionItem(
                         asset: ui.AppAssets.visitingTemplateShareIcon,

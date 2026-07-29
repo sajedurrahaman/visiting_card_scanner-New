@@ -10,10 +10,12 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
+import 'package:visiting_card/features/folder/presentation/view_model/folder_viewmodel.dart';
 import 'package:visiting_card/features/home/domain/model/recent_card_item.dart';
+import 'package:visiting_card/features/home/presentation/view_model/home_view_model.dart';
 import 'package:visiting_card/features/scan/domain/saved_contact_info.dart';
 import 'package:visiting_card/features/scan/presentation/helper/visiting_card_share_helper.dart';
-import 'package:visiting_card/features/scan/presentation/view/screen/visiting_card_scanned_contact_screen.dart';
+import 'package:visiting_card/features/scan/presentation/view/screen/visiting_card_scan_template_edit_screen.dart';
 import 'package:visiting_card/features/scan/presentation/view_model/visiting_card_scan_viewmodel.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_export_utils.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_edit_contact_info_screen.dart';
@@ -422,12 +424,12 @@ class _VisitingCardContactDetailsScreenState
         );
 
     // Template-generated cards → template edit flow (live preview).
-    // Scan cards → scan edit flow (scanned photos).
     if (editContact.isFromTemplate) {
       await _openTemplateEdit(editContact);
       return;
     }
 
+    // Scan cards → edit on the selected template (not raw scan photos).
     final bytesList = <Uint8List>[];
     for (final file in _images) {
       if (await file.exists()) {
@@ -446,16 +448,54 @@ class _VisitingCardContactDetailsScreenState
     );
     if (!mounted) return;
 
-    await Navigator.push(
+    final template = _templateForId(editContact.templateId);
+    final updated = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (_) => ChangeNotifierProvider.value(
           value: vm,
-          child: const VisitingCardScannedContactScreen(),
+          child: VisitingCardScanTemplateEditScreen(
+            template: template,
+            isHorizontal: _isHorizontalTemplate(editContact.templateId),
+          ),
         ),
       ),
     );
-    if (mounted) await _load();
+    if (!mounted || updated != true) return;
+
+    // Persist field / logo / QR / transform changes back to storage.
+    _applyScanVmToPreview(vm);
+    final home = context.read<HomeViewModel>();
+    final folder = context.read<FolderViewModel>();
+    final ok = await vm.saveScannedCard(
+      homeViewModel: home,
+      folderViewModel: folder,
+      templateId: template.id,
+      captureTemplateSide: _captureTemplateSide,
+    );
+    if (!mounted) return;
+    if (ok) {
+      ui.AppToast.success(context, 'Contact update Successfully');
+    }
+    await _load();
+  }
+
+  void _applyScanVmToPreview(VisitingCardScanViewModel scan) {
+    _previewVm.applyContactLists(
+      names: scan.names,
+      designations: scan.designations,
+      companies: scan.companies,
+      taglines: scan.taglines,
+      phones: scan.phones,
+      emails: scan.emails,
+      websites: scan.websites,
+      addresses: scan.addresses,
+      qrAssetPath: scan.qrAssetPath,
+      logoAssetPath: scan.logoAssetPath,
+      hasChosenQr: scan.hasChosenQr,
+      hasChosenLogo: scan.hasChosenLogo,
+      fieldTransforms: scan.fieldTransforms,
+    );
   }
 
   Future<void> _openTemplateEdit(SavedContactInfo contact) async {

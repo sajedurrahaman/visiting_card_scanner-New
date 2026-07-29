@@ -66,6 +66,8 @@ class VisitingCardEditContactInfoScreen extends StatelessWidget {
     await _clearFocus(context);
     if (path == null || path.isEmpty) return;
     vm.applyQrImage(path);
+    if (!context.mounted) return;
+    ui.AppToast.success(context, 'QR Code uploaded successfully');
     await _clearFocus(context);
   }
 
@@ -82,6 +84,7 @@ class VisitingCardEditContactInfoScreen extends StatelessWidget {
     final path = await vm.persistLogoFile(file);
     if (!context.mounted) return;
     vm.applyLogoImage(path);
+    ui.AppToast.success(context, 'Logo uploaded successfully');
     await _clearFocus(context);
   }
 

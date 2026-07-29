@@ -13,6 +13,9 @@ import 'package:visiting_card/features/template/presentation/view/screen/visitin
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_edit_field_cards.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
 
+/// First-pass scan OCR edit — shows **scanned photos** (1/2, 2/2).
+/// Template live-preview edit is [VisitingCardScanTemplateEditScreen]
+/// (opened from Card Details after a template is selected).
 class VisitingCardScannedContactScreen extends StatefulWidget {
   const VisitingCardScannedContactScreen({super.key});
 
@@ -64,6 +67,8 @@ class _VisitingCardScannedContactScreenState
     await _clearFocus();
     if (path == null || path.isEmpty) return;
     vm.applyQrImage(path);
+    if (!mounted) return;
+    ui.AppToast.success(context, 'QR Code uploaded successfully');
     await _clearFocus();
   }
 
@@ -77,6 +82,7 @@ class _VisitingCardScannedContactScreenState
     final path = await vm.persistLogoFile(file);
     if (!mounted) return;
     vm.applyLogoImage(path);
+    ui.AppToast.success(context, 'Logo uploaded successfully');
     await _clearFocus();
   }
 

@@ -365,9 +365,10 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       final style = styleFor(configPos, fontSize: fontSize);
       final display = configPos.uppercase ? value.toUpperCase() : value;
 
-      // Tight box = actual painted text (no extra green-border padding).
+      // Tight box = actual painted text (no extra green-border vertical padding).
+      final measureStyle = style.copyWith(height: 1.0);
       final painter = TextPainter(
-        text: TextSpan(text: display, style: style),
+        text: TextSpan(text: display, style: measureStyle),
         maxLines: configPos.maxLines,
         ellipsis: '…',
         textAlign: configPos.textAlign,
@@ -381,7 +382,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         maxLines: configPos.maxLines,
         overflow: TextOverflow.ellipsis,
         textAlign: configPos.textAlign,
-        style: style,
+        style: measureStyle,
       );
 
       if (!interactive) {
@@ -427,49 +428,20 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       if (!isAsset && !File(assetPath).existsSync()) return;
 
       final t = vm.resolvedTransform(field, isFront: isFront);
-      final box = size.width * t.size;
-      final image = isAsset
-          ? Image.asset(
-              assetPath,
-              key: ValueKey(assetPath),
-              fit: BoxFit.contain,
-              errorBuilder: (_, _, _) => const SizedBox.shrink(),
-            )
-          : Image.file(
-              File(assetPath),
-              key: ValueKey(assetPath),
-              fit: BoxFit.contain,
-              errorBuilder: (_, _, _) => const SizedBox.shrink(),
-            );
-
-      if (!interactive) {
-        children.add(
-          Positioned(
-            left: size.width * t.left,
-            top: size.height * t.top,
-            width: box,
-            height: box,
-            child: Transform.rotate(angle: t.rotation, child: image),
-          ),
-        );
-        return;
-      }
-
       children.add(
-        VisitingCardTransformOverlay(
+        _AspectFitTransformImage(
+          key: ValueKey('transform-$field-$assetPath-$isFront'),
           cardSize: size,
-          left: size.width * t.left,
-          top: size.height * t.top,
-          boxWidth: box,
-          boxHeight: box,
-          rotation: t.rotation,
+          transform: t,
+          assetPath: assetPath,
+          isAsset: isAsset,
+          interactive: interactive,
           selected: vm.selectedOverlay == field,
           onSelect: () => vm.selectOverlay(field),
           onDeselect: vm.clearOverlaySelection,
           onMove: (dx, dy) => vm.moveOverlay(field, dx, dy, size),
           onResize: (d) => vm.resizeOverlay(field, d, size),
           onRotate: (r) => vm.rotateOverlay(field, r),
-          child: image,
         ),
       );
     }
@@ -549,6 +521,148 @@ class _PositionedField extends StatelessWidget {
               ? cardSize.height * position.height!
               : null),
       child: child,
+    );
+  }
+}
+
+/// Sizes logo/QR box to the image aspect ratio so the green border has no
+/// vertical (or horizontal) letterbox padding.
+class _AspectFitTransformImage extends StatefulWidget {
+  const _AspectFitTransformImage({
+    super.key,
+    required this.cardSize,
+    required this.transform,
+    required this.assetPath,
+    required this.isAsset,
+    required this.interactive,
+    required this.selected,
+    required this.onSelect,
+    required this.onDeselect,
+    required this.onMove,
+    required this.onResize,
+    required this.onRotate,
+  });
+
+  final Size cardSize;
+  final VisitingCardFieldTransform transform;
+  final String assetPath;
+  final bool isAsset;
+  final bool interactive;
+  final bool selected;
+  final VoidCallback onSelect;
+  final VoidCallback onDeselect;
+  final void Function(double dx, double dy) onMove;
+  final void Function(double delta) onResize;
+  final void Function(double absoluteRadians) onRotate;
+
+  @override
+  State<_AspectFitTransformImage> createState() =>
+      _AspectFitTransformImageState();
+}
+
+class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
+  /// width / height; null until decoded.
+  double? _aspect;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveAspect();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AspectFitTransformImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.assetPath != widget.assetPath) {
+      _aspect = null;
+      _resolveAspect();
+    }
+  }
+
+  void _resolveAspect() {
+    final ImageProvider provider = widget.isAsset
+        ? AssetImage(widget.assetPath)
+        : FileImage(File(widget.assetPath));
+    final stream = provider.resolve(const ImageConfiguration());
+    late final ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (info, _) {
+        final w = info.image.width.toDouble();
+        final h = info.image.height.toDouble();
+        stream.removeListener(listener);
+        if (!mounted || h <= 0) return;
+        setState(() => _aspect = w / h);
+      },
+      onError: (_, _) {
+        stream.removeListener(listener);
+        if (!mounted) return;
+        setState(() => _aspect = 1);
+      },
+    );
+    stream.addListener(listener);
+  }
+
+  (double, double) _boxFor(double aspect) {
+    final maxSide = widget.cardSize.width * widget.transform.size;
+    if (aspect >= 1) {
+      return (maxSide, maxSide / aspect);
+    }
+    return (maxSide * aspect, maxSide);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final aspect = _aspect ?? 1.0;
+    final (boxW, boxH) = _boxFor(aspect);
+    final left = widget.cardSize.width * widget.transform.left;
+    final top = widget.cardSize.height * widget.transform.top;
+
+    final image = widget.isAsset
+        ? Image.asset(
+            widget.assetPath,
+            key: ValueKey(widget.assetPath),
+            fit: BoxFit.fill,
+            width: boxW,
+            height: boxH,
+            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+          )
+        : Image.file(
+            File(widget.assetPath),
+            key: ValueKey(widget.assetPath),
+            fit: BoxFit.fill,
+            width: boxW,
+            height: boxH,
+            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+          );
+
+    if (!widget.interactive) {
+      return Positioned(
+        left: left,
+        top: top,
+        width: boxW,
+        height: boxH,
+        child: Transform.rotate(
+          angle: widget.transform.rotation,
+          child: image,
+        ),
+      );
+    }
+
+    return VisitingCardTransformOverlay(
+      cardSize: widget.cardSize,
+      left: left,
+      top: top,
+      boxWidth: boxW,
+      boxHeight: boxH,
+      rotation: widget.transform.rotation,
+      selected: widget.selected,
+      tightBorder: true,
+      onSelect: widget.onSelect,
+      onDeselect: widget.onDeselect,
+      onMove: widget.onMove,
+      onResize: widget.onResize,
+      onRotate: widget.onRotate,
+      child: image,
     );
   }
 }

@@ -58,21 +58,23 @@ class _VisitingCardTransformOverlayState
   @override
   Widget build(BuildContext context) {
     final handle = _handle.w;
-    final hitPad = handle / 2;
+    // Horizontal only — no vertical padding around the green border.
+    final hitPadX = handle / 2;
+    final hitPadBottom = handle / 2;
 
     return Positioned(
-      left: widget.left - hitPad,
-      top: widget.top - hitPad,
-      width: widget.boxWidth + hitPad * 2,
-      height: widget.boxHeight + hitPad * 2,
+      left: widget.left - hitPadX,
+      top: widget.top,
+      width: widget.boxWidth + hitPadX * 2,
+      height: widget.boxHeight + hitPadBottom,
       child: Transform.rotate(
         angle: widget.rotation,
         child: Stack(
           clipBehavior: Clip.none,
           children: [
             Positioned(
-              left: hitPad,
-              top: hitPad,
+              left: hitPadX,
+              top: 0,
               width: widget.boxWidth,
               height: widget.boxHeight,
               child: GestureDetector(
@@ -111,22 +113,22 @@ class _VisitingCardTransformOverlayState
                 ),
               ),
             ),
-          if (widget.selected) ...[
-            // Bottom-right: resize
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onPanUpdate: (d) => widget.onResize(d.delta.dy),
-                child: _HandleButton(
-                  size: handle,
-                  icon: Icons.unfold_more_rounded,
-                  iconAngleDegrees: 145,
+            if (widget.selected) ...[
+              // Bottom-right: resize
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onPanUpdate: (d) => widget.onResize(d.delta.dy),
+                  child: _HandleButton(
+                    size: handle,
+                    icon: Icons.unfold_more_rounded,
+                    iconAngleDegrees: 145,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
           ],
         ),
       ),

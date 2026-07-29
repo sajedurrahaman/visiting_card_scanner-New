@@ -14,6 +14,7 @@ import 'package:visiting_card/features/home/presentation/view_model/home_view_mo
 import 'package:visiting_card/features/scan/domain/ocr_contact_parser.dart';
 import 'package:visiting_card/features/scan/domain/saved_contact_info.dart';
 import 'package:visiting_card/features/scan/domain/scanned_image_model.dart';
+import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
 
 class VisitingCardScanViewModel extends ChangeNotifier {
@@ -49,6 +50,8 @@ class VisitingCardScanViewModel extends ChangeNotifier {
   bool hasChosenQr = false;
   bool hasChosenLogo = false;
   String? selectedTemplateId;
+  VisitingCardFieldTransforms fieldTransforms =
+      const VisitingCardFieldTransforms();
 
   int get maxShots => isBothSides ? 2 : 1;
   bool get canCaptureMore => images.length < maxShots;
@@ -125,6 +128,7 @@ class VisitingCardScanViewModel extends ChangeNotifier {
     qrAssetPath = contact.qrImagePath.isNotEmpty ? contact.qrImagePath : null;
     logoAssetPath =
         contact.logoImagePath.isNotEmpty ? contact.logoImagePath : null;
+    fieldTransforms = contact.fieldTransforms;
     notifyListeners();
   }
 
@@ -268,6 +272,9 @@ class VisitingCardScanViewModel extends ChangeNotifier {
     logoAssetPath = path;
     notifyListeners();
   }
+
+  /// Notify listeners after bulk field / transform sync from template edit.
+  void notifyContactChanged() => notifyListeners();
 
   Future<String> persistLogoFile(File source) async {
     final dir = await getApplicationDocumentsDirectory();
@@ -507,6 +514,7 @@ class VisitingCardScanViewModel extends ChangeNotifier {
       hasChosenQr: hasChosenQr,
       hasChosenLogo: hasChosenLogo,
       templateImagePaths: templateImagePaths ?? const [],
+      fieldTransforms: fieldTransforms,
     );
   }
 
