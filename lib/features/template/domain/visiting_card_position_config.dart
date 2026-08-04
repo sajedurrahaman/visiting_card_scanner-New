@@ -38,6 +38,7 @@ class VisitingCardFieldPosition {
     this.letterSpacing = 0,
     this.heightFactor = 1.15,
     this.maxDisplayNameLength = 16,
+    this.threeWordFontSize = 10,
   });
 
   final double? left;
@@ -75,6 +76,9 @@ class VisitingCardFieldPosition {
   /// Override per name [VisitingCardFieldPosition] when a layout needs more/less.
   final int maxDisplayNameLength;
 
+  /// Font size when the clipped name has 3+ words.
+  final double threeWordFontSize;
+
   bool get hasSplitNameColors =>
       firstNameColor != null || lastNameColor != null;
 
@@ -92,9 +96,7 @@ class VisitingCardFieldPosition {
         .split(RegExp(r'\s+'))
         .where((word) => word.isNotEmpty)
         .length;
-    if (wordCount >= 3) {
-      return (fontSize - 2).clamp(8.0, fontSize);
-    }
+    if (wordCount >= 3) return threeWordFontSize;
     return fontSize;
   }
 }
@@ -191,16 +193,15 @@ class VisitingCardPositionConfig {
       name: VisitingCardFieldPosition(
         left: 0.08,
         top: 0.14,
-        width: 0.48,
         fontSize: 13.5,
         fontWeight: FontWeight.w800,
         letterSpacing: 0.4,
-        maxLines: 1,
         uppercase: true,
         color: Color(0xFF1A1A1A),
         firstNameColor: Color(0xFF1A1A1A),
         lastNameColor: Color(0xFFF5A623),
         maxDisplayNameLength: 20,
+        threeWordFontSize: 11.5,
       ),
       // Designation
       designation: VisitingCardFieldPosition(
@@ -421,7 +422,7 @@ back: VisitingCardSidePositions(
         maxLines: 1,
         uppercase: false,
         color: Color(0xFF1A1A1A),
-        maxDisplayNameLength: 20,
+        maxDisplayNameLength: 19,
       ),
       designation: VisitingCardFieldPosition(
         left: 0.555,
