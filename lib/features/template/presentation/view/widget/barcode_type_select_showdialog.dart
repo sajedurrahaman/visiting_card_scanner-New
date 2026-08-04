@@ -46,7 +46,7 @@ class BarcodeTypeSelectDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dialogWidth = 360.w;
-    final dialogHeight = 280.h;
+    final dialogHeight = 286.h;
 
     return Dialog(
       backgroundColor: const Color(0x00000000),

@@ -40,7 +40,7 @@ class QrcodeTypeSelectDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dialogWidth = 362.w;
-    final dialogHeight = 274.h;
+    final dialogHeight = 284.h;
 
     return Dialog(
       backgroundColor: const Color(0x00000000),

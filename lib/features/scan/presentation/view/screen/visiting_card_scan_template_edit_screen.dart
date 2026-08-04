@@ -269,6 +269,7 @@ class _VisitingCardScanTemplateEditScreenState
                 title: 'Name',
                 entries: _editVm.names,
                 showAddIcon: false,
+                maxLength: _editVm.maxDisplayNameLength,
                 hasError:
                     _editVm.isFieldInvalid(ContactValidationField.name),
                 onChanged: (i, v) =>
@@ -289,6 +290,8 @@ class _VisitingCardScanTemplateEditScreenState
                 title: 'Company',
                 entries: _editVm.companies,
                 showAddIcon: false,
+                hasError:
+                    _editVm.isFieldInvalid(ContactValidationField.company),
                 onChanged: (i, v) =>
                     _editVm.updateSimpleField(_editVm.companies, i, v),
                 onClear: (i) => _editVm.clearField(_editVm.companies, i),

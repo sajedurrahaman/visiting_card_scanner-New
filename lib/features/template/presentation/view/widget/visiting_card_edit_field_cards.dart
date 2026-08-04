@@ -88,6 +88,7 @@ class VisitingSimpleFieldCard extends StatelessWidget {
     this.onAdd,
     this.showAddIcon = true,
     this.hasError = false,
+    this.maxLength,
   });
 
   final String title;
@@ -97,6 +98,7 @@ class VisitingSimpleFieldCard extends StatelessWidget {
   final VoidCallback? onAdd;
   final bool showAddIcon;
   final bool hasError;
+  final int? maxLength;
 
   static const _errorColor = Color(0xFFE53935);
 
@@ -153,6 +155,7 @@ class VisitingSimpleFieldCard extends StatelessWidget {
               onClear: () => onClear(index),
               showClearIcon: index > 0,
               hasError: hasError && index == 0,
+              maxLength: maxLength,
             );
           }),
         ],
@@ -387,6 +390,7 @@ class _UnderlinedInputRow extends StatefulWidget {
     required this.onClear,
     this.showClearIcon = false,
     this.hasError = false,
+    this.maxLength,
   });
 
   final String value;
@@ -394,6 +398,7 @@ class _UnderlinedInputRow extends StatefulWidget {
   final VoidCallback onClear;
   final bool showClearIcon;
   final bool hasError;
+  final int? maxLength;
 
   @override
   State<_UnderlinedInputRow> createState() => _UnderlinedInputRowState();
@@ -445,6 +450,7 @@ class _UnderlinedInputRowState extends State<_UnderlinedInputRow> {
           child: TextField(
             controller: _controller,
             autofocus: false,
+            maxLength: widget.maxLength,
             onChanged: widget.onChanged,
             onTapOutside: (_) =>
                 FocusManager.instance.primaryFocus?.unfocus(),
@@ -455,6 +461,7 @@ class _UnderlinedInputRowState extends State<_UnderlinedInputRow> {
             ),
             decoration: InputDecoration(
               isDense: true,
+              counterText: '',
               border: _underline(underlineColor),
               enabledBorder: _underline(underlineColor),
               focusedBorder: _underline(focusedColor, width: 1.2),

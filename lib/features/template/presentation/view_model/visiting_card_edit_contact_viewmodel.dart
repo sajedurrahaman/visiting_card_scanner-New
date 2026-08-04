@@ -28,7 +28,14 @@ class ContactFieldEntry {
 }
 
 /// Required fields validated on Edit Contact Info → Next.
-enum ContactValidationField { name, designation, phone, email, address }
+enum ContactValidationField {
+  name,
+  designation,
+  company,
+  phone,
+  email,
+  address,
+}
 
 class VisitingCardEditContactViewModel extends ChangeNotifier {
   VisitingCardEditContactViewModel({
@@ -139,6 +146,16 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   String get displayAddress =>
       addresses.isNotEmpty ? addresses.first.value.trim() : '';
 
+  /// Template front-name cap from [VisitingCardFieldPosition.maxDisplayNameLength].
+  int get maxDisplayNameLength {
+    final layout = VisitingCardPositionConfig.forTemplate(
+      templateId: templateId,
+      isHorizontal: isHorizontal,
+    );
+    final max = layout.front.name?.maxDisplayNameLength ?? 16;
+    return max < 1 ? 1 : max;
+  }
+
   /// Fields that failed the last [validateRequiredContactFields] pass.
   final Set<ContactValidationField> invalidFields = {};
 
@@ -151,7 +168,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
 
   /// Returns first validation error for required contact fields, or `null`.
   /// Marks all failing fields in [invalidFields] (red underline in UI).
-  /// Validates: Name, Designation, Tell, Email, Address.
+  /// Validates: Name, Designation, Company, Tell, Email, Address.
   String? validateRequiredContactFields() {
     invalidFields.clear();
     String? firstError;
@@ -163,9 +180,17 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
 
     if (displayName.isEmpty) {
       fail(ContactValidationField.name, 'Please enter name');
+    } else if (displayName.length > maxDisplayNameLength) {
+      fail(
+        ContactValidationField.name,
+        'Name length max-$maxDisplayNameLength',
+      );
     }
     if (displayDesignation.isEmpty) {
       fail(ContactValidationField.designation, 'Please enter designation');
+    }
+    if (displayCompany.isEmpty) {
+      fail(ContactValidationField.company, 'Please enter company');
     }
 
     final phone = phones
@@ -454,12 +479,17 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     List<ContactFieldEntry> source, {
     String fallbackType = '',
   }) {
+    final maxName = identical(target, names) ? maxDisplayNameLength : null;
     target
       ..clear()
       ..addAll(
-        source.map(
-          (e) => ContactFieldEntry(value: e.value, type: e.type),
-        ),
+        source.map((e) {
+          var value = e.value;
+          if (maxName != null && value.length > maxName) {
+            value = value.substring(0, maxName);
+          }
+          return ContactFieldEntry(value: value, type: e.type);
+        }),
       );
     if (target.isEmpty) {
       target.add(ContactFieldEntry(type: fallbackType));
@@ -514,7 +544,11 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     String value,
   ) {
     if (index < 0 || index >= list.length) return;
-    list[index].value = value;
+    var next = value;
+    if (identical(list, names) && next.length > maxDisplayNameLength) {
+      next = next.substring(0, maxDisplayNameLength);
+    }
+    list[index].value = next;
     _clearErrorForList(list);
     notifyListeners();
   }
@@ -563,6 +597,8 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       invalidFields.remove(ContactValidationField.name);
     } else if (identical(list, designations)) {
       invalidFields.remove(ContactValidationField.designation);
+    } else if (identical(list, companies)) {
+      invalidFields.remove(ContactValidationField.company);
     } else if (identical(list, phones)) {
       invalidFields.remove(ContactValidationField.phone);
     } else if (identical(list, emails)) {
