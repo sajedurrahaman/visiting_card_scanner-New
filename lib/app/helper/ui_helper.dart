@@ -29,6 +29,7 @@ class AppAssets {
   // settings
   static const shareIcon = 'assets/icons/share_icon.svg';
   static const ratingIcon = 'assets/icons/rate_us_icon.svg';
+  static const moreIcon = 'assets/icons/more_apps.svg';
   static const contactIcon = 'assets/icons/contacts_us.svg';
   static const privacyIcon = 'assets/icons/privacy_policy.svg';
   static const termsIcon = 'assets/icons/terms_icon.svg';

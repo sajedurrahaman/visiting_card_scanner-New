@@ -41,6 +41,11 @@ class SettingsScreen extends StatelessWidget {
                       label: 'Rate Us',
                       onTap: () => viewModel.onRateUsTap(context),
                     ),
+                    SettingsItemData(
+                      icon: ui.AppAssets.moreIcon,
+                      label: 'More Apps',
+                      onTap: () => viewModel.onMoreAppsTap(context),
+                    ),
                   ],
                 ),
                 SizedBox(height: 24.h),

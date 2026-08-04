@@ -26,7 +26,7 @@ import 'package:visiting_card/features/template/presentation/view_model/visiting
 import 'package:visiting_card/app/storage/app_storage_service.dart';
 import 'package:visiting_card/features/home/domain/model/saved_file_model.dart';
 
-enum VisitingCardInitialAction { share }
+enum VisitingCardInitialAction { share, edit }
 
 /// Card Details opened from Recent / Folder thumbnail.
 /// Same layout as [VisitingCardScannedDetailsScreen] without Change Template
@@ -244,6 +244,8 @@ class _VisitingCardContactDetailsScreenState
       switch (action) {
         case VisitingCardInitialAction.share:
           _onShareContact();
+        case VisitingCardInitialAction.edit:
+          _openEdit();
       }
     });
   }

@@ -200,6 +200,17 @@ class RecentCardTile extends StatelessWidget {
   ) async {
     if (item.fileType == 'visiting_card') {
       switch (action) {
+        case RecentCardMenuAction.rename:
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => VisitingCardContactDetailsScreen(
+                item: item,
+                initialAction: VisitingCardInitialAction.edit,
+              ),
+            ),
+          );
+          return;
         case RecentCardMenuAction.download:
           await Navigator.push(
             context,
@@ -219,7 +230,6 @@ class RecentCardTile extends StatelessWidget {
             ),
           );
           return;
-        case RecentCardMenuAction.rename:
         case RecentCardMenuAction.delete:
           break;
       }

@@ -8,6 +8,8 @@ class SettingsViewModel extends ChangeNotifier {
   static const String _appName = 'Visiting Card';
   static const String _androidAppId = 'com.example.visiting_card';
   static const String _supportEmail = 'sajedurrahamanapp@gmail.com';
+  static const String _moreAppsUrl =
+      'https://play.google.com/store/apps/dev?id=6584495725981374366';
   static const String _privacyPolicyUrl = '';
   static const String _termsAndConditionsUrl = '';
 
@@ -59,6 +61,15 @@ class SettingsViewModel extends ChangeNotifier {
     if (!launchedWeb && context.mounted) {
       ui.AppToast.show(context, message: 'Failed to open store page');
     }
+  }
+
+  Future<void> onMoreAppsTap(BuildContext context) async {
+    await _openUrl(
+      context,
+      url: _moreAppsUrl,
+      missingMessage: 'Add More Apps URL to open this page',
+      failureMessage: 'Failed to open More Apps',
+    );
   }
 
   Future<void> onContactUsTap(BuildContext context) async {
