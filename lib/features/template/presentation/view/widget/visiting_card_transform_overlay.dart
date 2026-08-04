@@ -22,6 +22,8 @@ class VisitingCardTransformOverlay extends StatefulWidget {
     required this.onMove,
     required this.onResize,
     required this.onRotate,
+    this.onGestureStart,
+    this.onGestureEnd,
     this.tightBorder = false,
   });
 
@@ -38,6 +40,8 @@ class VisitingCardTransformOverlay extends StatefulWidget {
   final void Function(double dx, double dy) onMove;
   final void Function(double delta) onResize;
   final void Function(double absoluteRadians) onRotate;
+  final VoidCallback? onGestureStart;
+  final VoidCallback? onGestureEnd;
 
   /// Text overlays: no extra inset around the green border.
   final bool tightBorder;
@@ -88,6 +92,7 @@ class _VisitingCardTransformOverlayState
                 },
                 onPanStart: (d) {
                   if (!widget.selected) widget.onSelect();
+                  widget.onGestureStart?.call();
                   _lastGlobal = d.globalPosition;
                 },
                 onPanUpdate: (d) {
@@ -97,18 +102,26 @@ class _VisitingCardTransformOverlayState
                   _lastGlobal = d.globalPosition;
                   widget.onMove(delta.dx, delta.dy);
                 },
-                onPanEnd: (_) => _lastGlobal = null,
+                onPanEnd: (_) {
+                  _lastGlobal = null;
+                  widget.onGestureEnd?.call();
+                },
+                onPanCancel: () {
+                  _lastGlobal = null;
+                  widget.onGestureEnd?.call();
+                },
                 child: Container(
                   key: _boxKey,
-                  // Border drawn on top — does not shrink child (no size jump).
-                  foregroundDecoration: widget.selected
-                      ? BoxDecoration(
-                          border: Border.all(
-                            color: _borderColor,
-                            width: widget.tightBorder ? 1.0 : 1.5,
-                          ),
-                        )
-                      : null,
+                  // Border always on in edit mode; thicker when selected.
+                  // Drawn on top — does not shrink child (no size jump).
+                  foregroundDecoration: BoxDecoration(
+                    border: Border.all(
+                      color: _borderColor,
+                      width: widget.selected
+                          ? (widget.tightBorder ? 1.2 : 2.0)
+                          : (widget.tightBorder ? 0.3 : 1.2),
+                    ),
+                  ),
                   child: widget.child,
                 ),
               ),
@@ -120,7 +133,10 @@ class _VisitingCardTransformOverlayState
                 bottom: 0,
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
+                  onPanStart: (_) => widget.onGestureStart?.call(),
                   onPanUpdate: (d) => widget.onResize(d.delta.dy),
+                  onPanEnd: (_) => widget.onGestureEnd?.call(),
+                  onPanCancel: () => widget.onGestureEnd?.call(),
                   child: _HandleButton(
                     size: handle,
                     icon: Icons.unfold_more_rounded,

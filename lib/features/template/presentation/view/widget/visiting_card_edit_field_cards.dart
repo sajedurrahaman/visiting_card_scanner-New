@@ -87,6 +87,7 @@ class VisitingSimpleFieldCard extends StatelessWidget {
     required this.onClear,
     this.onAdd,
     this.showAddIcon = true,
+    this.hasError = false,
   });
 
   final String title;
@@ -95,6 +96,9 @@ class VisitingSimpleFieldCard extends StatelessWidget {
   final void Function(int index) onClear;
   final VoidCallback? onAdd;
   final bool showAddIcon;
+  final bool hasError;
+
+  static const _errorColor = Color(0xFFE53935);
 
   @override
   Widget build(BuildContext context) {
@@ -104,6 +108,9 @@ class VisitingSimpleFieldCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12.r),
+        border: hasError
+            ? Border.all(color: _errorColor.withValues(alpha: 0.55), width: 1)
+            : null,
         boxShadow: _cardShadow,
       ),
       child: Column(
@@ -117,7 +124,9 @@ class VisitingSimpleFieldCard extends StatelessWidget {
                     fontFamily: ui.AppFonts.sfPro,
                     fontSize: 13.sp,
                     fontWeight: FontWeight.w500,
-                    color: ui.Colors.parentIconSelectTextColor,
+                    color: hasError
+                        ? _errorColor
+                        : ui.Colors.parentIconSelectTextColor,
                   ),
                 ),
               ),
@@ -143,6 +152,7 @@ class VisitingSimpleFieldCard extends StatelessWidget {
               onChanged: (v) => onChanged(index, v),
               onClear: () => onClear(index),
               showClearIcon: index > 0,
+              hasError: hasError && index == 0,
             );
           }),
         ],
@@ -161,6 +171,7 @@ class VisitingTypedFieldCard extends StatefulWidget {
     required this.onTypeChanged,
     required this.onClear,
     required this.onAdd,
+    this.hasError = false,
   });
 
   final String title;
@@ -170,6 +181,7 @@ class VisitingTypedFieldCard extends StatefulWidget {
   final void Function(int index, String type) onTypeChanged;
   final void Function(int index) onClear;
   final VoidCallback onAdd;
+  final bool hasError;
 
   @override
   State<VisitingTypedFieldCard> createState() => _VisitingTypedFieldCardState();
@@ -177,6 +189,7 @@ class VisitingTypedFieldCard extends StatefulWidget {
 
 class _VisitingTypedFieldCardState extends State<VisitingTypedFieldCard> {
   final List<TextEditingController> _controllers = [];
+  static const _errorColor = Color(0xFFE53935);
 
   @override
   void initState() {
@@ -220,14 +233,24 @@ class _VisitingTypedFieldCardState extends State<VisitingTypedFieldCard> {
     super.dispose();
   }
 
+  UnderlineInputBorder _underline(Color color, {double width = 1}) {
+    return UnderlineInputBorder(
+      borderSide: BorderSide(color: color, width: width.w),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final error = widget.hasError;
     return Container(
       margin: EdgeInsets.only(bottom: 10.h),
       padding: EdgeInsets.fromLTRB(14.w, 10.h, 10.w, 8.h),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12.r),
+        border: error
+            ? Border.all(color: _errorColor.withValues(alpha: 0.55), width: 1)
+            : null,
         boxShadow: _cardShadow,
       ),
       child: Column(
@@ -241,7 +264,9 @@ class _VisitingTypedFieldCardState extends State<VisitingTypedFieldCard> {
                     fontFamily: ui.AppFonts.sfPro,
                     fontSize: 13.sp,
                     fontWeight: FontWeight.w500,
-                    color: ui.Colors.parentIconSelectTextColor,
+                    color: error
+                        ? _errorColor
+                        : ui.Colors.parentIconSelectTextColor,
                   ),
                 ),
               ),
@@ -267,6 +292,12 @@ class _VisitingTypedFieldCardState extends State<VisitingTypedFieldCard> {
             final selected = widget.typeOptions.contains(entry.type)
                 ? entry.type
                 : widget.typeOptions.first;
+            final rowError = error && index == 0;
+            final underlineColor =
+                rowError ? _errorColor : const Color(0xFFE0E0E0);
+            final focusedColor = rowError
+                ? _errorColor
+                : ui.Colors.parentIconSelectTextColor;
             return Padding(
               key: ValueKey('${widget.title}-typed-$index'),
               padding: EdgeInsets.only(top: 4.h),
@@ -317,24 +348,9 @@ class _VisitingTypedFieldCardState extends State<VisitingTypedFieldCard> {
                       ),
                       decoration: InputDecoration(
                         isDense: true,
-                        border: UnderlineInputBorder(
-                          borderSide: BorderSide(
-                            color: const Color(0xFFE0E0E0),
-                            width: 1.w,
-                          ),
-                        ),
-                        enabledBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(
-                            color: const Color(0xFFE0E0E0),
-                            width: 1.w,
-                          ),
-                        ),
-                        focusedBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(
-                            color: ui.Colors.parentIconSelectTextColor,
-                            width: 1.2.w,
-                          ),
-                        ),
+                        border: _underline(underlineColor),
+                        enabledBorder: _underline(underlineColor),
+                        focusedBorder: _underline(focusedColor, width: 1.2),
                         contentPadding: EdgeInsets.symmetric(vertical: 8.h),
                       ),
                     ),
@@ -370,12 +386,14 @@ class _UnderlinedInputRow extends StatefulWidget {
     required this.onChanged,
     required this.onClear,
     this.showClearIcon = false,
+    this.hasError = false,
   });
 
   final String value;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
   final bool showClearIcon;
+  final bool hasError;
 
   @override
   State<_UnderlinedInputRow> createState() => _UnderlinedInputRowState();
@@ -383,6 +401,7 @@ class _UnderlinedInputRow extends StatefulWidget {
 
 class _UnderlinedInputRowState extends State<_UnderlinedInputRow> {
   late final TextEditingController _controller;
+  static const _errorColor = Color(0xFFE53935);
 
   @override
   void initState() {
@@ -407,8 +426,19 @@ class _UnderlinedInputRowState extends State<_UnderlinedInputRow> {
     super.dispose();
   }
 
+  UnderlineInputBorder _underline(Color color, {double width = 1}) {
+    return UnderlineInputBorder(
+      borderSide: BorderSide(color: color, width: width.w),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final underlineColor =
+        widget.hasError ? _errorColor : const Color(0xFFE0E0E0);
+    final focusedColor = widget.hasError
+        ? _errorColor
+        : ui.Colors.parentIconSelectTextColor;
     return Row(
       children: [
         Expanded(
@@ -425,24 +455,9 @@ class _UnderlinedInputRowState extends State<_UnderlinedInputRow> {
             ),
             decoration: InputDecoration(
               isDense: true,
-              border: UnderlineInputBorder(
-                borderSide: BorderSide(
-                  color: const Color(0xFFE0E0E0),
-                  width: 1.w,
-                ),
-              ),
-              enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(
-                  color: const Color(0xFFE0E0E0),
-                  width: 1.w,
-                ),
-              ),
-              focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(
-                  color: ui.Colors.parentIconSelectTextColor,
-                  width: 1.2.w,
-                ),
-              ),
+              border: _underline(underlineColor),
+              enabledBorder: _underline(underlineColor),
+              focusedBorder: _underline(focusedColor, width: 1.2),
               contentPadding: EdgeInsets.symmetric(vertical: 8.h),
             ),
           ),

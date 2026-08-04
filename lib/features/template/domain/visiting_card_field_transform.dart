@@ -1,5 +1,22 @@
 /// Interactive overlay fields that users can drag / resize / rotate.
-enum VisitingCardOverlayField { logo, qr, company, tagline }
+enum VisitingCardOverlayField {
+  name,
+  designation,
+  company,
+  tagline,
+  phone,
+  email,
+  website,
+  address,
+  logo,
+  qr,
+}
+
+extension VisitingCardOverlayFieldX on VisitingCardOverlayField {
+  bool get isImageOverlay =>
+      this == VisitingCardOverlayField.logo ||
+      this == VisitingCardOverlayField.qr;
+}
 
 /// Runtime placement override for one overlay field.
 ///

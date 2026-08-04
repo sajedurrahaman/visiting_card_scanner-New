@@ -8,6 +8,7 @@ import 'package:visiting_card/app/helper/qr_color_helper.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/folder/presentation/view_model/folder_viewmodel.dart';
 import 'package:visiting_card/features/home/presentation/view_model/home_view_model.dart';
+import 'package:visiting_card/features/parent/presentation/view_model/parent_view_model.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/barcode_template_stack_builder.dart';
 import 'package:visiting_card/features/template/presentation/view_model/barcode_customize_viewmodel.dart';
 
@@ -71,7 +72,17 @@ class _BarcodeCustomizeBodyState extends State<_BarcodeCustomizeBody> {
       folderViewModel: context.read<FolderViewModel>(),
     );
     if (!mounted) return;
-    ui.AppToast.success(context, ok ? 'Saved to gallery' : 'Save failed');
+    if (!ok) {
+      ui.AppToast.show(
+        context,
+        message: 'Save failed',
+        backgroundColor: const Color(0xFFE53935),
+      );
+      return;
+    }
+    ui.AppToast.success(context, 'Saved to gallery');
+    context.read<ParentViewModel>().changeIndex(0);
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   @override

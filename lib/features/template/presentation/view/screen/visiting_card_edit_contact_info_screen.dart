@@ -6,6 +6,7 @@ import 'package:visiting_card/features/template/presentation/helper/visiting_car
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_details_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_logo_picker_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_tempalte_qrcode_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/widget/overlay_scroll_lock_toast.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_edit_field_cards.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
@@ -18,6 +19,18 @@ class VisitingCardEditContactInfoScreen extends StatelessWidget {
     VisitingCardEditContactViewModel vm,
   ) async {
     FocusScope.of(context).unfocus();
+    vm.clearOverlaySelection();
+
+    final error = vm.validateRequiredContactFields();
+    if (error != null) {
+      ui.AppToast.show(
+        context,
+        message: error,
+        backgroundColor: const Color(0xFFE53935),
+      );
+      return;
+    }
+
     if (vm.isFront) {
       vm.showBack();
       return;
@@ -108,14 +121,17 @@ class VisitingCardEditContactInfoScreen extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: ListView(
-        // One scroll for card + fields. Lock only while an overlay is selected
-        // so finger move/resize is not stolen by page scroll.
-        physics: vm.selectedOverlay != null
-            ? const NeverScrollableScrollPhysics()
-            : const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 24.h),
-        children: [
+      body: OverlayScrollLockToast(
+        locked: vm.selectedOverlay != null,
+        isOverlayGestureActive: () => vm.overlayGestureActive,
+        child: ListView(
+          // One scroll for card + fields. Lock only while an overlay is selected
+          // so finger move/resize is not stolen by page scroll.
+          physics: vm.selectedOverlay != null
+              ? const NeverScrollableScrollPhysics()
+              : const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 24.h),
+          children: [
           Container(
             padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 8.h),
             decoration: BoxDecoration(
@@ -153,6 +169,7 @@ class VisitingCardEditContactInfoScreen extends StatelessWidget {
             title: 'Name',
             entries: vm.names,
             showAddIcon: false,
+            hasError: vm.isFieldInvalid(ContactValidationField.name),
             onChanged: (i, v) => vm.updateSimpleField(vm.names, i, v),
             onClear: (i) => vm.clearField(vm.names, i),
           ),
@@ -160,6 +177,7 @@ class VisitingCardEditContactInfoScreen extends StatelessWidget {
             title: 'Designation',
             entries: vm.designations,
             showAddIcon: false,
+            hasError: vm.isFieldInvalid(ContactValidationField.designation),
             onChanged: (i, v) => vm.updateSimpleField(vm.designations, i, v),
             onClear: (i) => vm.clearField(vm.designations, i),
           ),
@@ -181,6 +199,7 @@ class VisitingCardEditContactInfoScreen extends StatelessWidget {
             title: 'Tell',
             entries: vm.phones,
             typeOptions: VisitingCardEditContactViewModel.telTypes,
+            hasError: vm.isFieldInvalid(ContactValidationField.phone),
             onValueChanged: (i, v) =>
                 vm.updateTypedField(vm.phones, i, value: v),
             onTypeChanged: (i, t) =>
@@ -192,6 +211,7 @@ class VisitingCardEditContactInfoScreen extends StatelessWidget {
             title: 'Email',
             entries: vm.emails,
             typeOptions: VisitingCardEditContactViewModel.emailWebsiteTypes,
+            hasError: vm.isFieldInvalid(ContactValidationField.email),
             onValueChanged: (i, v) =>
                 vm.updateTypedField(vm.emails, i, value: v),
             onTypeChanged: (i, t) =>
@@ -213,6 +233,7 @@ class VisitingCardEditContactInfoScreen extends StatelessWidget {
           VisitingSimpleFieldCard(
             title: 'Address',
             entries: vm.addresses,
+            hasError: vm.isFieldInvalid(ContactValidationField.address),
             onChanged: (i, v) => vm.updateSimpleField(vm.addresses, i, v),
             onClear: (i) => vm.removeField(vm.addresses, i),
             onAdd: () => vm.addField(vm.addresses, defaultType: ''),
@@ -223,6 +244,7 @@ class VisitingCardEditContactInfoScreen extends StatelessWidget {
             onTap: () => _onNext(context, vm),
           ),
         ],
+        ),
       ),
     );
   }

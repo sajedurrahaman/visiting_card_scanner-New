@@ -37,6 +37,7 @@ class VisitingCardFieldPosition {
     this.uppercase = false,
     this.letterSpacing = 0,
     this.heightFactor = 1.15,
+    this.maxDisplayNameLength = 16,
   });
 
   final double? left;
@@ -70,13 +71,24 @@ class VisitingCardFieldPosition {
   final double letterSpacing;
   final double heightFactor;
 
+  /// Max characters shown for Name on this template field (avoids overflow).
+  /// Override per name [VisitingCardFieldPosition] when a layout needs more/less.
+  final int maxDisplayNameLength;
+
   bool get hasSplitNameColors =>
       firstNameColor != null || lastNameColor != null;
 
+  /// Truncates [rawName] to [maxDisplayNameLength] for card preview/export.
+  String clipDisplayName(String rawName) {
+    final trimmed = rawName.trim();
+    final max = maxDisplayNameLength < 1 ? 1 : maxDisplayNameLength;
+    if (trimmed.length <= max) return trimmed;
+    return trimmed.substring(0, max);
+  }
+
   /// Shrinks name text when it has three or more words so it stays on one line.
   double resolvedNameFontSize(String rawName) {
-    final wordCount = rawName
-        .trim()
+    final wordCount = clipDisplayName(rawName)
         .split(RegExp(r'\s+'))
         .where((word) => word.isNotEmpty)
         .length;
@@ -188,6 +200,7 @@ class VisitingCardPositionConfig {
         color: Color(0xFF1A1A1A),
         firstNameColor: Color(0xFF1A1A1A),
         lastNameColor: Color(0xFFF5A623),
+        maxDisplayNameLength: 20,
       ),
       // Designation
       designation: VisitingCardFieldPosition(
@@ -294,6 +307,7 @@ class VisitingCardPositionConfig {
         maxLines: 1,
         uppercase: false,
         color: Color(0xFF1A1A1A),
+        maxDisplayNameLength: 20,
       ),
       designation: VisitingCardFieldPosition(
         left: 0.20,
@@ -407,6 +421,7 @@ back: VisitingCardSidePositions(
         maxLines: 1,
         uppercase: false,
         color: Color(0xFF1A1A1A),
+        maxDisplayNameLength: 20,
       ),
       designation: VisitingCardFieldPosition(
         left: 0.555,
@@ -492,18 +507,19 @@ back: VisitingCardSidePositions(
         front: VisitingCardSidePositions(
       // Name — white (on green left)
       name: VisitingCardFieldPosition(
-        left: 0.05,
+        left: 0.04,
         top: 0.08,
         width: 0.40,
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: FontWeight.w700,
         maxLines: 1,
         uppercase: false,
         color: Color(0xFFFFFFFF),
+        maxDisplayNameLength: 20,
       ),
           designation: VisitingCardFieldPosition(
-            left: 0.05,
-            top: 0.18,
+            left: 0.04,
+            top: 0.17,
             fontSize: 6.5,
             color: Color(0xFFFFFFFF),
             uppercase: false,
@@ -597,6 +613,7 @@ back: VisitingCardSidePositions(
         maxLines: 1,
         uppercase: false,
         color: Color(0xFF1A1A1A),
+        maxDisplayNameLength: 20,
       ),
       designation: VisitingCardFieldPosition(
         left: 0.05,
@@ -701,6 +718,7 @@ back: VisitingCardSidePositions(
         uppercase: false,
         fontStyle: FontStyle.italic,
         color: Color(0xFF0D4F4C),
+        maxDisplayNameLength: 20,
       ),
       designation: VisitingCardFieldPosition(
         left: 0.118,
@@ -851,6 +869,7 @@ back: VisitingCardSidePositions(
         uppercase: false,
         fontStyle: FontStyle.italic,
         color: Color(0xFF2076FD),
+        maxDisplayNameLength: 20,
       ),
       designation: VisitingCardFieldPosition(
         left: 0.135,
@@ -938,6 +957,7 @@ back: VisitingCardSidePositions(
         uppercase: true,
         firstNameColor: Color(0xFF606060),
         lastNameColor: Color(0xFF713954),
+        maxDisplayNameLength: 20,
       ),
       designation: VisitingCardFieldPosition(
         left: 0.068,
@@ -1053,6 +1073,7 @@ back: VisitingCardSidePositions(
         uppercase: false,
         fontStyle: FontStyle.italic,
         color: Color(0xFF6ACA2B),
+        maxDisplayNameLength: 20,
       ),
       designation: VisitingCardFieldPosition(
         left: 0.135,
@@ -1163,6 +1184,7 @@ back: VisitingCardSidePositions(
         maxLines: 1,
         uppercase: true,
         color: Color(0xFF1A1A1A),
+        maxDisplayNameLength: 20,
       ),
       designation: VisitingCardFieldPosition(
         left: 0.10,

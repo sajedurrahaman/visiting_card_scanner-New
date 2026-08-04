@@ -27,6 +27,9 @@ class ContactFieldEntry {
   String type;
 }
 
+/// Required fields validated on Edit Contact Info → Next.
+enum ContactValidationField { name, designation, phone, email, address }
+
 class VisitingCardEditContactViewModel extends ChangeNotifier {
   VisitingCardEditContactViewModel({
     required this.templateId,
@@ -89,6 +92,9 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   final Map<String, VisitingCardFieldTransform> backOverlays = {};
   VisitingCardOverlayField? selectedOverlay;
 
+  /// True while user is dragging / resizing a field overlay (skip scroll toast).
+  bool overlayGestureActive = false;
+
   final List<ContactFieldEntry> names = [ContactFieldEntry()];
   final List<ContactFieldEntry> designations = [ContactFieldEntry()];
   final List<ContactFieldEntry> companies = [ContactFieldEntry()];
@@ -132,6 +138,80 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       taglines.isNotEmpty ? taglines.first.value.trim() : '';
   String get displayAddress =>
       addresses.isNotEmpty ? addresses.first.value.trim() : '';
+
+  /// Fields that failed the last [validateRequiredContactFields] pass.
+  final Set<ContactValidationField> invalidFields = {};
+
+  bool isFieldInvalid(ContactValidationField field) =>
+      invalidFields.contains(field);
+
+  void clearFieldError(ContactValidationField field) {
+    if (invalidFields.remove(field)) notifyListeners();
+  }
+
+  /// Returns first validation error for required contact fields, or `null`.
+  /// Marks all failing fields in [invalidFields] (red underline in UI).
+  /// Validates: Name, Designation, Tell, Email, Address.
+  String? validateRequiredContactFields() {
+    invalidFields.clear();
+    String? firstError;
+
+    void fail(ContactValidationField field, String message) {
+      invalidFields.add(field);
+      firstError ??= message;
+    }
+
+    if (displayName.isEmpty) {
+      fail(ContactValidationField.name, 'Please enter name');
+    }
+    if (displayDesignation.isEmpty) {
+      fail(ContactValidationField.designation, 'Please enter designation');
+    }
+
+    final phone = phones
+        .map((e) => e.value.trim())
+        .firstWhere((v) => v.isNotEmpty, orElse: () => '');
+    if (phone.isEmpty) {
+      fail(ContactValidationField.phone, 'Please enter phone number');
+    } else {
+      final digits = phone.replaceAll(RegExp(r'[^\d+]'), '');
+      final digitOnly = digits.replaceAll('+', '');
+      if (digitOnly.isEmpty || !RegExp(r'^\d+$').hasMatch(digitOnly)) {
+        fail(
+          ContactValidationField.phone,
+          'Please enter a valid phone number',
+        );
+      } else if (digitOnly.length < 5 || digitOnly.length > 15) {
+        fail(
+          ContactValidationField.phone,
+          'Phone number length min-5 and max-15',
+        );
+      }
+    }
+
+    final email = emails
+        .map((e) => e.value.trim())
+        .firstWhere((v) => v.isNotEmpty, orElse: () => '');
+    if (email.isEmpty) {
+      fail(ContactValidationField.email, 'Please enter email');
+    } else {
+      final emailOk =
+          RegExp(r'^[\w\-.]+@([\w-]+\.)+[\w-]{2,}$').hasMatch(email);
+      if (!emailOk) {
+        fail(
+          ContactValidationField.email,
+          'Please enter a valid email address',
+        );
+      }
+    }
+
+    if (displayAddress.isEmpty) {
+      fail(ContactValidationField.address, 'Please enter address');
+    }
+
+    notifyListeners();
+    return firstError;
+  }
 
   void setSide(int index) {
     if (index < 0 || index > 1 || index == sideIndex) return;
@@ -183,19 +263,22 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     );
     final side = useFront ? layout.front : layout.back;
     final pos = switch (field) {
-      VisitingCardOverlayField.logo => side.logo,
-      VisitingCardOverlayField.qr => side.qr,
+      VisitingCardOverlayField.name => side.name,
+      VisitingCardOverlayField.designation => side.designation,
       VisitingCardOverlayField.company => side.company,
       VisitingCardOverlayField.tagline => side.tagline,
+      VisitingCardOverlayField.phone => side.phone,
+      VisitingCardOverlayField.email => side.email,
+      VisitingCardOverlayField.website => side.website,
+      VisitingCardOverlayField.address => side.address,
+      VisitingCardOverlayField.logo => side.logo,
+      VisitingCardOverlayField.qr => side.qr,
     };
     if (pos == null) return null;
     final left = pos.left ?? 0;
     final top = pos.top ??
         (pos.bottom != null ? (1.0 - (pos.bottom! + (pos.size ?? 0.14))) : 0.0);
-    final size = field == VisitingCardOverlayField.logo ||
-            field == VisitingCardOverlayField.qr
-        ? (pos.size ?? 0.14)
-        : pos.fontSize;
+    final size = field.isImageOverlay ? (pos.size ?? 0.14) : pos.fontSize;
     return VisitingCardFieldTransform(
       left: left,
       top: top.clamp(0.0, 1.0),
@@ -223,7 +306,18 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   void clearOverlaySelection() {
     if (selectedOverlay == null) return;
     selectedOverlay = null;
+    overlayGestureActive = false;
     notifyListeners();
+  }
+
+  void beginOverlayGesture() {
+    if (overlayGestureActive) return;
+    overlayGestureActive = true;
+  }
+
+  void endOverlayGesture() {
+    if (!overlayGestureActive) return;
+    overlayGestureActive = false;
   }
 
   void _ensureOverlay(VisitingCardOverlayField field) {
@@ -260,8 +354,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     _ensureOverlay(field);
     final key = VisitingCardFieldTransform.keyOf(field);
     final current = currentOverlays[key]!;
-    final isImage = field == VisitingCardOverlayField.logo ||
-        field == VisitingCardOverlayField.qr;
+    final isImage = field.isImageOverlay;
     final next = isImage
         ? (current.size + pixelDeltaY / cardSize.width).clamp(0.06, 0.55)
         : (current.size + pixelDeltaY * 0.08).clamp(4.0, 28.0);
@@ -414,6 +507,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   ) {
     if (index < 0 || index >= list.length) return;
     list[index].value = value;
+    _clearErrorForList(list);
     notifyListeners();
   }
 
@@ -426,12 +520,14 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     if (index < 0 || index >= list.length) return;
     if (value != null) list[index].value = value;
     if (type != null) list[index].type = type;
+    _clearErrorForList(list);
     notifyListeners();
   }
 
   void clearField(List<ContactFieldEntry> list, int index) {
     if (index < 0 || index >= list.length) return;
     list[index].value = '';
+    _clearErrorForList(list);
     notifyListeners();
   }
 
@@ -450,7 +546,22 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     }
     if (index < 0 || index >= list.length) return;
     list.removeAt(index);
+    _clearErrorForList(list);
     notifyListeners();
+  }
+
+  void _clearErrorForList(List<ContactFieldEntry> list) {
+    if (identical(list, names)) {
+      invalidFields.remove(ContactValidationField.name);
+    } else if (identical(list, designations)) {
+      invalidFields.remove(ContactValidationField.designation);
+    } else if (identical(list, phones)) {
+      invalidFields.remove(ContactValidationField.phone);
+    } else if (identical(list, emails)) {
+      invalidFields.remove(ContactValidationField.email);
+    } else if (identical(list, addresses)) {
+      invalidFields.remove(ContactValidationField.address);
+    }
   }
 
   void applyContactFromSaved(

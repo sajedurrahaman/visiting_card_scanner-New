@@ -7,6 +7,7 @@ import 'package:visiting_card/features/scan/presentation/view_model/visiting_car
 import 'package:visiting_card/features/template/presentation/helper/visiting_card_qr_payload.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_logo_picker_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_tempalte_qrcode_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/widget/overlay_scroll_lock_toast.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_edit_field_cards.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
@@ -160,6 +161,17 @@ class _VisitingCardScanTemplateEditScreenState
   Future<void> _onDone() async {
     FocusScope.of(context).unfocus();
     _editVm.clearOverlaySelection();
+
+    final error = _editVm.validateRequiredContactFields();
+    if (error != null) {
+      ui.AppToast.show(
+        context,
+        message: error,
+        backgroundColor: const Color(0xFFE53935),
+      );
+      return;
+    }
+
     if (_editVm.isFront) {
       _editVm.showBack();
       return;
@@ -211,12 +223,15 @@ class _VisitingCardScanTemplateEditScreenState
               onPressed: () => Navigator.pop(context),
             ),
           ),
-          body: ListView(
-            physics: _editVm.selectedOverlay != null
-                ? const NeverScrollableScrollPhysics()
-                : const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 24.h),
-            children: [
+          body: OverlayScrollLockToast(
+            locked: _editVm.selectedOverlay != null,
+            isOverlayGestureActive: () => _editVm.overlayGestureActive,
+            child: ListView(
+              physics: _editVm.selectedOverlay != null
+                  ? const NeverScrollableScrollPhysics()
+                  : const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 24.h),
+              children: [
               Container(
                 padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 8.h),
                 decoration: BoxDecoration(
@@ -254,6 +269,8 @@ class _VisitingCardScanTemplateEditScreenState
                 title: 'Name',
                 entries: _editVm.names,
                 showAddIcon: false,
+                hasError:
+                    _editVm.isFieldInvalid(ContactValidationField.name),
                 onChanged: (i, v) =>
                     _editVm.updateSimpleField(_editVm.names, i, v),
                 onClear: (i) => _editVm.clearField(_editVm.names, i),
@@ -262,6 +279,8 @@ class _VisitingCardScanTemplateEditScreenState
                 title: 'Designation',
                 entries: _editVm.designations,
                 showAddIcon: false,
+                hasError: _editVm
+                    .isFieldInvalid(ContactValidationField.designation),
                 onChanged: (i, v) =>
                     _editVm.updateSimpleField(_editVm.designations, i, v),
                 onClear: (i) => _editVm.clearField(_editVm.designations, i),
@@ -286,6 +305,8 @@ class _VisitingCardScanTemplateEditScreenState
                 title: 'Tell',
                 entries: _editVm.phones,
                 typeOptions: VisitingCardEditContactViewModel.telTypes,
+                hasError:
+                    _editVm.isFieldInvalid(ContactValidationField.phone),
                 onValueChanged: (i, v) =>
                     _editVm.updateTypedField(_editVm.phones, i, value: v),
                 onTypeChanged: (i, t) =>
@@ -299,6 +320,8 @@ class _VisitingCardScanTemplateEditScreenState
                 entries: _editVm.emails,
                 typeOptions:
                     VisitingCardEditContactViewModel.emailWebsiteTypes,
+                hasError:
+                    _editVm.isFieldInvalid(ContactValidationField.email),
                 onValueChanged: (i, v) =>
                     _editVm.updateTypedField(_editVm.emails, i, value: v),
                 onTypeChanged: (i, t) =>
@@ -325,6 +348,8 @@ class _VisitingCardScanTemplateEditScreenState
               VisitingSimpleFieldCard(
                 title: 'Address',
                 entries: _editVm.addresses,
+                hasError:
+                    _editVm.isFieldInvalid(ContactValidationField.address),
                 onChanged: (i, v) =>
                     _editVm.updateSimpleField(_editVm.addresses, i, v),
                 onClear: (i) => _editVm.removeField(_editVm.addresses, i),
@@ -337,6 +362,7 @@ class _VisitingCardScanTemplateEditScreenState
                 onTap: _onDone,
               ),
             ],
+            ),
           ),
         );
       },
