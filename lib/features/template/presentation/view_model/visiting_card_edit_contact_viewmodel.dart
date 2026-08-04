@@ -278,7 +278,15 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     final left = pos.left ?? 0;
     final top = pos.top ??
         (pos.bottom != null ? (1.0 - (pos.bottom! + (pos.size ?? 0.14))) : 0.0);
-    final size = field.isImageOverlay ? (pos.size ?? 0.14) : pos.fontSize;
+    final double size;
+    if (field.isImageOverlay) {
+      size = pos.size ?? 0.14;
+    } else if (field == VisitingCardOverlayField.name) {
+      // Keep 3-word compact size when selecting (don't jump to full fontSize).
+      size = pos.resolvedNameFontSize(displayName);
+    } else {
+      size = pos.fontSize;
+    }
     return VisitingCardFieldTransform(
       left: left,
       top: top.clamp(0.0, 1.0),

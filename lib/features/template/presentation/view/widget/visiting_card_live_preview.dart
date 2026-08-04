@@ -297,12 +297,8 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       final display = pos.uppercase ? clipped.toUpperCase() : clipped;
       final t = vm.resolvedTransform(field, isFront: isFront);
       final maxW = size.width * (t.width ?? pos.width ?? 0.48);
-      // Prefer 3-word compact size unless user resized this name overlay.
-      final hasCustomSize = vm.overlayFor(field, isFront: isFront) != null;
-      final fontSize =
-          hasCustomSize ? t.size : pos.resolvedNameFontSize(clipped);
       final baseStyle = nameStyleFor(pos, clipped).copyWith(
-        fontSize: fontSize.sp,
+        fontSize: t.size.sp,
         height: 1.0,
       );
 

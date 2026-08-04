@@ -719,7 +719,8 @@ back: VisitingCardSidePositions(
         uppercase: false,
         fontStyle: FontStyle.italic,
         color: Color(0xFF0D4F4C),
-        maxDisplayNameLength: 20,
+        maxDisplayNameLength: 22,
+        threeWordFontSize: 16,
       ),
       designation: VisitingCardFieldPosition(
         left: 0.118,
@@ -870,7 +871,8 @@ back: VisitingCardSidePositions(
         uppercase: false,
         fontStyle: FontStyle.italic,
         color: Color(0xFF2076FD),
-        maxDisplayNameLength: 20,
+        maxDisplayNameLength: 22,
+        threeWordFontSize: 16,
       ),
       designation: VisitingCardFieldPosition(
         left: 0.135,
@@ -958,7 +960,8 @@ back: VisitingCardSidePositions(
         uppercase: true,
         firstNameColor: Color(0xFF606060),
         lastNameColor: Color(0xFF713954),
-        maxDisplayNameLength: 20,
+        maxDisplayNameLength: 22,
+        threeWordFontSize: 16,
       ),
       designation: VisitingCardFieldPosition(
         left: 0.068,
@@ -1074,7 +1077,8 @@ back: VisitingCardSidePositions(
         uppercase: false,
         fontStyle: FontStyle.italic,
         color: Color(0xFF6ACA2B),
-        maxDisplayNameLength: 20,
+        maxDisplayNameLength: 22,
+        threeWordFontSize: 16,
       ),
       designation: VisitingCardFieldPosition(
         left: 0.135,
@@ -1185,7 +1189,8 @@ back: VisitingCardSidePositions(
         maxLines: 1,
         uppercase: true,
         color: Color(0xFF1A1A1A),
-        maxDisplayNameLength: 20,
+        maxDisplayNameLength: 22,
+        threeWordFontSize: 16,
       ),
       designation: VisitingCardFieldPosition(
         left: 0.10,
