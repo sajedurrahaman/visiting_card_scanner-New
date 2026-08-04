@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.visiting_card"
+    namespace = "com.digital.visiting.card.scanner.maker.reader"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 

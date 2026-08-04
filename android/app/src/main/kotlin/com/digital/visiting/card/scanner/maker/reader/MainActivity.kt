@@ -1,4 +1,4 @@
-package com.example.visiting_card
+package com.digital.visiting.card.scanner.maker.reader
 
 import io.flutter.embedding.android.FlutterActivity
 

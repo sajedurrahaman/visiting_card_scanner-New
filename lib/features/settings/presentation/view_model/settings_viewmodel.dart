@@ -5,37 +5,37 @@ import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 
 class SettingsViewModel extends ChangeNotifier {
   // TODO: Replace these placeholders with your real production values.
-  static const String _appName = 'Visiting Card';
-  static const String _androidAppId = 'com.example.visiting_card';
+  static const String _appName = 'Visiting Card Scanner';
+  static const String _androidAppId = 'com.digital.visiting.card.scanner.maker.reader';
   static const String _supportEmail = 'sajedurrahamanapp@gmail.com';
   static const String _moreAppsUrl =
       'https://play.google.com/store/apps/dev?id=6584495725981374366';
-  static const String _privacyPolicyUrl = '';
-  static const String _termsAndConditionsUrl = '';
+  static const String _privacyPolicyUrl = 'https://sites.google.com/view/visiting-card-scanner-maker';
+  static const String _termsAndConditionsUrl = 'https://sites.google.com/view/visitingcardscannermaker';
 
   void onUpgradePremiumTap() {}
 
-  Future<void> onShareWithFriendTap(BuildContext context) async {
-    try {
-      await Share.share('Check out $_appName');
-    } catch (_) {
-      if (!context.mounted) return;
-      ui.AppToast.show(context, message: 'Failed to share app');
-    }
-  }
-
   // Future<void> onShareWithFriendTap(BuildContext context) async {
-  //   final message =
-  //       'Check out $_appName\n'
-  //       'https://play.google.com/store/apps/details?id=$_androidAppId';
-  //
   //   try {
-  //     await Share.share(message);
+  //     await Share.share('Check out $_appName');
   //   } catch (_) {
   //     if (!context.mounted) return;
   //     ui.AppToast.show(context, message: 'Failed to share app');
   //   }
   // }
+
+  Future<void> onShareWithFriendTap(BuildContext context) async {
+    final message =
+        'Check out $_appName\n'
+        'https://play.google.com/store/apps/details?id=$_androidAppId';
+
+    try {
+      await Share.share(message);
+    } catch (_) {
+      if (!context.mounted) return;
+      ui.AppToast.show(context, message: 'Failed to share app');
+    }
+  }
 
   Future<void> onRateUsTap(BuildContext context) async {
     if (_androidAppId.isEmpty) {
