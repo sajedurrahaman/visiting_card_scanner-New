@@ -6,7 +6,6 @@ import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 class SettingsViewModel extends ChangeNotifier {
   // TODO: Replace these placeholders with your real production values.
   static const String _appName = 'Visiting Card Scanner';
-  static const String _androidAppId = 'com.digital.visiting.card.scanner.maker.reader';
   static const String _supportEmail = 'sajedurrahamanapp@gmail.com';
   static const String _moreAppsUrl =
       'https://apps.apple.com/us/developer/md-sajedur-rahaman/id1586019019';
@@ -27,7 +26,7 @@ class SettingsViewModel extends ChangeNotifier {
   Future<void> onShareWithFriendTap(BuildContext context) async {
     final message =
         'Check out $_appName\n'
-        'https://apps.apple.com/app/id=$_androidAppId';
+        'https://apps.apple.com/app/id6798218537';
 
     try {
       await Share.share(message);
@@ -38,14 +37,10 @@ class SettingsViewModel extends ChangeNotifier {
   }
 
   Future<void> onRateUsTap(BuildContext context) async {
-    if (_androidAppId.isEmpty) {
-      ui.AppToast.show(context, message: 'Add app id to enable Rate Us');
-      return;
-    }
 
-    final marketUri = Uri.parse('market://details?id=$_androidAppId');
+    final marketUri = Uri.parse('market://details?id6798218537');
     final webUri = Uri.parse(
-      'https://apps.apple.com/app/?id=$_androidAppId',
+      'https://apps.apple.com/app/id6798218537',
     );
 
     final launched = await launchUrl(
