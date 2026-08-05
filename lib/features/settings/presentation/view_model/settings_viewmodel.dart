@@ -9,9 +9,9 @@ class SettingsViewModel extends ChangeNotifier {
   static const String _androidAppId = 'com.digital.visiting.card.scanner.maker.reader';
   static const String _supportEmail = 'sajedurrahamanapp@gmail.com';
   static const String _moreAppsUrl =
-      'https://play.google.com/store/apps/dev?id=6584495725981374366';
-  static const String _privacyPolicyUrl = 'https://sites.google.com/view/visiting-card-scanner-maker';
-  static const String _termsAndConditionsUrl = 'https://sites.google.com/view/visitingcardscannermaker';
+      'https://apps.apple.com/us/developer/md-sajedur-rahaman/id1586019019';
+  static const String _privacyPolicyUrl = 'https://sites.google.com/view/visiting-card-scanner-maker-a';
+  static const String _termsAndConditionsUrl = 'https://sites.google.com/view/visitingcardscannermaker-a';
 
   void onUpgradePremiumTap() {}
 
@@ -27,7 +27,7 @@ class SettingsViewModel extends ChangeNotifier {
   Future<void> onShareWithFriendTap(BuildContext context) async {
     final message =
         'Check out $_appName\n'
-        'https://play.google.com/store/apps/details?id=$_androidAppId';
+        'https://apps.apple.com/app/id=$_androidAppId';
 
     try {
       await Share.share(message);
@@ -45,7 +45,7 @@ class SettingsViewModel extends ChangeNotifier {
 
     final marketUri = Uri.parse('market://details?id=$_androidAppId');
     final webUri = Uri.parse(
-      'https://play.google.com/store/apps/details?id=$_androidAppId',
+      'https://apps.apple.com/app/?id=$_androidAppId',
     );
 
     final launched = await launchUrl(
