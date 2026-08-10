@@ -562,11 +562,16 @@ class _VisitingCardCameraScreenState extends State<VisitingCardCameraScreen> {
                                       !widget.isRetakeMode)
                                   ? ParentScanModeStrip(
                                       selected: widget.scanMode,
-                                      onChanged: (mode) =>
-                                          ParentScanNavigator.switchMode(
-                                        context,
-                                        mode,
-                                      ),
+                                      onChanged: (mode) async {
+                                          await _controller?.dispose();
+                                          _controller = null;
+                                          if (context.mounted) {
+                                            ParentScanNavigator.switchMode(
+                                              context,
+                                              mode,
+                                            );
+                                          }
+                                        },
                                     )
                                   : (vm.images.isNotEmpty &&
                                           !widget.isRetakeMode)

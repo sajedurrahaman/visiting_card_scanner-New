@@ -77,9 +77,11 @@ class _QrBarcodeCameraScanScreenState extends State<QrBarcodeCameraScanScreen>
     if (!mounted || _handled) return;
     if (state == AppLifecycleState.resumed && _resumeOnForeground) {
       _resumeOnForeground = false;
-      try {
-        await _controller.start();
-      } catch (_) {}
+      if(!_controller.value.isRunning){
+        try {
+          await _controller.start();
+        } catch (_) {}
+      }
     } else if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused) {
       _resumeOnForeground = true;
@@ -119,9 +121,12 @@ class _QrBarcodeCameraScanScreenState extends State<QrBarcodeCameraScanScreen>
     // Back from result → resume camera for another scan.
     if (!mounted) return;
     _handled = false;
-    try {
-      await _controller.start();
-    } catch (_) {}
+    _resumeOnForeground = false;
+    if (!_controller.value.isRunning) {
+  try {
+    await _controller.start();
+  } catch (_) {}
+}
   }
 
   Future<void> _onDetect(BarcodeCapture capture) async {
@@ -317,8 +322,12 @@ class _QrBarcodeCameraScanScreenState extends State<QrBarcodeCameraScanScreen>
                               (widget.kind == QrBarcodeScanKind.qrCode
                                   ? ParentScanMode.qrCode
                                   : ParentScanMode.barcode),
-                          onChanged: (mode) =>
-                              ParentScanNavigator.switchMode(context, mode),
+                          onChanged: (mode) async {
+  await _controller.stop();
+  if (context.mounted) {
+    ParentScanNavigator.switchMode(context, mode);
+  }
+},
                         ),
                       Expanded(
                         child: Align(
