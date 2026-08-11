@@ -18,8 +18,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-
-
   @override
   void initState() {
     super.initState();
@@ -35,95 +33,89 @@ class _HomeScreenState extends State<HomeScreen> {
     return SafeArea(
       bottom: false,
       child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.only(top: 12.h, bottom: 20.h),
-              child: Text(
-                'Visiting Card Scanner',
-                style: ui.AppTextStyles.mainText(),
-              ),
+        children: [
+          Padding(
+            padding: EdgeInsets.only(top: 12.h, bottom: 20.h),
+            child: Text(
+              'Visiting Card Scanner',
+              style: ui.AppTextStyles.mainText(),
             ),
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const _SectionTitle(title: 'Scan'),
-                    SizedBox(height: 16.h),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          ),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const _SectionTitle(title: 'Scan'),
+                  SizedBox(height: 16.h),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _ScanAction(
+                        icon: ui.AppAssets.homeVisitingCard,
+                        label: 'Visiting Card',
+                        onTap: () =>
+                            HomeScreenVisitingCardBottomSheet.show(context),
+                      ),
+                      _ScanAction(
+                        icon: ui.AppAssets.homeQrCode,
+                        label: 'QR Code',
+                        onTap: () => HomeScreenQrcodeBottomSheet.show(context),
+                      ),
+                      _ScanAction(
+                        icon: ui.AppAssets.homeBarCode,
+                        label: 'Barcode',
+                        onTap: () => HomeScreenBarcodeBottomSheet.show(context),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 28.h),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _ScanAction(
-                          icon: ui.AppAssets.homeVisitingCard,
-                          label: 'Visiting Card',
-                          onTap: () =>
-                              HomeScreenVisitingCardBottomSheet.show(context),
-                        ),
-                        _ScanAction(
-                          icon: ui.AppAssets.homeQrCode,
-                          label: 'QR Code',
-                          onTap: () =>
-                              HomeScreenQrcodeBottomSheet.show(context),
-                        ),
-                        _ScanAction(
-                          icon: ui.AppAssets.homeBarCode,
-                          label: 'Barcode',
-                          onTap: () =>
-                              HomeScreenBarcodeBottomSheet.show(context),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 28.h),
-                    if (viewModel.hasRecentCards)
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Row(
                           children: [
-                            Row(
-                              children: [
-                                const Expanded(
-                                  child: _SectionTitle(title: 'Recent'),
-                                ),
-                                GestureDetector(
-                                  onTap: () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      RouteNames.recent,
-                                    );
-                                  },
-                                  child: Text(
-                                    'View All',
-                                    style: ui.AppTextStyles.sellAllText(),
-                                  ),
-                                ),
-                              ],
+                            const Expanded(
+                              child: _SectionTitle(title: 'Recent'),
                             ),
-                            SizedBox(height: 12.h),
-                            Expanded(
-                              child: ListView.builder(
-                                padding: EdgeInsets.fromLTRB(6.w, 8.h, 6.w, 120.h),
-                                itemCount: viewModel.recentCards.length,
-                                itemBuilder: (context, index) {
-                                  final item = viewModel.recentCards[index];
-                                  return Padding(
-                                    padding: EdgeInsets.only(bottom: 12.h),
-                                    child: RecentCardTile(item: item),
-                                  );
-                                },
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.pushNamed(context, RouteNames.recent);
+                              },
+                              child: Text(
+                                'View All',
+                                style: ui.AppTextStyles.sellAllText(),
                               ),
                             ),
                           ],
                         ),
-                      )
-                    else
-                      const Expanded(child: _EmptyRecentState()),
-                  ],
-                ),
+                        SizedBox(height: 12.h),
+                        Expanded(
+                          child: ListView.builder(
+                            padding: EdgeInsets.fromLTRB(6.w, 8.h, 6.w, 120.h),
+                            itemCount: viewModel.recentCards.length,
+                            itemBuilder: (context, index) {
+                              final item = viewModel.recentCards[index];
+                              return Padding(
+                                padding: EdgeInsets.only(bottom: 12.h),
+                                child: RecentCardTile(item: item),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (!viewModel.hasRecentCards) _EmptyRecentState(),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -137,12 +129,7 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: ui.AppTextStyles.mainText(),
-        ),
-      ],
+      children: [Text(title, style: ui.AppTextStyles.mainText())],
     );
   }
 }
@@ -181,11 +168,7 @@ class _ScanAction extends StatelessWidget {
                 ],
               ),
               alignment: Alignment.center,
-              child: SvgPicture.asset(
-                icon,
-                width: 36.w,
-                height: 36.w,
-              ),
+              child: SvgPicture.asset(icon, width: 36.w, height: 36.w),
             ),
             SizedBox(height: 10.h),
             Text(
@@ -209,7 +192,7 @@ class _EmptyRecentState extends StatelessWidget {
   Widget build(BuildContext context) {
     // Center between Scan section and bottom nav bar.
     return Padding(
-      padding: EdgeInsets.only(bottom: 72.h),
+      padding: EdgeInsets.only(bottom: 140.h),
       child: Center(
         child: Image.asset(
           ui.AppAssets.homeScreenRecentEmpty,
@@ -220,4 +203,3 @@ class _EmptyRecentState extends StatelessWidget {
     );
   }
 }
-
