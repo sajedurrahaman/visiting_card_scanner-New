@@ -19,10 +19,7 @@ class SettingsScreen extends StatelessWidget {
         children: [
           Padding(
             padding: EdgeInsets.only(top: 12.h, bottom: 20.h),
-            child: Text(
-              'Settings',
-              style: ui.AppTextStyles.mainText(),
-            ),
+            child: Text('Settings', style: ui.AppTextStyles.mainText()),
           ),
           Expanded(
             child: ListView(
@@ -34,16 +31,19 @@ class SettingsScreen extends StatelessWidget {
                     SettingsItemData(
                       icon: ui.AppAssets.shareIcon,
                       label: 'Share with Friend',
+                      subTitle: 'Share app link with friends',
                       onTap: () => viewModel.onShareWithFriendTap(context),
                     ),
                     SettingsItemData(
                       icon: ui.AppAssets.ratingIcon,
                       label: 'Rate Us',
+                      subTitle: 'Opens Google Play Store',
                       onTap: () => viewModel.onRateUsTap(context),
                     ),
                     SettingsItemData(
                       icon: ui.AppAssets.moreIcon,
                       label: 'More Apps',
+                      subTitle: 'Explore our more apps',
                       onTap: () => viewModel.onMoreAppsTap(context),
                     ),
                   ],
@@ -55,16 +55,19 @@ class SettingsScreen extends StatelessWidget {
                     SettingsItemData(
                       icon: ui.AppAssets.contactIcon,
                       label: 'Contact Us',
+                      subTitle: 'Send us your feedback',
                       onTap: () => viewModel.onContactUsTap(context),
                     ),
                     SettingsItemData(
                       icon: ui.AppAssets.privacyIcon,
                       label: 'Privacy Policy',
+                      subTitle: 'How we use your information',
                       onTap: () => viewModel.onPrivacyPolicyTap(context),
                     ),
                     SettingsItemData(
                       icon: ui.AppAssets.termsIcon,
                       label: 'Terms & Conditions',
+                      subTitle: 'Guidelines for using the app',
                       onTap: () => viewModel.onTermsAndConditionsTap(context),
                     ),
                   ],
