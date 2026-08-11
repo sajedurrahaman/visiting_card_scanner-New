@@ -83,7 +83,8 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
 
   void _jumpTo(int page) {
     if (!_pageController.hasClients) return;
-    final current = _pageController.page?.round() ?? _pageController.initialPage;
+    final current =
+        _pageController.page?.round() ?? _pageController.initialPage;
     if (current == page) return;
     _ignorePageCallback = true;
     _pageController.jumpToPage(page);
@@ -141,7 +142,8 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
                 itemCount: 2,
                 // Allow finger swipe 1/2 ↔ 2/2; lock only while an overlay
                 // is selected so move/rotate/resize keep winning gestures.
-                physics: widget.enableFieldTransform &&
+                physics:
+                    widget.enableFieldTransform &&
                         widget.vm.selectedOverlay != null
                     ? const NeverScrollableScrollPhysics()
                     : const BouncingScrollPhysics(
@@ -181,8 +183,8 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final size = Size(constraints.maxWidth, constraints.maxHeight);
-        final interactive = widget.enableFieldTransform &&
-            sideIndex == widget.vm.sideIndex;
+        final interactive =
+            widget.enableFieldTransform && sideIndex == widget.vm.sideIndex;
         return Stack(
           fit: StackFit.expand,
           children: [
@@ -297,10 +299,10 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       final display = pos.uppercase ? clipped.toUpperCase() : clipped;
       final t = vm.resolvedTransform(field, isFront: isFront);
       final maxW = size.width * (t.width ?? pos.width ?? 0.48);
-      final baseStyle = nameStyleFor(pos, clipped).copyWith(
-        fontSize: t.size.sp,
-        height: 1.0,
-      );
+      final baseStyle = nameStyleFor(
+        pos,
+        clipped,
+      ).copyWith(fontSize: t.size.sp, height: 1.0);
 
       final Widget text;
       if (pos.hasSplitNameColors) {
@@ -389,27 +391,70 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     }) {
       if (configPos == null || value.trim().isEmpty) return;
       final t = vm.resolvedTransform(field, isFront: isFront);
-      final maxW = size.width * (t.width ?? configPos.width ?? 0.4);
-      final fontSize = t.size;
-      final style = styleFor(configPos, fontSize: fontSize);
+      final isTagline = field == VisitingCardOverlayField.tagline;
+      final configuredWidth = size.width * (t.width ?? configPos.width ?? 0.4);
+      final availableWidth = (size.width - (size.width * t.left))
+          .clamp(1.0, size.width)
+          .toDouble();
+      final maxW = isTagline
+          ? configuredWidth.clamp(1.0, availableWidth).toDouble()
+          : configuredWidth;
+      final maxLines = isTagline ? null : configPos.maxLines;
       final display = configPos.uppercase ? value.toUpperCase() : value;
 
-      // Tight box = actual painted text (no extra green-border vertical padding).
-      final measureStyle = style.copyWith(height: 1.0);
-      final painter = TextPainter(
-        text: TextSpan(text: display, style: measureStyle),
-        maxLines: configPos.maxLines,
-        ellipsis: '…',
+      TextStyle measureStyleFor(double fontSize) =>
+          styleFor(configPos, fontSize: fontSize).copyWith(height: 1.0);
+
+      TextPainter layoutText(TextStyle style) => TextPainter(
+        text: TextSpan(text: display, style: style),
+        maxLines: maxLines,
+        // A tagline must always show its complete text; it wraps instead
+        // of replacing the end of the text with an ellipsis.
+        ellipsis: isTagline ? null : '…',
         textAlign: configPos.textAlign,
         textDirection: TextDirection.ltr,
       )..layout(maxWidth: maxW);
+
+      var measureStyle = measureStyleFor(t.size);
+      var painter = layoutText(measureStyle);
+
+      // Keep all wrapped tagline lines within the card when its font has been
+      // enlarged. The largest fitting size is used, so the resize control
+      // remains useful without ever clipping the final words.
+      if (isTagline) {
+        final availableHeight = (size.height - (size.height * t.top))
+            .clamp(1.0, size.height)
+            .toDouble();
+        if (painter.height > availableHeight) {
+          var low = 1.0;
+          var high = t.size;
+          var bestStyle = measureStyleFor(low);
+          var bestPainter = layoutText(bestStyle);
+          for (var i = 0; i < 18; i++) {
+            final candidateSize = (low + high) / 2;
+            final candidateStyle = measureStyleFor(candidateSize);
+            final candidatePainter = layoutText(candidateStyle);
+            if (candidatePainter.height <= availableHeight) {
+              low = candidateSize;
+              bestStyle = candidateStyle;
+              bestPainter = candidatePainter;
+            } else {
+              high = candidateSize;
+            }
+          }
+          measureStyle = bestStyle;
+          painter = bestPainter;
+        }
+      }
+
       final boxW = painter.width.clamp(1.0, maxW);
       final boxH = painter.height.clamp(1.0, size.height);
 
       final text = Text(
         display,
-        maxLines: configPos.maxLines,
-        overflow: TextOverflow.ellipsis,
+        maxLines: maxLines,
+        softWrap: isTagline,
+        overflow: isTagline ? TextOverflow.visible : TextOverflow.ellipsis,
         textAlign: configPos.textAlign,
         style: measureStyle,
       );
@@ -496,12 +541,11 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       value: vm.displayTagline,
     );
 
-    final phones =
-        vm.phones.where((e) => e.value.trim().isNotEmpty).toList();
-    final emails =
-        vm.emails.where((e) => e.value.trim().isNotEmpty).toList();
-    final websites =
-        vm.websites.where((e) => e.value.trim().isNotEmpty).toList();
+    final phones = vm.phones.where((e) => e.value.trim().isNotEmpty).toList();
+    final emails = vm.emails.where((e) => e.value.trim().isNotEmpty).toList();
+    final websites = vm.websites
+        .where((e) => e.value.trim().isNotEmpty)
+        .toList();
 
     addTransformText(
       field: VisitingCardOverlayField.phone,
@@ -663,10 +707,7 @@ class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
         top: top,
         width: boxW,
         height: boxH,
-        child: Transform.rotate(
-          angle: widget.transform.rotation,
-          child: image,
-        ),
+        child: Transform.rotate(angle: widget.transform.rotation, child: image),
       );
     }
 
