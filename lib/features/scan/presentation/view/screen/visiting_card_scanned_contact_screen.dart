@@ -175,9 +175,9 @@ class _VisitingCardScannedContactScreenState
                       onTap: isFirst
                           ? null
                           : () => _pageController.previousPage(
-                                duration: const Duration(milliseconds: 250),
-                                curve: Curves.easeInOut,
-                              ),
+                              duration: const Duration(milliseconds: 250),
+                              curve: Curves.easeInOut,
+                            ),
                       child: SvgPicture.asset(
                         isFirst
                             ? ui.AppAssets.inactiveLeftSideArrow
@@ -199,9 +199,9 @@ class _VisitingCardScannedContactScreenState
                       onTap: isLast
                           ? null
                           : () => _pageController.nextPage(
-                                duration: const Duration(milliseconds: 250),
-                                curve: Curves.easeInOut,
-                              ),
+                              duration: const Duration(milliseconds: 250),
+                              curve: Curves.easeInOut,
+                            ),
                       child: SvgPicture.asset(
                         isLast
                             ? ui.AppAssets.inactiveRightSideArrow
@@ -250,16 +250,14 @@ class _VisitingCardScannedContactScreenState
                   title: 'Company',
                   entries: vm.companies,
                   showAddIcon: false,
-                  onChanged: (i, v) =>
-                      vm.updateSimpleField(vm.companies, i, v),
+                  onChanged: (i, v) => vm.updateSimpleField(vm.companies, i, v),
                   onClear: (_) {},
                 ),
                 VisitingSimpleFieldCard(
                   title: 'Tagline',
                   entries: vm.taglines,
                   showAddIcon: false,
-                  onChanged: (i, v) =>
-                      vm.updateSimpleField(vm.taglines, i, v),
+                  onChanged: (i, v) => vm.updateSimpleField(vm.taglines, i, v),
                   onClear: (_) {},
                 ),
                 VisitingTypedFieldCard(
@@ -283,8 +281,7 @@ class _VisitingCardScannedContactScreenState
                   onTypeChanged: (i, t) =>
                       vm.updateTypedField(vm.emails, i, type: t),
                   onClear: (i) => vm.removeField(vm.emails, i),
-                  onAdd: () =>
-                      vm.addField(vm.emails, defaultType: 'Company'),
+                  onAdd: () => vm.addField(vm.emails, defaultType: 'Company'),
                 ),
                 VisitingTypedFieldCard(
                   title: 'Website',
@@ -296,22 +293,17 @@ class _VisitingCardScannedContactScreenState
                   onTypeChanged: (i, t) =>
                       vm.updateTypedField(vm.websites, i, type: t),
                   onClear: (i) => vm.removeField(vm.websites, i),
-                  onAdd: () =>
-                      vm.addField(vm.websites, defaultType: 'Company'),
+                  onAdd: () => vm.addField(vm.websites, defaultType: 'Company'),
                 ),
                 VisitingSimpleFieldCard(
                   title: 'Address',
                   entries: vm.addresses,
-                  onChanged: (i, v) =>
-                      vm.updateSimpleField(vm.addresses, i, v),
+                  onChanged: (i, v) => vm.updateSimpleField(vm.addresses, i, v),
                   onClear: (i) => vm.removeField(vm.addresses, i),
                   onAdd: () => vm.addField(vm.addresses, defaultType: ''),
                 ),
                 SizedBox(height: 8.h),
-                VisitingGradientButton(
-                  label: 'Next',
-                  onTap: _onNext,
-                ),
+                VisitingGradientButton(label: 'Next', onTap: _onNext),
               ],
             ),
           ),

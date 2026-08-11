@@ -120,7 +120,11 @@ class _QrcodeCustomizeBodyState extends State<_QrcodeCustomizeBody> {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, size: 18.sp, color: const Color(0xFF404040)),
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            size: 18.sp,
+            color: const Color(0xFF404040),
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -137,16 +141,20 @@ class _QrcodeCustomizeBodyState extends State<_QrcodeCustomizeBody> {
             child: Text(
               vm.isSaving ? 'Saving...' : 'Save',
               style: ui.AppTextStyles.helperText(color: _accent).copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16.sp,
-                    letterSpacing: 0,
-                  ),
+                fontWeight: FontWeight.w600,
+                fontSize: 16.sp,
+                letterSpacing: 0,
+              ),
             ),
           ),
         ],
         bottom: PreferredSize(
           preferredSize: Size.fromHeight(1.h),
-          child: const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
+          child: const Divider(
+            height: 1,
+            thickness: 1,
+            color: Color(0xFFEEEEEE),
+          ),
         ),
       ),
       body: Column(
@@ -156,10 +164,7 @@ class _QrcodeCustomizeBodyState extends State<_QrcodeCustomizeBody> {
             padding: EdgeInsets.only(
               bottom: MediaQuery.viewInsetsOf(context).bottom,
             ),
-            child: _EditorPanel(
-              vm: vm,
-              overlayController: _overlayController,
-            ),
+            child: _EditorPanel(vm: vm, overlayController: _overlayController),
           ),
         ],
       ),
@@ -183,10 +188,7 @@ class _PreviewCard extends StatelessWidget {
             Screenshot(
               controller: vm.screenshotController,
               child: Container(
-                constraints: BoxConstraints(
-                  minWidth: 210.w,
-                  maxWidth: 320.w,
-                ),
+                constraints: BoxConstraints(minWidth: 210.w, maxWidth: 320.w),
                 margin: const EdgeInsets.only(top: 20),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFFFFF),
@@ -204,10 +206,10 @@ class _PreviewCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     SizedBox(
-                      width: 230.w,
-                      height: 230.w,
+                      width: 200.w,
+                      height: 200.w,
                       child: Padding(
-                        padding: EdgeInsets.all(10.w),
+                        padding: EdgeInsets.all(5.w),
                         child: _GradientQrPreview(
                           fontWeightFor: _fontWeightFor,
                           fontStyleFor: _fontStyleFor,
@@ -217,7 +219,7 @@ class _PreviewCard extends StatelessWidget {
                     if (vm.overlayText.isNotEmpty)
                       Padding(
                         padding: EdgeInsets.only(
-                          bottom: 16.h,
+                          bottom: 0.h,
                           left: 10.w,
                           right: 10.w,
                         ),
@@ -227,11 +229,14 @@ class _PreviewCard extends StatelessWidget {
                           style: TextStyle(
                             fontFamily: ui.AppFonts.sfPro,
                             fontSize: vm.overlayFontSize.sp,
-                            fontWeight: _fontWeightFor(vm.selectedFontStyleIndex),
+                            fontWeight: _fontWeightFor(
+                              vm.selectedFontStyleIndex,
+                            ),
                             fontStyle: _fontStyleFor(vm.selectedFontStyleIndex),
                             color: vm.overlayTextColor,
-                            letterSpacing:
-                                vm.selectedFontStyleIndex == 4 ? 1.5 : 0,
+                            letterSpacing: vm.selectedFontStyleIndex == 4
+                                ? 1.5
+                                : 0,
                           ),
                         ),
                       ),
@@ -268,7 +273,6 @@ class _PreviewCard extends StatelessWidget {
         ? FontStyle.italic
         : FontStyle.normal;
   }
-
 }
 
 class _GradientQrPreview extends StatelessWidget {
@@ -309,10 +313,7 @@ class _GradientQrPreview extends StatelessWidget {
 }
 
 class _EditorPanel extends StatelessWidget {
-  const _EditorPanel({
-    required this.vm,
-    required this.overlayController,
-  });
+  const _EditorPanel({required this.vm, required this.overlayController});
 
   final QrcodeCustomizeViewModel vm;
   final TextEditingController overlayController;
@@ -324,10 +325,13 @@ class _EditorPanel extends StatelessWidget {
     final contentHeight = selectedTab == null
         ? 0.0
         : switch (selectedTab) {
-            QrCustomizeTab.text => keyboardVisible ? 64.h : 256.h,
+            // The input has Flutter's 48 px minimum touch height.  Leave
+            // enough room for it after the panel's vertical padding when the
+            // keyboard is visible (64.h could be about one pixel too short).
+            QrCustomizeTab.text => keyboardVisible ? 72.h : 256.h,
             QrCustomizeTab.template => 256.h,
             QrCustomizeTab.color => 256.h,
-            QrCustomizeTab.logo => keyboardVisible ? 64.h : 256.h,
+            QrCustomizeTab.logo => keyboardVisible ? 72.h : 256.h,
             _ => 160.h,
           };
 
@@ -368,7 +372,11 @@ class _TabRow extends StatelessWidget {
   Widget build(BuildContext context) {
     const tabs = [
       (QrCustomizeTab.text, ui.AppAssets.qrTemplateRowIconText, 'Text'),
-      (QrCustomizeTab.template, ui.AppAssets.qrTemplateRowIconTemplate, 'Template'),
+      (
+        QrCustomizeTab.template,
+        ui.AppAssets.qrTemplateRowIconTemplate,
+        'Template',
+      ),
       (QrCustomizeTab.color, ui.AppAssets.qrTemplateRowIconColor, 'Color'),
       (QrCustomizeTab.logo, ui.AppAssets.qrTemplateRowIconLogo, 'Logo'),
       (QrCustomizeTab.dots, ui.AppAssets.qrTemplateRowIconDot, 'Dots'),
@@ -457,13 +465,14 @@ class _CircularTab extends StatelessWidget {
           SizedBox(height: 6.h),
           Text(
             label,
-            style: ui.AppTextStyles.iconUnderText(
-              color: selected ? _accent : const Color(0xFF404040),
-            ).copyWith(
-              fontSize: 11.sp,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              letterSpacing: 0,
-            ),
+            style:
+                ui.AppTextStyles.iconUnderText(
+                  color: selected ? _accent : const Color(0xFF404040),
+                ).copyWith(
+                  fontSize: 11.sp,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  letterSpacing: 0,
+                ),
           ),
         ],
       ),
@@ -616,7 +625,8 @@ class _TextTab extends StatelessWidget {
                           height: 32.w,
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
-                            itemCount: QrcodeCustomizeViewModel.textColors.length + 2,
+                            itemCount:
+                                QrcodeCustomizeViewModel.textColors.length + 2,
                             itemBuilder: (context, index) {
                               if (index == 0) {
                                 final active = vm.overlaySolidSwatchUi == -1;
@@ -633,11 +643,15 @@ class _TextTab extends StatelessWidget {
                                           : Colors.grey.withValues(alpha: 0.1),
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color: active ? _accent : Colors.transparent,
+                                        color: active
+                                            ? _accent
+                                            : Colors.transparent,
                                         width: 2,
                                       ),
                                     ),
-                                    child: SvgPicture.asset(QrColorHelper.defaultResetIcon),
+                                    child: SvgPicture.asset(
+                                      QrColorHelper.defaultResetIcon,
+                                    ),
                                   ),
                                 );
                               }
@@ -664,19 +678,24 @@ class _TextTab extends StatelessWidget {
                                           : Colors.grey.withValues(alpha: 0.1),
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color: active ? _accent : Colors.transparent,
+                                        color: active
+                                            ? _accent
+                                            : Colors.transparent,
                                         width: 2,
                                       ),
                                     ),
-                                    child: SvgPicture.asset(ui.AppAssets.multipleColorIcon),
+                                    child: SvgPicture.asset(
+                                      ui.AppAssets.multipleColorIcon,
+                                    ),
                                   ),
                                 );
                               }
                               final colorIndex = index - 2;
-                              final color =
-                                  QrcodeCustomizeViewModel.textColors[colorIndex];
+                              final color = QrcodeCustomizeViewModel
+                                  .textColors[colorIndex];
                               return GestureDetector(
-                                onTap: () => vm.selectOverlaySolidColor(colorIndex),
+                                onTap: () =>
+                                    vm.selectOverlaySolidColor(colorIndex),
                                 child: Container(
                                   width: 32.w,
                                   height: 32.w,
@@ -685,7 +704,8 @@ class _TextTab extends StatelessWidget {
                                     color: color,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: vm.overlaySolidSwatchUi == colorIndex
+                                      color:
+                                          vm.overlaySolidSwatchUi == colorIndex
                                           ? _accent
                                           : Colors.transparent,
                                       width: 2,
@@ -709,13 +729,15 @@ class _TextTab extends StatelessWidget {
                         GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          itemCount: QrcodeCustomizeViewModel.fontStyleLabels.length,
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 4,
-                            crossAxisSpacing: 6.w,
-                            mainAxisSpacing: 6.h,
-                            childAspectRatio: 2.8,
-                          ),
+                          itemCount:
+                              QrcodeCustomizeViewModel.fontStyleLabels.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 4,
+                                crossAxisSpacing: 6.w,
+                                mainAxisSpacing: 6.h,
+                                childAspectRatio: 2.8,
+                              ),
                           itemBuilder: (context, index) {
                             final selected = vm.selectedFontStyleIndex == index;
                             return GestureDetector(
@@ -726,7 +748,9 @@ class _TextTab extends StatelessWidget {
                                   color: const Color(0xFFFFFFFF),
                                   borderRadius: BorderRadius.circular(5.r),
                                   border: Border.all(
-                                    color: selected ? _accent : const Color(0xFFE0E0E0),
+                                    color: selected
+                                        ? _accent
+                                        : const Color(0xFFE0E0E0),
                                     width: selected ? 1.5 : 1,
                                   ),
                                 ),
@@ -735,8 +759,12 @@ class _TextTab extends StatelessWidget {
                                   style: TextStyle(
                                     fontFamily: ui.AppFonts.sfPro,
                                     fontSize: 10.sp,
-                                    fontWeight: _PreviewCard._fontWeightFor(index),
-                                    fontStyle: _PreviewCard._fontStyleFor(index),
+                                    fontWeight: _PreviewCard._fontWeightFor(
+                                      index,
+                                    ),
+                                    fontStyle: _PreviewCard._fontStyleFor(
+                                      index,
+                                    ),
                                     color: const Color(0xFF1A1A1A),
                                   ),
                                 ),
@@ -765,13 +793,12 @@ class _TextSectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: ui.AppTextStyles.iconUnderText(
-        color: const Color(0xFF1A1A1A),
-      ).copyWith(
-        fontSize: 12.sp,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0,
-      ),
+      style: ui.AppTextStyles.iconUnderText(color: const Color(0xFF1A1A1A))
+          .copyWith(
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0,
+          ),
     );
   }
 }
@@ -825,21 +852,30 @@ class _OverlayTextField extends StatelessWidget {
         return TextField(
           controller: controller,
           onChanged: onChanged,
-          style: ui.AppTextStyles.helperText(color: const Color(0xFF1A1A1A))
-              .copyWith(fontSize: 14.sp, letterSpacing: 0),
+          style: ui.AppTextStyles.helperText(
+            color: const Color(0xFF1A1A1A),
+          ).copyWith(fontSize: 14.sp, letterSpacing: 0),
           decoration: InputDecoration(
             hintText: 'Enter text',
-            hintStyle: ui.AppTextStyles.helperText(color: const Color(0xFFB0B0B0))
-                .copyWith(fontSize: 14.sp, letterSpacing: 0),
+            hintStyle: ui.AppTextStyles.helperText(
+              color: const Color(0xFFB0B0B0),
+            ).copyWith(fontSize: 14.sp, letterSpacing: 0),
             filled: true,
             fillColor: const Color(0xFFFFFFFF),
-            contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 7.h),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 14.w,
+              vertical: 7.h,
+            ),
             suffixIcon: value.text.isEmpty
                 ? null
                 : IconButton(
-              icon: Icon(Icons.close, size: 16.sp, color: const Color(0xFF9E9E9E)),
-              onPressed: onClear,
-            ),
+                    icon: Icon(
+                      Icons.close,
+                      size: 16.sp,
+                      color: const Color(0xFF9E9E9E),
+                    ),
+                    onPressed: onClear,
+                  ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10.r),
               borderSide: const BorderSide(color: _accent, width: 1.2),
@@ -994,7 +1030,9 @@ class _ColorTab extends StatelessWidget {
                                 width: 2,
                               ),
                             ),
-                            child: SvgPicture.asset(QrColorHelper.defaultResetIcon),
+                            child: SvgPicture.asset(
+                              QrColorHelper.defaultResetIcon,
+                            ),
                           ),
                         );
                       }
@@ -1030,8 +1068,9 @@ class _ColorTab extends StatelessWidget {
                                 width: 2,
                               ),
                             ),
-                            child:
-                                SvgPicture.asset(ui.AppAssets.multipleColorIcon),
+                            child: SvgPicture.asset(
+                              ui.AppAssets.multipleColorIcon,
+                            ),
                           ),
                         );
                       }
@@ -1096,7 +1135,9 @@ class _ColorTab extends StatelessWidget {
                                 width: 2,
                               ),
                             ),
-                            child: SvgPicture.asset(QrColorHelper.defaultResetIcon),
+                            child: SvgPicture.asset(
+                              QrColorHelper.defaultResetIcon,
+                            ),
                           ),
                         );
                       }
@@ -1148,7 +1189,8 @@ class _ColorTab extends StatelessWidget {
                       itemBuilder: (context, index) {
                         const thumbSize = 35.0;
                         if (index == 0) {
-                          final active = vm.backgroundImageSwatchUi == -1 ||
+                          final active =
+                              vm.backgroundImageSwatchUi == -1 ||
                               vm.selectedBackgroundImage == null;
                           return GestureDetector(
                             onTap: vm.resetBackgroundImage,
@@ -1167,8 +1209,9 @@ class _ColorTab extends StatelessWidget {
                                   width: 1,
                                 ),
                               ),
-                              child:
-                                  SvgPicture.asset(QrColorHelper.defaultResetIcon),
+                              child: SvgPicture.asset(
+                                QrColorHelper.defaultResetIcon,
+                              ),
                             ),
                           );
                         }
@@ -1189,8 +1232,9 @@ class _ColorTab extends StatelessWidget {
                             height: thumbSize.w,
                             width: thumbSize.w,
                             decoration: BoxDecoration(
-                              color:
-                                  selected ? Colors.white : Colors.transparent,
+                              color: selected
+                                  ? Colors.white
+                                  : Colors.transparent,
                               border: Border.all(
                                 color: selected ? _accent : Colors.transparent,
                                 width: 1,
@@ -1336,7 +1380,9 @@ class _LogoTab extends StatelessWidget {
                                       : Colors.grey.withValues(alpha: 0.1),
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: active ? _accent : Colors.transparent,
+                                    color: active
+                                        ? _accent
+                                        : Colors.transparent,
                                     width: 2,
                                   ),
                                 ),
@@ -1369,7 +1415,9 @@ class _LogoTab extends StatelessWidget {
                                       : Colors.grey.withValues(alpha: 0.1),
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: active ? _accent : Colors.transparent,
+                                    color: active
+                                        ? _accent
+                                        : Colors.transparent,
                                     width: 2,
                                   ),
                                 ),
@@ -1424,8 +1472,7 @@ class _LogoTab extends StatelessWidget {
                         childAspectRatio: 2.8,
                       ),
                       itemBuilder: (context, index) {
-                        final selected =
-                            vm.selectedLogoFontStyleIndex == index;
+                        final selected = vm.selectedLogoFontStyleIndex == index;
                         return GestureDetector(
                           onTap: () => vm.setLogoFontStyleIndex(index),
                           child: Container(
@@ -1445,8 +1492,7 @@ class _LogoTab extends StatelessWidget {
                               style: TextStyle(
                                 fontFamily: ui.AppFonts.sfPro,
                                 fontSize: 10.sp,
-                                fontWeight:
-                                    _PreviewCard._fontWeightFor(index),
+                                fontWeight: _PreviewCard._fontWeightFor(index),
                                 fontStyle: _PreviewCard._fontStyleFor(index),
                                 color: const Color(0xFF1A1A1A),
                               ),
@@ -1616,19 +1662,28 @@ class _LogoTextField extends StatelessWidget {
         return TextField(
           controller: controller,
           onChanged: onChanged,
-          style: ui.AppTextStyles.helperText(color: const Color(0xFF1A1A1A))
-              .copyWith(fontSize: 14.sp, letterSpacing: 0),
+          style: ui.AppTextStyles.helperText(
+            color: const Color(0xFF1A1A1A),
+          ).copyWith(fontSize: 14.sp, letterSpacing: 0),
           decoration: InputDecoration(
             hintText: 'Enter text',
-            hintStyle: ui.AppTextStyles.helperText(color: const Color(0xFFB0B0B0))
-                .copyWith(fontSize: 14.sp, letterSpacing: 0),
+            hintStyle: ui.AppTextStyles.helperText(
+              color: const Color(0xFFB0B0B0),
+            ).copyWith(fontSize: 14.sp, letterSpacing: 0),
             filled: true,
             fillColor: const Color(0xFFFFFFFF),
-            contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 7.h),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 14.w,
+              vertical: 7.h,
+            ),
             suffixIcon: value.text.isEmpty
                 ? null
                 : IconButton(
-                    icon: Icon(Icons.close, size: 16.sp, color: const Color(0xFF9E9E9E)),
+                    icon: Icon(
+                      Icons.close,
+                      size: 16.sp,
+                      color: const Color(0xFF9E9E9E),
+                    ),
                     onPressed: onClear,
                   ),
             border: OutlineInputBorder(
@@ -1720,10 +1775,7 @@ class _GradientToggle extends StatelessWidget {
   static const _gradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [
-      Color(0xFF3DCB6A),
-      Color(0xFF0B5D2A),
-    ],
+    colors: [Color(0xFF3DCB6A), Color(0xFF0B5D2A)],
   );
 
   @override
