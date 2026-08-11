@@ -17,6 +17,18 @@ class VisitingCardShareHelper {
 
   static Future<bool>? _contactsPermissionFuture;
 
+  /// iOS requires a non-zero source rectangle for its share sheet.  Capture it
+  /// from the details page (rather than the dialog that is about to close).
+  static Rect sharePositionOrigin(BuildContext context) {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box != null && box.hasSize && !box.size.isEmpty) {
+      return box.localToGlobal(Offset.zero) & box.size;
+    }
+
+    final size = MediaQuery.sizeOf(context);
+    return Rect.fromLTWH(0, 0, size.width, size.height);
+  }
+
   static String shareFormattedData(SavedContactInfo contact) {
     var formattedData = '';
 
@@ -72,6 +84,7 @@ class VisitingCardShareHelper {
     Future<void> Function()? onShareOldCard,
     Future<void> Function()? onShareNewCard,
   }) async {
+    final origin = sharePositionOrigin(context);
     final data = contact.name.trim().isEmpty && fallbackName.trim().isNotEmpty
         ? SavedContactInfo(
             name: fallbackName,
@@ -88,9 +101,8 @@ class VisitingCardShareHelper {
           )
         : contact;
 
-    final itemCount = 5 +
-        (onShareOldCard != null ? 1 : 0) +
-        (onShareNewCard != null ? 1 : 0);
+    final itemCount =
+        5 + (onShareOldCard != null ? 1 : 0) + (onShareNewCard != null ? 1 : 0);
     final rowCount = (itemCount / 3).ceil();
     final dialogHeight = (rowCount * 88.0).clamp(190.0, 280.0);
 
@@ -176,7 +188,11 @@ class VisitingCardShareHelper {
                   label: 'More Share',
                   onTap: () async {
                     Navigator.pop(dialogContext);
-                    await Share.share(shareFormattedData(data));
+                    if (!context.mounted) return;
+                    await Share.share(
+                      shareFormattedData(data),
+                      sharePositionOrigin: origin,
+                    );
                   },
                 ),
               ],
@@ -278,8 +294,9 @@ class VisitingCardShareHelper {
 
       // 2) flutter_contacts permission API (Android/iOS write)
       try {
-        final fcStatus = await fc.FlutterContacts.permissions
-            .request(fc.PermissionType.readWrite);
+        final fcStatus = await fc.FlutterContacts.permissions.request(
+          fc.PermissionType.readWrite,
+        );
         log('FlutterContacts.permissions=$fcStatus');
         if (fcStatus == fc.PermissionStatus.granted ||
             fcStatus == fc.PermissionStatus.limited) {
@@ -310,8 +327,7 @@ class VisitingCardShareHelper {
         .where((e) => e.isNotEmpty)
         .toList();
     final first = nameParts.isNotEmpty ? nameParts.first : contact.name.trim();
-    final last =
-        nameParts.length > 1 ? nameParts.sublist(1).join(' ') : null;
+    final last = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : null;
 
     final phones = contact.phones
         .where((e) => e.value.trim().isNotEmpty)
@@ -371,22 +387,12 @@ class VisitingCardShareHelper {
   ) async {
     final phones = contact.phones
         .where((tel) => tel.value.trim().isNotEmpty)
-        .map(
-          (tel) => csp.Item(
-            label: 'mobile',
-            value: tel.value.trim(),
-          ),
-        )
+        .map((tel) => csp.Item(label: 'mobile', value: tel.value.trim()))
         .toList();
 
     final emails = contact.emails
         .where((email) => email.value.trim().isNotEmpty)
-        .map(
-          (email) => csp.Item(
-            label: 'work',
-            value: email.value.trim(),
-          ),
-        )
+        .map((email) => csp.Item(label: 'work', value: email.value.trim()))
         .toList();
 
     final nameParts = contact.name
@@ -395,8 +401,7 @@ class VisitingCardShareHelper {
         .where((e) => e.isNotEmpty)
         .toList();
     final given = nameParts.isNotEmpty ? nameParts.first : contact.name.trim();
-    final family =
-        nameParts.length > 1 ? nameParts.sublist(1).join(' ') : null;
+    final family = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : null;
 
     final newContact = csp.Contact(
       givenName: given,
@@ -432,9 +437,7 @@ class VisitingCardShareHelper {
   static Future<void> sendSms(SavedContactInfo contact) async {
     final uri = Uri(
       scheme: 'sms',
-      queryParameters: {
-        'body': shareFormattedData(contact),
-      },
+      queryParameters: {'body': shareFormattedData(contact)},
     );
     final launched = await launchUrl(uri);
     if (!launched) {

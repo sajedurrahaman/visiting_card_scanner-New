@@ -74,7 +74,32 @@ class RecentCardMenuViewModel extends ChangeNotifier {
     }
 
     try {
-      await Share.shareXFiles([XFile(path)], text: item.name);
+      // QR and barcode scans are stored as .txt files.  On iOS, sharing that
+      // file as an attachment can fail because no compatible activity is
+      // available. Share the scanned value itself instead.
+      final renderBox = context.findRenderObject() as RenderBox?;
+      final origin = renderBox == null
+          ? null
+          : renderBox.localToGlobal(Offset.zero) & renderBox.size;
+
+      if (item.isTextFile) {
+        final text = (await File(path).readAsString()).trim();
+        if (text.isEmpty) {
+          if (context.mounted) ui.AppToast.success(context, 'Nothing to share');
+          return;
+        }
+        await Share.share(
+          text,
+          subject: item.name,
+          sharePositionOrigin: origin,
+        );
+      } else {
+        await Share.shareXFiles(
+          [XFile(path)],
+          text: item.name,
+          sharePositionOrigin: origin,
+        );
+      }
     } catch (_) {
       if (!context.mounted) return;
       ui.AppToast.success(context, 'Share failed');
