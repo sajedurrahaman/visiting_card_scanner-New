@@ -327,6 +327,13 @@ class AppTextStyles {
         color: color ?? const Color(0xFF6B6B6B),
         letterSpacing: 1.0.sp,
       );
+       static TextStyle subTitleText({Color? color}) => TextStyle(
+        fontFamily: AppFonts.sfPro,
+        fontSize: 10.sp,
+        fontWeight: FontWeight.w400,
+        color: color ?? const Color(0xFF6B6B6B),
+        letterSpacing: 1.0.sp,
+      );
 
   static TextStyle iconUnderText({Color? color}) => TextStyle(
     fontFamily: AppFonts.sfPro,

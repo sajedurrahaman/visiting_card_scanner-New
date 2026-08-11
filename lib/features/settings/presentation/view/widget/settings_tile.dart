@@ -24,19 +24,26 @@ class SettingsTile extends StatelessWidget {
                 width: 40.w,
                 height: 40.w,
                 alignment: Alignment.center,
-                child: SvgPicture.asset(
-                  item.icon,
-                  width: 22.w,
-                  height: 22.w,
-                ),
+                child: SvgPicture.asset(item.icon, width: 22.w, height: 22.w),
               ),
               SizedBox(width: 12.w),
               Expanded(
-                child: Text(
-                  item.label,
-                  style: ui.AppTextStyles.helperText(
-                    color: const Color(0xFF1A1A1A),
-                  ).copyWith(fontWeight: FontWeight.w600),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.label,
+                      style: ui.AppTextStyles.helperText(
+                        color: const Color(0xFF1A1A1A),
+                      ).copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      item.subTitle,
+                      style: ui.AppTextStyles.subTitleText(
+                        color: const Color(0xFF898787),
+                      ).copyWith(fontWeight: FontWeight.w400),
+                    ),
+                  ],
                 ),
               ),
               Icon(
