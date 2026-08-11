@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' hide Colors;
 import 'package:visiting_card/app/routes/route_names.dart';
+import 'package:visiting_card/app/storage/app_storage_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -15,11 +16,20 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _navigateToParent();
+    _bootstrapAndNavigate();
   }
 
-  Future<void> _navigateToParent() async {
-    await Future.delayed(const Duration(seconds: 2));
+  Future<void> _bootstrapAndNavigate() async {
+    final minSplash = Future<void>.delayed(const Duration(seconds: 2));
+
+    try {
+      await AppStorageService.init().timeout(const Duration(seconds: 8));
+    } catch (error, stackTrace) {
+      // Keep going so a storage failure cannot brick launch on TestFlight.
+      debugPrint('AppStorageService.init failed: $error\n$stackTrace');
+    }
+
+    await minSplash;
     if (!mounted) return;
     Navigator.pushReplacementNamed(context, RouteNames.parent);
   }
