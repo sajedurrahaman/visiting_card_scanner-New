@@ -34,6 +34,16 @@ android {
         versionName = flutter.versionName
     }
 
+    // Keep native libraries uncompressed and page-aligned in the APK.  This is
+    // required for reliable loading on Android devices that use 16 KB pages.
+    // AGP 8.5.1+ (this project uses AGP 9) applies the necessary 16 KB ZIP
+    // alignment when legacy JNI packaging is disabled.
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
+
     signingConfigs {
         create("release") {
             keyAlias = keystoreProperties["keyAlias"] as String
