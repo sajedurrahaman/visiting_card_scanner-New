@@ -63,12 +63,17 @@ class QrBarcodeScanResultScreen extends StatelessWidget {
     ui.AppToast.success(context, 'Copied to Clipboard');
   }
 
-  Future<void> _share() async {
+  Future<void> _share(BuildContext context) async {
+    final box = context.findRenderObject() as RenderBox?;
+    final origin = box != null
+        ? box.localToGlobal(Offset.zero) & box.size
+        : Rect.zero;
     await Share.share(
       content,
       subject: kind == QrBarcodeScanKind.qrCode
           ? 'Scanned QR Code'
           : 'Scanned Barcode',
+      sharePositionOrigin: origin,
     );
   }
 
@@ -232,7 +237,7 @@ class QrBarcodeScanResultScreen extends StatelessWidget {
                       icon: ui.AppAssets.qrBarScannerOutputShareIcon,
                       title: 'Share Link',
                       subtitle: 'Share link with others',
-                      onTap: _share,
+                      onTap: () => _share(context),
                     ),
                   ),
                 ],

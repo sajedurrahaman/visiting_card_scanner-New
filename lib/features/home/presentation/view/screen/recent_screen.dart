@@ -19,10 +19,7 @@ class RecentScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFEBFEF5),
-              Colors.white,
-            ],
+            colors: [Color(0xFFEBFEF5), Colors.white],
             stops: [0.0, 0.20],
           ),
         ),
@@ -32,13 +29,16 @@ class RecentScreen extends StatelessWidget {
             children: [
               Padding(
                 padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      'Recent',
-                      style: ui.AppTextStyles.mainText(),
+                    IconButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      icon: Icon(Icons.arrow_back_ios),
                     ),
+                    Text('Recent', style: ui.AppTextStyles.mainText()),
                   ],
                 ),
               ),
