@@ -146,13 +146,14 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
 
   /// Vertical 6–10 place QR on the front (and still on the back).
   bool get hasFrontQr {
-    const frontQrIds = {'v6', 'v7', 'v8', 'v9', 'v10'};
+    //const frontQrIds = {'v6', 'v7', 'v8', 'v9', 'v10'};
+    const frontQrIds = <String>{};
     return frontQrIds.contains(templateId);
   }
 
-  /// Horizontal 8–10 have no QR on front or back.
+  /// Templates without any QR on either side.
   bool get hasQr {
-    const noQrIds = {'h8', 'h9', 'h10'};
+    const noQrIds = <String>{};
     return !noQrIds.contains(templateId);
   }
 
