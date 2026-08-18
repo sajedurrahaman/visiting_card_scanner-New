@@ -5,6 +5,7 @@ import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/template/presentation/helper/visiting_card_qr_payload.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_logo_picker_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_tempalte_qrcode_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_details_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/overlay_scroll_lock_toast.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_edit_field_cards.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
@@ -50,7 +51,19 @@ class _VisitingCardEditContactInfoScreenState
       await _scrollToTop();
       return;
     }
+
+    // 2/2 -> details page (Save / Share)
     await _scrollToTop();
+    if (!context.mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider.value(
+          value: vm,
+          child: const VisitingCardDetailsScreen(),
+        ),
+      ),
+    );
   }
 
   Future<void> _scrollToTop() {
