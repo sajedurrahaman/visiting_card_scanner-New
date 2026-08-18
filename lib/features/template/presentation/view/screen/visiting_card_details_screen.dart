@@ -36,9 +36,7 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
     int side,
   ) async {
     vm.setSide(side);
-    await Future<void>.delayed(const Duration(milliseconds: 80));
-    await WidgetsBinding.instance.endOfFrame;
-    await Future<void>.delayed(const Duration(milliseconds: 40));
+    await waitForVisitingCardCaptureFrame();
     try {
       return await captureVisitingCardPngBytes(
         _cardCaptureKey,

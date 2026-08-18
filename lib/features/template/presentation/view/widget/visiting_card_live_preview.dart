@@ -83,10 +83,21 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
 
   void _animateTo(int page) {
     if (!_pageController.hasClients) return;
-    final current =
-        _pageController.page?.round() ?? _pageController.initialPage;
-    if (current == page) return;
+    final offset =
+        _pageController.page ?? _pageController.initialPage.toDouble();
+    if ((offset - page).abs() < 0.001) return;
+
+    // Details/download preview has no in-widget pager. Jump so capture never
+    // snapshots the mid-swipe frame (front-right + back-left stitched).
+    final animateSideChange =
+        widget.showPager || widget.enableFieldTransform;
+
     _ignorePageCallback = true;
+    if (!animateSideChange) {
+      _pageController.jumpToPage(page);
+      _ignorePageCallback = false;
+      return;
+    }
     _pageController
         .animateToPage(
           page,

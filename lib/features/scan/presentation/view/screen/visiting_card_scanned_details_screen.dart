@@ -245,9 +245,7 @@ class _VisitingCardScannedDetailsScreenState
 
   Future<Uint8List?> _captureTemplateSide(int side) async {
     _previewVm.setSide(side);
-    await Future<void>.delayed(const Duration(milliseconds: 80));
-    await WidgetsBinding.instance.endOfFrame;
-    await Future<void>.delayed(const Duration(milliseconds: 40));
+    await waitForVisitingCardCaptureFrame();
     try {
       return await captureVisitingCardPngBytes(
         _templateCaptureKey,
