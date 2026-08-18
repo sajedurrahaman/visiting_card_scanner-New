@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:upgrader/upgrader.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/app/routes/route_names.dart';
 import 'package:visiting_card/features/home/presentation/view/widgets/home_screen_barcode_bottom_sheet.dart';
@@ -18,6 +22,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final Upgrader _upgrader = Upgrader(
+    durationUntilAlertAgain: const Duration(seconds: 0),
+    debugLogging: false,
+    debugDisplayAlways: false,
+    messages: _ExitAppUpgraderMessages(),
+  );
+
   @override
   void initState() {
     super.initState();
@@ -26,97 +37,147 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _exitApp() {
+    if (Platform.isAndroid) {
+      SystemNavigator.pop();
+    } else {
+      exit(0);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<HomeViewModel>();
 
-    return SafeArea(
-      bottom: false,
-      child: Column(
-        children: [
-          Padding(
-            padding: EdgeInsets.only(top: 12.h, bottom: 20.h),
-            child: Text(
-              'Visiting Card Scanner',
-              style: ui.AppTextStyles.mainText(),
+    return UpgradeAlert(
+      upgrader: _upgrader,
+      barrierDismissible: false,
+      showIgnore: false,
+      showLater: true,
+      shouldPopScope: () => false,
+      onLater: () {
+        _exitApp();
+        return true;
+      },
+      onIgnore: () {
+        _exitApp();
+        return false;
+      },
+      onUpdate: () => true,
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.only(top: 12.h, bottom: 20.h),
+              child: Text(
+                'Visiting Card Scanner',
+                style: ui.AppTextStyles.mainText(),
+              ),
             ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const _SectionTitle(title: 'Scan'),
-                  SizedBox(height: 16.h),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _ScanAction(
-                        icon: ui.AppAssets.homeVisitingCard,
-                        label: 'Visiting Card',
-                        onTap: () =>
-                            HomeScreenVisitingCardBottomSheet.show(context),
-                      ),
-                      _ScanAction(
-                        icon: ui.AppAssets.homeQrCode,
-                        label: 'QR Code',
-                        onTap: () => HomeScreenQrcodeBottomSheet.show(context),
-                      ),
-                      _ScanAction(
-                        icon: ui.AppAssets.homeBarCode,
-                        label: 'Barcode',
-                        onTap: () => HomeScreenBarcodeBottomSheet.show(context),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 28.h),
-
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const _SectionTitle(title: 'Scan'),
+                    SizedBox(height: 16.h),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        Row(
-                          children: [
-                            const Expanded(
-                              child: _SectionTitle(title: 'Recent'),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.pushNamed(context, RouteNames.recent);
-                              },
-                              child: Text(
-                                'View All',
-                                style: ui.AppTextStyles.sellAllText(),
-                              ),
-                            ),
-                          ],
+                        _ScanAction(
+                          icon: ui.AppAssets.homeVisitingCard,
+                          label: 'Visiting Card',
+                          onTap: () =>
+                              HomeScreenVisitingCardBottomSheet.show(context),
                         ),
-                        SizedBox(height: 12.h),
-                        Expanded(
-                          child: ListView.builder(
-                            padding: EdgeInsets.fromLTRB(6.w, 8.h, 6.w, 120.h),
-                            itemCount: viewModel.recentCards.length,
-                            itemBuilder: (context, index) {
-                              final item = viewModel.recentCards[index];
-                              return Padding(
-                                padding: EdgeInsets.only(bottom: 12.h),
-                                child: RecentCardTile(item: item),
-                              );
-                            },
-                          ),
+                        _ScanAction(
+                          icon: ui.AppAssets.homeQrCode,
+                          label: 'QR Code',
+                          onTap: () =>
+                              HomeScreenQrcodeBottomSheet.show(context),
+                        ),
+                        _ScanAction(
+                          icon: ui.AppAssets.homeBarCode,
+                          label: 'Barcode',
+                          onTap: () =>
+                              HomeScreenBarcodeBottomSheet.show(context),
                         ),
                       ],
                     ),
-                  ),
-                  if (!viewModel.hasRecentCards) _EmptyRecentState(),
-                ],
+                    SizedBox(height: 28.h),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Expanded(
+                                child: _SectionTitle(title: 'Recent'),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    RouteNames.recent,
+                                  );
+                                },
+                                child: Text(
+                                  'View All',
+                                  style: ui.AppTextStyles.sellAllText(),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 12.h),
+                          Expanded(
+                            child: ListView.builder(
+                              padding:
+                                  EdgeInsets.fromLTRB(6.w, 8.h, 6.w, 120.h),
+                              itemCount: viewModel.recentCards.length,
+                              itemBuilder: (context, index) {
+                                final item = viewModel.recentCards[index];
+                                return Padding(
+                                  padding: EdgeInsets.only(bottom: 12.h),
+                                  child: RecentCardTile(item: item),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (!viewModel.hasRecentCards) const _EmptyRecentState(),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+}
+
+class _ExitAppUpgraderMessages extends UpgraderMessages {
+  @override
+  String? message(UpgraderMessage messageKey) {
+    switch (messageKey) {
+      case UpgraderMessage.buttonTitleUpdate:
+        return 'Update Now';
+      case UpgraderMessage.buttonTitleLater:
+        return 'Exit App';
+      case UpgraderMessage.title:
+        return 'Update Required';
+      case UpgraderMessage.body:
+        return 'A new version of this app is available. '
+            'Please update to continue using the app.';
+      case UpgraderMessage.prompt:
+        return 'Would you like to update now?';
+      default:
+        return super.message(messageKey);
+    }
   }
 }
 
