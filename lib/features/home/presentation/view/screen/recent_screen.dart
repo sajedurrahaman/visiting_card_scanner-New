@@ -43,21 +43,38 @@ class RecentScreen extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: ListView.builder(
-                  padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 24.h),
-                  itemCount: viewModel.recentCards.length,
-                  itemBuilder: (context, index) {
-                    final item = viewModel.recentCards[index];
-                    return Padding(
-                      padding: EdgeInsets.only(bottom: 12.h),
-                      child: RecentCardTile(item: item),
-                    );
-                  },
-                ),
+                child: viewModel.hasRecentCards
+                    ? ListView.builder(
+                        padding: EdgeInsets.fromLTRB(16.w, 2.h, 16.w, 24.h),
+                        itemCount: viewModel.recentCards.length,
+                        itemBuilder: (context, index) {
+                          final item = viewModel.recentCards[index];
+                          return Padding(
+                            padding: EdgeInsets.only(bottom: 12.h),
+                            child: RecentCardTile(item: item),
+                          );
+                        },
+                      )
+                    : const _EmptyRecentState(),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _EmptyRecentState extends StatelessWidget {
+  const _EmptyRecentState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Image.asset(
+        ui.AppAssets.homeScreenRecentEmpty,
+        width: 200.w,
+        fit: BoxFit.contain,
       ),
     );
   }

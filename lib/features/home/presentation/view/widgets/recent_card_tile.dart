@@ -250,8 +250,14 @@ class _RecentThumbnail extends StatelessWidget {
 
   /// Matches PDF-Scanner Discover/Directory list image thumbs:
   /// 50×46, radius 8, [Image.file] + [BoxFit.cover].
-  static double get _width => 50.w;
+  static double get _width => 80.w;
+  static double get _qrBarcodeWidth => 70.w;
   static double get _height => 46.h;
+
+  bool get _isQrOrBarcode =>
+      item.fileType == 'qr' || item.fileType == 'barcode';
+
+  double get _thumbWidth => _isQrOrBarcode ? _qrBarcodeWidth : _width;
 
   File? _resolveImageFile() {
     // Scan .txt files are not images — never load them via Image.file.
@@ -282,14 +288,15 @@ class _RecentThumbnail extends StatelessWidget {
     final file = _resolveImageFile();
     final radius = BorderRadius.circular(8.r);
 
+    Widget child;
     if (file != null) {
-      return ClipRRect(
+      child = ClipRRect(
         borderRadius: radius,
         child: Image.file(
           file,
-          width: _width,
+          width: _thumbWidth,
           height: _height,
-          fit: BoxFit.cover,
+          fit: _isQrOrBarcode ? BoxFit.contain : BoxFit.fill,
           filterQuality: FilterQuality.medium,
           gaplessPlayback: true,
           errorBuilder: (context, error, stackTrace) {
@@ -300,10 +307,8 @@ class _RecentThumbnail extends StatelessWidget {
           },
         ),
       );
-    }
-
-    if (item.isTextFile) {
-      return _assetThumb(
+    } else if (item.isTextFile) {
+      child = _assetThumb(
         asset: item.fileType == 'barcode'
             ? ui.AppAssets.barcodeThumbIcon
             : item.fileType == 'qr'
@@ -312,25 +317,70 @@ class _RecentThumbnail extends StatelessWidget {
         background: item.fileType == 'barcode'
             ? const Color(0xFFE7E0FE)
             : const Color(0xFFDAEDFF),
+        iconWidth: item.fileType == 'barcode' ? 36.w : 26.w,
+        iconHeight: item.fileType == 'barcode' ? 20.h : 26.w,
+      );
+    } else if (_isQrOrBarcode) {
+      child = _assetThumb(
+        asset: item.fileType == 'barcode'
+            ? ui.AppAssets.barcodeThumbIcon
+            : ui.AppAssets.qrCodeThumbIcon,
+        background: item.fileType == 'barcode'
+            ? const Color(0xFFE7E0FE)
+            : const Color(0xFFDAEDFF),
+        iconWidth: item.fileType == 'barcode' ? 36.w : 26.w,
+        iconHeight: item.fileType == 'barcode' ? 20.h : 26.w,
+      );
+    } else {
+      child = _placeholder(
+        icon: Icons.credit_card,
+        background: const Color(0xFFF3F3F3),
       );
     }
 
-    return _placeholder(
-      icon: item.fileType == 'barcode'
-          ? Icons.qr_code_2_outlined
-          : item.fileType == 'qr'
-              ? Icons.qr_code_outlined
-              : Icons.credit_card,
-      background: const Color(0xFFF3F3F3),
+    return _isQrOrBarcode ? _elevationBox(child) : _floatingBox(child);
+  }
+
+  Widget _elevationBox(Widget child) {
+    return Material(
+      elevation: 20,
+      color: Colors.white,
+      shadowColor: Colors.black26,
+      borderRadius: BorderRadius.circular(8.r),
+      clipBehavior: Clip.antiAlias,
+      child: child,
+    );
+  }
+
+  Widget _floatingBox(Widget child) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 
   Widget _assetThumb({
     required String asset,
     required Color background,
+    double? iconWidth,
+    double? iconHeight,
   }) {
     return Container(
-      width: _width,
+      width: _thumbWidth,
       height: _height,
       decoration: BoxDecoration(
         color: background,
@@ -339,8 +389,8 @@ class _RecentThumbnail extends StatelessWidget {
       alignment: Alignment.center,
       child: SvgPicture.asset(
         asset,
-        width: 28.w,
-        height: 28.w,
+        width: iconWidth ?? 28.w,
+        height: iconHeight ?? 28.w,
         fit: BoxFit.contain,
       ),
     );
@@ -352,7 +402,7 @@ class _RecentThumbnail extends StatelessWidget {
     Color iconColor = const Color(0xFF9E9E9E),
   }) {
     return Container(
-      width: _width,
+      width: _thumbWidth,
       height: _height,
       decoration: BoxDecoration(
         color: background,

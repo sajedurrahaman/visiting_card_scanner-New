@@ -253,7 +253,7 @@ class _EmptyRecentState extends StatelessWidget {
   Widget build(BuildContext context) {
     // Center between Scan section and bottom nav bar.
     return Padding(
-      padding: EdgeInsets.only(bottom: 140.h),
+      padding: EdgeInsets.only(bottom: 180.h),
       child: Center(
         child: Image.asset(
           ui.AppAssets.homeScreenRecentEmpty,
