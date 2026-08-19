@@ -66,6 +66,10 @@ dependencies:
   isar_plus_flutter_libs: ^1.2.2
   google_fonts: ^6.3.1
   upgrader: ^11.4.0
+  firebase_core: ^4.13.0
+  firebase_crashlytics: ^5.2.7
+  firebase_messaging: ^16.5.0
+  flutter_local_notifications: ^20.1.0
 
 dev_dependencies:
   flutter_test:

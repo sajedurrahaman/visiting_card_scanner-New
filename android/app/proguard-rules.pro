@@ -6,6 +6,8 @@
 -dontwarn com.google.mlkit.vision.text.japanese.**
 -dontwarn com.google.mlkit.vision.text.korean.**
 
-# TensorFlow Lite (ML Kit OCR)
--keep class org.tensorflow.lite.** { *; }
--dontwarn org.tensorflow.lite.**
+# Firebase / Crashlytics
+-keepattributes SourceFile,LineNumberTable
+-keep public class * extends java.lang.Exception
+-keep class com.google.firebase.** { *; }
+-dontwarn com.google.firebase.**
