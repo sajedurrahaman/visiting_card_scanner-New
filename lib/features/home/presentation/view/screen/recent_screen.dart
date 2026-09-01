@@ -55,9 +55,28 @@ class RecentScreen extends StatelessWidget {
                   },
                 ),
               ),
+              if (!viewModel.hasRecentCards) const _EmptyRecentState(),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _EmptyRecentState extends StatelessWidget {
+  const _EmptyRecentState();
+
+  @override
+  Widget build(BuildContext context) {
+    // Center between Scan section and bottom nav bar.
+    return Container(
+      alignment: Alignment.center,
+      padding: EdgeInsets.only(bottom: 200.h),
+      child: Image.asset(
+        ui.AppAssets.homeScreenRecentEmpty,
+        width: 200.w,
+        fit: BoxFit.contain,
       ),
     );
   }
