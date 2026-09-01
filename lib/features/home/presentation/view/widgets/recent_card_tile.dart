@@ -45,10 +45,10 @@ class RecentCardTile extends StatelessWidget {
           label: 'Download',
         ),
       _buildMenuItem(
-          value: RecentCardMenuAction.share,
-          icon: Icons.share_outlined,
-          label: 'Share',
-        ),
+        value: RecentCardMenuAction.share,
+        icon: Icons.share_outlined,
+        label: 'Share',
+      ),
       _buildMenuItem(
         value: RecentCardMenuAction.delete,
         icon: Icons.delete_outline,
@@ -57,7 +57,8 @@ class RecentCardTile extends StatelessWidget {
     ];
 
     return GestureDetector(
-      onTap: onTap ??
+      onTap:
+          onTap ??
           (isSelectionMode
               ? null
               : () async {
@@ -118,10 +119,7 @@ class RecentCardTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: ui.AppTextStyles.helperText(
                       color: const Color(0xFF1A1A1A),
-                    ).copyWith(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12.sp,
-                    ),
+                    ).copyWith(fontWeight: FontWeight.w600, fontSize: 12.sp),
                   ),
                   SizedBox(height: 4.h),
                   Row(
@@ -235,11 +233,7 @@ class RecentCardTile extends StatelessWidget {
       }
     }
 
-    await menuViewModel.handleMenuAction(
-      context,
-      item: item,
-      action: action,
-    );
+    await menuViewModel.handleMenuAction(context, item: item, action: action);
   }
 }
 
@@ -250,7 +244,7 @@ class _RecentThumbnail extends StatelessWidget {
 
   /// Matches PDF-Scanner Discover/Directory list image thumbs:
   /// 50×46, radius 8, [Image.file] + [BoxFit.cover].
-  static double get _width => 50.w;
+  static double get _width => 70.w;
   static double get _height => 46.h;
 
   File? _resolveImageFile() {
@@ -289,7 +283,7 @@ class _RecentThumbnail extends StatelessWidget {
           file,
           width: _width,
           height: _height,
-          fit: BoxFit.cover,
+          fit: BoxFit.fill,
           filterQuality: FilterQuality.medium,
           gaplessPlayback: true,
           errorBuilder: (context, error, stackTrace) {
@@ -307,8 +301,8 @@ class _RecentThumbnail extends StatelessWidget {
         asset: item.fileType == 'barcode'
             ? ui.AppAssets.barcodeThumbIcon
             : item.fileType == 'qr'
-                ? ui.AppAssets.qrCodeThumbIcon
-                : ui.AppAssets.txtFileThumbIcon,
+            ? ui.AppAssets.qrCodeThumbIcon
+            : ui.AppAssets.txtFileThumbIcon,
         background: item.fileType == 'barcode'
             ? const Color(0xFFE7E0FE)
             : const Color(0xFFDAEDFF),
@@ -319,16 +313,13 @@ class _RecentThumbnail extends StatelessWidget {
       icon: item.fileType == 'barcode'
           ? Icons.qr_code_2_outlined
           : item.fileType == 'qr'
-              ? Icons.qr_code_outlined
-              : Icons.credit_card,
+          ? Icons.qr_code_outlined
+          : Icons.credit_card,
       background: const Color(0xFFF3F3F3),
     );
   }
 
-  Widget _assetThumb({
-    required String asset,
-    required Color background,
-  }) {
+  Widget _assetThumb({required String asset, required Color background}) {
     return Container(
       width: _width,
       height: _height,
