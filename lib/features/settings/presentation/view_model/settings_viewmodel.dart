@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
+import 'package:visiting_card/features/scan/presentation/helper/visiting_card_share_helper.dart';
 
 class SettingsViewModel extends ChangeNotifier {
   // TODO: Replace these placeholders with your real production values.
@@ -29,7 +29,7 @@ class SettingsViewModel extends ChangeNotifier {
         'https://apps.apple.com/app/id6798218537';
 
     try {
-      await Share.share(message);
+      await VisitingCardShareHelper.shareText(context, message);
     } catch (_) {
       if (!context.mounted) return;
       ui.AppToast.show(context, message: 'Failed to share app');

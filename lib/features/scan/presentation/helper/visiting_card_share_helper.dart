@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:contacts_service_plus/contacts_service_plus.dart' as csp;
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
@@ -27,6 +28,32 @@ class VisitingCardShareHelper {
 
     final size = MediaQuery.sizeOf(context);
     return Rect.fromLTWH(0, 0, size.width, size.height);
+  }
+
+  static Future<ShareResult> shareXFiles(
+    BuildContext context,
+    List<XFile> files, {
+    String? text,
+    String? subject,
+  }) {
+    return Share.shareXFiles(
+      files,
+      text: text,
+      subject: subject,
+      sharePositionOrigin: sharePositionOrigin(context),
+    );
+  }
+
+  static Future<ShareResult> shareText(
+    BuildContext context,
+    String text, {
+    String? subject,
+  }) {
+    return Share.share(
+      text,
+      subject: subject,
+      sharePositionOrigin: sharePositionOrigin(context),
+    );
   }
 
   static String shareFormattedData(SavedContactInfo contact) {
@@ -84,7 +111,6 @@ class VisitingCardShareHelper {
     Future<void> Function()? onShareOldCard,
     Future<void> Function()? onShareNewCard,
   }) async {
-    final origin = sharePositionOrigin(context);
     final data = contact.name.trim().isEmpty && fallbackName.trim().isNotEmpty
         ? SavedContactInfo(
             name: fallbackName,
@@ -189,9 +215,9 @@ class VisitingCardShareHelper {
                   onTap: () async {
                     Navigator.pop(dialogContext);
                     if (!context.mounted) return;
-                    await Share.share(
+                    await shareText(
+                      context,
                       shareFormattedData(data),
-                      sharePositionOrigin: origin,
                     );
                   },
                 ),

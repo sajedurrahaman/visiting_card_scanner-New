@@ -230,7 +230,7 @@ class FolderDetailBody extends StatelessWidget {
                     ui.AppToast.success(context, 'Moved successfully');
                   },
                   onShare: () async {
-                    await viewModel.shareSelectedItems(folderId);
+                    await viewModel.shareSelectedItems(folderId, context);
                     if (!context.mounted) return;
                     ui.AppToast.success(context, 'Share selected items');
                   },

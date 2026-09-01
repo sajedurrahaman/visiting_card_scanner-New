@@ -422,7 +422,11 @@ class _VisitingCardScannedDetailsScreenState
         files.add(XFile(tmp.path));
       }
       if (files.isEmpty) return;
-      await Share.shareXFiles(files, text: 'Visiting Card');
+      await VisitingCardShareHelper.shareXFiles(
+        context,
+        files,
+        text: 'Visiting Card',
+      );
     } catch (_) {
       if (!mounted) return;
       ui.AppToast.show(context, message: 'Failed to share scanned card');
@@ -457,7 +461,8 @@ class _VisitingCardScannedDetailsScreenState
       );
       await frontFile.writeAsBytes(frontBytes, flush: true);
       await backFile.writeAsBytes(backBytes, flush: true);
-      await Share.shareXFiles(
+      await VisitingCardShareHelper.shareXFiles(
+        context,
         [XFile(frontFile.path), XFile(backFile.path)],
         text: 'Visiting Card',
       );

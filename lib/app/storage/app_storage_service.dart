@@ -34,11 +34,20 @@ class AppStorageService {
   List<SavedFileModel> _cache = const [];
   List<FolderRecord> _folderCache = const [];
 
-  static Future<void> init() async {
+  static Future<void>? _initFuture;
+
+  static Future<void> init() {
+    return _initFuture ??= _initOnce();
+  }
+
+  static Future<void> _initOnce() async {
     _prefs ??= await SharedPreferences.getInstance();
 
     final directory = await getApplicationDocumentsDirectory();
-    _isar = await Isar.openAsync(
+    // openAsync spawns a background isolate; on iOS devices that can hang
+    // indefinitely when native libs load via SPM. open() on the main isolate
+    // is reliable and fast enough for splash.
+    _isar ??= Isar.open(
       schemas: [SavedFileEntitySchema, FolderEntitySchema],
       directory: directory.path,
       name: 'visiting_card',

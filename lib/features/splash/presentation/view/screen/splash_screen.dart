@@ -23,9 +23,8 @@ class _SplashScreenState extends State<SplashScreen> {
     final minSplash = Future<void>.delayed(const Duration(seconds: 2));
 
     try {
-      await AppStorageService.init().timeout(const Duration(seconds: 8));
+      await AppStorageService.init();
     } catch (error, stackTrace) {
-      // Keep going so a storage failure cannot brick launch on TestFlight.
       debugPrint('AppStorageService.init failed: $error\n$stackTrace');
     }
 

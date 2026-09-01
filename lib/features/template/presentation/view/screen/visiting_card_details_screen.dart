@@ -164,7 +164,8 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
       );
       await frontFile.writeAsBytes(frontBytes, flush: true);
       await backFile.writeAsBytes(backBytes, flush: true);
-      await Share.shareXFiles(
+      await VisitingCardShareHelper.shareXFiles(
+        context,
         [XFile(frontFile.path), XFile(backFile.path)],
         text: 'Visiting Card',
       );

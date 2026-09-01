@@ -9,6 +9,7 @@ import 'package:visiting_card/features/folder/presentation/view/widget/folder_it
 import 'package:visiting_card/features/home/domain/model/recent_card_item.dart';
 import 'package:visiting_card/features/home/domain/model/saved_file_model.dart';
 import 'package:visiting_card/features/scan/domain/visiting_card_folder_paths.dart';
+import 'package:visiting_card/features/scan/presentation/helper/visiting_card_share_helper.dart';
 
 class FolderViewModel extends ChangeNotifier {
   FolderViewModel() {
@@ -345,7 +346,7 @@ class FolderViewModel extends ChangeNotifier {
     return true;
   }
 
-  Future<void> shareSelectedItems(String folderId) async {
+  Future<void> shareSelectedItems(String folderId, BuildContext context) async {
     final selectedIds = _selectedItemIds[folderId];
     if (selectedIds == null || selectedIds.isEmpty) {
       return;
@@ -363,7 +364,7 @@ class FolderViewModel extends ChangeNotifier {
       return;
     }
 
-    await Share.shareXFiles(files);
+    await VisitingCardShareHelper.shareXFiles(context, files);
     exitSelectionMode(folderId);
   }
 
