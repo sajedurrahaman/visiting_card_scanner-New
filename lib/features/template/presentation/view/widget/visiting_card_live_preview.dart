@@ -62,9 +62,9 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     if (oldWidget.vm != widget.vm) {
       oldWidget.vm.removeListener(_onVmChanged);
       widget.vm.addListener(_onVmChanged);
-      _jumpTo(_sideIndex);
+      _animateTo(_sideIndex);
     } else if (oldWidget.sideOverride != widget.sideOverride) {
-      _jumpTo(_sideIndex);
+      _animateTo(_sideIndex);
     }
   }
 
@@ -77,18 +77,36 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
 
   void _onVmChanged() {
     if (!mounted) return;
-    _jumpTo(widget.sideOverride ?? widget.vm.sideIndex);
+    _animateTo(widget.sideOverride ?? widget.vm.sideIndex);
     setState(() {});
   }
 
-  void _jumpTo(int page) {
+  void _animateTo(int page) {
     if (!_pageController.hasClients) return;
-    final current =
-        _pageController.page?.round() ?? _pageController.initialPage;
-    if (current == page) return;
+    final offset =
+        _pageController.page ?? _pageController.initialPage.toDouble();
+    if ((offset - page).abs() < 0.001) return;
+
+    // Details/download preview has no in-widget pager. Jump so capture never
+    // snapshots the mid-swipe frame (front-right + back-left stitched).
+    final animateSideChange =
+        widget.showPager || widget.enableFieldTransform;
+
     _ignorePageCallback = true;
-    _pageController.jumpToPage(page);
-    _ignorePageCallback = false;
+    if (!animateSideChange) {
+      _pageController.jumpToPage(page);
+      _ignorePageCallback = false;
+      return;
+    }
+    _pageController
+        .animateToPage(
+          page,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+        )
+        .whenComplete(() {
+          if (mounted) _ignorePageCallback = false;
+        });
   }
 
   void _onPageChanged(int page) {

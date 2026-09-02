@@ -61,6 +61,13 @@ Future<ui.Image> _gpuRescaleImage(
   }
 }
 
+/// Wait until the preview has painted the requested side (after [setSide]).
+Future<void> waitForVisitingCardCaptureFrame() async {
+  await WidgetsBinding.instance.endOfFrame;
+  await Future<void>.delayed(const Duration(milliseconds: 32));
+  await WidgetsBinding.instance.endOfFrame;
+}
+
 /// High-quality PNG capture (Photo Collage Maker style).
 Future<Uint8List> captureVisitingCardPngBytes(
   GlobalKey repaintKey, {

@@ -63,6 +63,11 @@
 	<string>Save QR codes, barcodes, and visiting cards to your photo library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Import visiting card images and save cards to your photo library.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

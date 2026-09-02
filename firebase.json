@@ -1,0 +1,30 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "visiting-card-scanner-maker",
+          "appId": "1:1047867960903:android:e7c28543dc79fbd3608b62",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "visiting-card-scanner-maker",
+          "appId": "1:1047867960903:ios:eed6545c9675fbc1608b62",
+          "uploadDebugSymbols": true,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "visiting-card-scanner-maker",
+          "configurations": {
+            "android": "1:1047867960903:android:e7c28543dc79fbd3608b62",
+            "ios": "1:1047867960903:ios:eed6545c9675fbc1608b62"
+          }
+        }
+      }
+    }
+  }
+}

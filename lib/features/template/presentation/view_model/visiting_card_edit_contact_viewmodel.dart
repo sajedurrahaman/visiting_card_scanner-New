@@ -120,14 +120,47 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   bool get isFront => sideIndex == 0;
   bool get isBack => sideIndex == 1;
 
-  /// Horizontal 2–5 + vertical 1,2,4,5 have logo on the front.
+  /// Horizontal 2–8,10 + vertical 1,2,4–10 have logo on the front.
   bool get hasFrontLogo {
-    const frontLogoIds = {'h2', 'h3', 'h4', 'h5', 'v1', 'v2', 'v4', 'v5'};
+    const frontLogoIds = {
+      'h2',
+      'h3',
+      'h4',
+      'h5',
+      'h6',
+      'h7',
+      'h8',
+      'h10',
+      'v1',
+      'v2',
+      'v4',
+      'v5',
+      'v6',
+      'v7',
+      'v8',
+      'v9',
+      'v10',
+    };
     return frontLogoIds.contains(templateId);
   }
 
-  /// QR is only placed on the back.
-  bool get canEditQr => isBack;
+  /// Vertical 6–10 place QR on the front (and still on the back).
+  bool get hasFrontQr {
+    //const frontQrIds = {'v6', 'v7', 'v8', 'v9', 'v10'};
+    const frontQrIds = <String>{};
+    return frontQrIds.contains(templateId);
+  }
+
+  /// Templates without any QR on either side.
+  bool get hasQr {
+    const noQrIds = <String>{};
+    return !noQrIds.contains(templateId);
+  }
+
+  bool get canEditQr {
+    if (!hasQr) return false;
+    return isBack || (isFront && hasFrontQr);
+  }
 
   /// Logo: back always; front only for templates that have front logo.
   bool get canEditLogo => isBack || (isFront && hasFrontLogo);

@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'package:visiting_card/app/firebase/firebase_services.dart';
 
 import 'app/routes/app_routes.dart';
 import 'app/view_models/app_viewmodels.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await initializeFirebase();
+  } catch (error, stackTrace) {
+    debugPrint('Firebase init failed: $error\n$stackTrace');
+  }
 
   // Never await heavy native I/O here. If Isar/SharedPreferences hangs or
   // crashes before runApp, iOS stays on the white launch screen forever

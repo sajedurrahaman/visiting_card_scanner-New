@@ -65,6 +65,26 @@ class AppAssets {
       'assets/images/visiting_card_template/horizontal/business_card front_05.png';
   static const vTemplateHorizontalFiveBack =
       'assets/images/visiting_card_template/horizontal/business_card-Back_05.png';
+  static const vTemplateHorizontalSixFront =
+      'assets/images/visiting_card_template/horizontal/business_card front_06.png';
+  static const vTemplateHorizontalSixBack =
+      'assets/images/visiting_card_template/horizontal/business_card-Back_06.png';
+  static const vTemplateHorizontalSevenFront =
+      'assets/images/visiting_card_template/horizontal/business_card front_07.png';
+  static const vTemplateHorizontalSevenBack =
+      'assets/images/visiting_card_template/horizontal/business_card-Back_07.png';
+  static const vTemplateHorizontalEightFront =
+      'assets/images/visiting_card_template/horizontal/business_card front_08.png';
+  static const vTemplateHorizontalEightBack =
+      'assets/images/visiting_card_template/horizontal/business_card-Back_08.png';
+  static const vTemplateHorizontalNineFront =
+      'assets/images/visiting_card_template/horizontal/business_card front_09.png';
+  static const vTemplateHorizontalNineBack =
+      'assets/images/visiting_card_template/horizontal/business_card-Back_09.png';
+  static const vTemplateHorizontalTenFront =
+      'assets/images/visiting_card_template/horizontal/business_card front_10.png';
+  static const vTemplateHorizontalTenBack =
+      'assets/images/visiting_card_template/horizontal/business_card-Back_10.png';
 
   static const vTemplateVerticalOneFront =
       'assets/images/visiting_card_template/vertical/Front_01.png';
@@ -86,6 +106,26 @@ class AppAssets {
       'assets/images/visiting_card_template/vertical/Front_05.png';
   static const vTemplateVerticalFiveBack =
       'assets/images/visiting_card_template/vertical/Back_05.png';
+  static const vTemplateVerticalSixFront =
+      'assets/images/visiting_card_template/vertical/Front_06.png';
+  static const vTemplateVerticalSixBack =
+      'assets/images/visiting_card_template/vertical/Back_06.png';
+  static const vTemplateVerticalSevenFront =
+      'assets/images/visiting_card_template/vertical/Front_07.png';
+  static const vTemplateVerticalSevenBack =
+      'assets/images/visiting_card_template/vertical/Back_07.png';
+  static const vTemplateVerticalEightFront =
+      'assets/images/visiting_card_template/vertical/Front_08.png';
+  static const vTemplateVerticalEightBack =
+      'assets/images/visiting_card_template/vertical/Back_08.png';
+  static const vTemplateVerticalNineFront =
+      'assets/images/visiting_card_template/vertical/Front_09.png';
+  static const vTemplateVerticalNineBack =
+      'assets/images/visiting_card_template/vertical/Back_09.png';
+  static const vTemplateVerticalTenFront =
+      'assets/images/visiting_card_template/vertical/Front_10.png';
+  static const vTemplateVerticalTenBack =
+      'assets/images/visiting_card_template/vertical/Back_10.png';
 
   static const inactiveLeftSideArrow =
       'assets/icons/inactive_left_side_arrow.svg';
@@ -289,6 +329,26 @@ class AppAssets {
       'assets/images/visiting_card_template_without_data/horizontal/business_card front_05.png';
   static const vTemplateHorizontalFiveBackWithOutData =
       'assets/images/visiting_card_template_without_data/horizontal/business_card-Back_05.png';
+  static const vTemplateHorizontalSixFrontWithOutData =
+      'assets/images/visiting_card_template_without_data/horizontal/business_card front_06.png';
+  static const vTemplateHorizontalSixBackWithOutData =
+      'assets/images/visiting_card_template_without_data/horizontal/business_card-Back_06.png';
+  static const vTemplateHorizontalSevenFrontWithOutData =
+      'assets/images/visiting_card_template_without_data/horizontal/business_card front_07.png';
+  static const vTemplateHorizontalSevenBackWithOutData =
+      'assets/images/visiting_card_template_without_data/horizontal/business_card-Back_07.png';
+  static const vTemplateHorizontalEightFrontWithOutData =
+      'assets/images/visiting_card_template_without_data/horizontal/business_card front_08.png';
+  static const vTemplateHorizontalEightBackWithOutData =
+      'assets/images/visiting_card_template_without_data/horizontal/business_card-Back_08.png';
+  static const vTemplateHorizontalNineFrontWithOutData =
+      'assets/images/visiting_card_template_without_data/horizontal/business_card front_09.png';
+  static const vTemplateHorizontalNineBackWithOutData =
+      'assets/images/visiting_card_template_without_data/horizontal/business_card-Back_09.png';
+  static const vTemplateHorizontalTenFrontWithOutData =
+      'assets/images/visiting_card_template_without_data/horizontal/business_card front_10.png';
+  static const vTemplateHorizontalTenBackWithOutData =
+      'assets/images/visiting_card_template_without_data/horizontal/business_card-Back_10.png';
 
   static const vTemplateVerticalOneFrontWithOutData =
       'assets/images/visiting_card_template_without_data/vertical/Front_01.png';
@@ -310,6 +370,26 @@ class AppAssets {
       'assets/images/visiting_card_template_without_data/vertical/Front_05.png';
   static const vTemplateVerticalFiveBackWithOutData =
       'assets/images/visiting_card_template_without_data/vertical/Back_05.png';
+  static const vTemplateVerticalSixFrontWithOutData =
+      'assets/images/visiting_card_template_without_data/vertical/Front_06.png';
+  static const vTemplateVerticalSixBackWithOutData =
+      'assets/images/visiting_card_template_without_data/vertical/Back_06.png';
+  static const vTemplateVerticalSevenFrontWithOutData =
+      'assets/images/visiting_card_template_without_data/vertical/Front_07.png';
+  static const vTemplateVerticalSevenBackWithOutData =
+      'assets/images/visiting_card_template_without_data/vertical/Back_07.png';
+  static const vTemplateVerticalEightFrontWithOutData =
+      'assets/images/visiting_card_template_without_data/vertical/Front_08.png';
+  static const vTemplateVerticalEightBackWithOutData =
+      'assets/images/visiting_card_template_without_data/vertical/Back_08.png';
+  static const vTemplateVerticalNineFrontWithOutData =
+      'assets/images/visiting_card_template_without_data/vertical/Front_09.png';
+  static const vTemplateVerticalNineBackWithOutData =
+      'assets/images/visiting_card_template_without_data/vertical/Back_09.png';
+  static const vTemplateVerticalTenFrontWithOutData =
+      'assets/images/visiting_card_template_without_data/vertical/Front_10.png';
+  static const vTemplateVerticalTenBackWithOutData =
+      'assets/images/visiting_card_template_without_data/vertical/Back_10.png';
 
   static const visitingCardAddPageIcon = 'assets/icons/Add page.svg';
 

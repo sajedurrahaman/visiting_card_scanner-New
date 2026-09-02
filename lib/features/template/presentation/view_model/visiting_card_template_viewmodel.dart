@@ -105,6 +105,41 @@ class VisitingCardTemplateViewModel extends ChangeNotifier {
       frontAssetWithoutData: ui.AppAssets.vTemplateHorizontalFiveFrontWithOutData,
       backAssetWithoutData: ui.AppAssets.vTemplateHorizontalFiveBackWithOutData,
     ),
+    VisitingCardTemplateItem(
+      id: 'h6',
+      frontAsset: ui.AppAssets.vTemplateHorizontalSixFront,
+      backAsset: ui.AppAssets.vTemplateHorizontalSixBack,
+      frontAssetWithoutData: ui.AppAssets.vTemplateHorizontalSixFrontWithOutData,
+      backAssetWithoutData: ui.AppAssets.vTemplateHorizontalSixBackWithOutData,
+    ),
+    VisitingCardTemplateItem(
+      id: 'h7',
+      frontAsset: ui.AppAssets.vTemplateHorizontalSevenFront,
+      backAsset: ui.AppAssets.vTemplateHorizontalSevenBack,
+      frontAssetWithoutData: ui.AppAssets.vTemplateHorizontalSevenFrontWithOutData,
+      backAssetWithoutData: ui.AppAssets.vTemplateHorizontalSevenBackWithOutData,
+    ),
+    VisitingCardTemplateItem(
+      id: 'h8',
+      frontAsset: ui.AppAssets.vTemplateHorizontalEightFront,
+      backAsset: ui.AppAssets.vTemplateHorizontalEightBack,
+      frontAssetWithoutData: ui.AppAssets.vTemplateHorizontalEightFrontWithOutData,
+      backAssetWithoutData: ui.AppAssets.vTemplateHorizontalEightBackWithOutData,
+    ),
+    VisitingCardTemplateItem(
+      id: 'h9',
+      frontAsset: ui.AppAssets.vTemplateHorizontalNineFront,
+      backAsset: ui.AppAssets.vTemplateHorizontalNineBack,
+      frontAssetWithoutData: ui.AppAssets.vTemplateHorizontalNineFrontWithOutData,
+      backAssetWithoutData: ui.AppAssets.vTemplateHorizontalNineBackWithOutData,
+    ),
+    VisitingCardTemplateItem(
+      id: 'h10',
+      frontAsset: ui.AppAssets.vTemplateHorizontalTenFront,
+      backAsset: ui.AppAssets.vTemplateHorizontalTenBack,
+      frontAssetWithoutData: ui.AppAssets.vTemplateHorizontalTenFrontWithOutData,
+      backAssetWithoutData: ui.AppAssets.vTemplateHorizontalTenBackWithOutData,
+    ),
   ];
 
   static const verticalTemplates = [
@@ -142,6 +177,41 @@ class VisitingCardTemplateViewModel extends ChangeNotifier {
       backAsset: ui.AppAssets.vTemplateVerticalFiveBack,
       frontAssetWithoutData: ui.AppAssets.vTemplateVerticalFiveFrontWithOutData,
       backAssetWithoutData: ui.AppAssets.vTemplateVerticalFiveBackWithOutData,
+    ),
+    VisitingCardTemplateItem(
+      id: 'v6',
+      frontAsset: ui.AppAssets.vTemplateVerticalSixFront,
+      backAsset: ui.AppAssets.vTemplateVerticalSixBack,
+      frontAssetWithoutData: ui.AppAssets.vTemplateVerticalSixFrontWithOutData,
+      backAssetWithoutData: ui.AppAssets.vTemplateVerticalSixBackWithOutData,
+    ),
+    VisitingCardTemplateItem(
+      id: 'v7',
+      frontAsset: ui.AppAssets.vTemplateVerticalSevenFront,
+      backAsset: ui.AppAssets.vTemplateVerticalSevenBack,
+      frontAssetWithoutData: ui.AppAssets.vTemplateVerticalSevenFrontWithOutData,
+      backAssetWithoutData: ui.AppAssets.vTemplateVerticalSevenBackWithOutData,
+    ),
+    VisitingCardTemplateItem(
+      id: 'v8',
+      frontAsset: ui.AppAssets.vTemplateVerticalEightFront,
+      backAsset: ui.AppAssets.vTemplateVerticalEightBack,
+      frontAssetWithoutData: ui.AppAssets.vTemplateVerticalEightFrontWithOutData,
+      backAssetWithoutData: ui.AppAssets.vTemplateVerticalEightBackWithOutData,
+    ),
+    VisitingCardTemplateItem(
+      id: 'v9',
+      frontAsset: ui.AppAssets.vTemplateVerticalNineFront,
+      backAsset: ui.AppAssets.vTemplateVerticalNineBack,
+      frontAssetWithoutData: ui.AppAssets.vTemplateVerticalNineFrontWithOutData,
+      backAssetWithoutData: ui.AppAssets.vTemplateVerticalNineBackWithOutData,
+    ),
+    VisitingCardTemplateItem(
+      id: 'v10',
+      frontAsset: ui.AppAssets.vTemplateVerticalTenFront,
+      backAsset: ui.AppAssets.vTemplateVerticalTenBack,
+      frontAssetWithoutData: ui.AppAssets.vTemplateVerticalTenFrontWithOutData,
+      backAssetWithoutData: ui.AppAssets.vTemplateVerticalTenBackWithOutData,
     ),
   ];
 }
