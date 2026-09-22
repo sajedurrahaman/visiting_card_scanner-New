@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gal/gal.dart';
-import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
@@ -16,10 +15,8 @@ import 'package:visiting_card/features/scan/domain/saved_contact_info.dart';
 import 'package:visiting_card/features/scan/domain/saved_contact_info_backup.dart';
 import 'package:visiting_card/features/scan/domain/visiting_card_folder_paths.dart';
 import 'package:visiting_card/features/scan/presentation/helper/visiting_card_share_helper.dart';
-import 'package:visiting_card/features/scan/presentation/view/screen/visiting_card_scan_template_edit_screen.dart';
-import 'package:visiting_card/features/scan/presentation/view_model/visiting_card_scan_viewmodel.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_export_utils.dart';
-import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_edit_contact_info_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_edit_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_template_viewmodel.dart';
@@ -514,71 +511,10 @@ class _VisitingCardContactDetailsScreenState
           imagePaths: _images.map((e) => e.path).toList(),
         );
 
-    // Template-generated cards → template edit flow (live preview).
-    if (editContact.isFromTemplate) {
-      await _openTemplateEdit(editContact);
-      return;
-    }
-
-    // Scan cards → template edit screen (move logo/QR/company/tagline).
-    // Next saves + shows Update toast. Back discards.
-    final bytesList = <Uint8List>[];
-    for (final file in _images) {
-      if (await file.exists()) {
-        bytesList.add(await file.readAsBytes());
-      }
-    }
-
-    final vm = VisitingCardScanViewModel();
-    await vm.loadFromSavedContact(
-      contact: editContact,
-      imageBytesList: bytesList,
-      savedFileId: widget.item.id,
-      contactFolderPath: widget.item.path,
-      folderId: widget.item.folderId,
-      dateTime: widget.item.dateTime,
-    );
-    if (!mounted) return;
-
-    final template = _templateForId(editContact.templateId);
-    final saved = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ChangeNotifierProvider.value(
-          value: vm,
-          child: VisitingCardScanTemplateEditScreen(
-            template: template,
-            isHorizontal: _isHorizontalTemplate(editContact.templateId),
-          ),
-        ),
-      ),
-    );
-    if (!mounted) return;
-    if (saved == true) {
-      _applyScanVmToPreview(vm);
-    }
-    await _load();
+    await _openLandscapeEdit(editContact);
   }
 
-  void _applyScanVmToPreview(VisitingCardScanViewModel scan) {
-    _previewVm.applyContactLists(
-      names: scan.names,
-      designations: scan.designations,
-      companies: scan.companies,
-      taglines: scan.taglines,
-      phones: scan.phones,
-      emails: scan.emails,
-      websites: scan.websites,
-      addresses: scan.addresses,
-      qrAssetPath: scan.qrAssetPath,
-      logoAssetPath: scan.logoAssetPath,
-      hasChosenQr: scan.hasChosenQr,
-      hasChosenLogo: scan.hasChosenLogo,
-      fieldTransforms: scan.fieldTransforms,
-    );
-  }
-
-  Future<void> _openTemplateEdit(SavedContactInfo contact) async {
+  Future<void> _openLandscapeEdit(SavedContactInfo contact) async {
     final template = _templateForId(contact.templateId);
     final vm = VisitingCardEditContactViewModel.fromTemplate(
       template,
@@ -593,16 +529,26 @@ class _VisitingCardContactDetailsScreenState
     );
     if (!mounted) return;
 
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ChangeNotifierProvider.value(
-          value: vm,
-          child: const VisitingCardEditContactInfoScreen(),
-        ),
-      ),
-    );
-    if (mounted) await _load();
+    final saved = await VisitingCardLandscapeEditScreen.open(context, vm: vm);
+    if (!mounted) return;
+    if (saved == true) {
+      _previewVm.applyContactLists(
+        names: vm.names,
+        designations: vm.designations,
+        companies: vm.companies,
+        taglines: vm.taglines,
+        phones: vm.phones,
+        emails: vm.emails,
+        websites: vm.websites,
+        addresses: vm.addresses,
+        qrAssetPath: vm.qrAssetPath,
+        logoAssetPath: vm.logoAssetPath,
+        hasChosenQr: vm.hasChosenQr,
+        hasChosenLogo: vm.hasChosenLogo,
+        fieldTransforms: vm.fieldTransformsSnapshot,
+      );
+    }
+    await _load();
   }
 
   Widget _buildLivePreviewCard() {
@@ -661,6 +607,18 @@ class _VisitingCardContactDetailsScreenState
                 canGoNext: _previewVm.sideIndex == 0,
                 onPrevious: _previewVm.showFront,
                 onNext: _previewVm.showBack,
+              ),
+            ),
+            Positioned(
+              bottom: 6.h,
+              right: 6.w,
+              child: _CornerActionButton(
+                onTap: _openEdit,
+                child: SvgPicture.asset(
+                  ui.AppAssets.visitingTemplateEditIcon,
+                  width: 15.w,
+                  height: 15.w,
+                ),
               ),
             ),
             if (_isDownloadingTemplate)
@@ -785,6 +743,18 @@ class _VisitingCardContactDetailsScreenState
                                 Icons.download_outlined,
                                 size: 15.sp,
                                 color: ui.Colors.parentIconSelectTextColor,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 6.h,
+                            right: 6.w,
+                            child: _CornerActionButton(
+                              onTap: _openEdit,
+                              child: SvgPicture.asset(
+                                ui.AppAssets.visitingTemplateEditIcon,
+                                width: 15.w,
+                                height: 15.w,
                               ),
                             ),
                           ),

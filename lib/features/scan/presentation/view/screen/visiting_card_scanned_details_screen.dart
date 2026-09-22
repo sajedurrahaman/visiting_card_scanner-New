@@ -14,10 +14,10 @@ import 'package:visiting_card/features/home/presentation/view_model/home_view_mo
 import 'package:visiting_card/features/parent/presentation/view_model/parent_view_model.dart';
 import 'package:visiting_card/features/scan/domain/scanned_image_model.dart';
 import 'package:visiting_card/features/scan/presentation/helper/visiting_card_share_helper.dart';
-import 'package:visiting_card/features/scan/presentation/view/screen/visiting_card_scan_template_edit_screen.dart';
 import 'package:visiting_card/features/scan/presentation/view_model/visiting_card_scan_viewmodel.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_export_utils.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_edit_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_edit_field_cards.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
@@ -130,25 +130,50 @@ class _VisitingCardScannedDetailsScreenState
     });
   }
 
+  void _syncScanFromPreview() {
+    final scan = context.read<VisitingCardScanViewModel>();
+    void replace(
+      List<ContactFieldEntry> target,
+      List<ContactFieldEntry> source, {
+      String fallbackType = '',
+    }) {
+      target
+        ..clear()
+        ..addAll(
+          source.map((e) => ContactFieldEntry(value: e.value, type: e.type)),
+        );
+      if (target.isEmpty) {
+        target.add(ContactFieldEntry(type: fallbackType));
+      }
+    }
+
+    replace(scan.names, _previewVm.names);
+    replace(scan.designations, _previewVm.designations);
+    replace(scan.companies, _previewVm.companies);
+    replace(scan.taglines, _previewVm.taglines);
+    replace(scan.phones, _previewVm.phones, fallbackType: 'Cell');
+    replace(scan.emails, _previewVm.emails, fallbackType: 'Company');
+    replace(scan.websites, _previewVm.websites, fallbackType: 'Company');
+    replace(scan.addresses, _previewVm.addresses);
+    scan.qrAssetPath = _previewVm.qrAssetPath;
+    scan.logoAssetPath = _previewVm.logoAssetPath;
+    scan.hasChosenQr = _previewVm.hasChosenQr;
+    scan.hasChosenLogo = _previewVm.hasChosenLogo;
+    scan.fieldTransforms = _previewVm.fieldTransformsSnapshot;
+    scan.selectedTemplateId = _previewVm.templateId;
+    scan.notifyContactChanged();
+  }
+
   Future<void> _onEditSelectedTemplate() async {
     final scan = context.read<VisitingCardScanViewModel>();
     scan.selectedTemplateId = _selectedTemplateId;
-    final template = _templateFor(_selectedTemplateId);
-    final updated = await Navigator.push<bool>(
+    await VisitingCardLandscapeEditScreen.open(
       context,
-      MaterialPageRoute(
-        builder: (_) => ChangeNotifierProvider.value(
-          value: scan,
-          child: VisitingCardScanTemplateEditScreen(
-            template: template,
-            isHorizontal: true,
-            popOnDone: true,
-          ),
-        ),
-      ),
+      vm: _previewVm,
+      persistToRecent: false,
     );
-    if (!mounted || updated != true) return;
-    _syncPreviewFromScan();
+    if (!mounted) return;
+    _syncScanFromPreview();
     setState(() {});
   }
 
@@ -621,6 +646,18 @@ class _VisitingCardScannedDetailsScreenState
                             ),
                           ),
                         ),
+                        Positioned(
+                          bottom: 6.h,
+                          right: 6.w,
+                          child: _CornerActionButton(
+                            onTap: _onEditSelectedTemplate,
+                            child: SvgPicture.asset(
+                              ui.AppAssets.visitingTemplateEditIcon,
+                              width: 15.w,
+                              height: 15.w,
+                            ),
+                          ),
+                        ),
                         if (_isDownloadingScan)
                           Positioned.fill(
                             child: ColoredBox(
@@ -690,6 +727,18 @@ class _VisitingCardScannedDetailsScreenState
                             canGoNext: _previewVm.sideIndex == 0,
                             onPrevious: _previewVm.showFront,
                             onNext: _previewVm.showBack,
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 6.h,
+                          right: 6.w,
+                          child: _CornerActionButton(
+                            onTap: _onEditSelectedTemplate,
+                            child: SvgPicture.asset(
+                              ui.AppAssets.visitingTemplateEditIcon,
+                              width: 15.w,
+                              height: 15.w,
+                            ),
                           ),
                         ),
                         if (_isDownloadingTemplate)

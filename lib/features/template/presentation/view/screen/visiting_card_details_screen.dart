@@ -14,6 +14,7 @@ import 'package:visiting_card/features/home/presentation/view_model/home_view_mo
 import 'package:visiting_card/features/parent/presentation/view_model/parent_view_model.dart';
 import 'package:visiting_card/features/scan/presentation/helper/visiting_card_share_helper.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_export_utils.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_edit_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_edit_field_cards.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
@@ -321,6 +322,23 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
                                 Icons.download_outlined,
                                 size: 15.sp,
                                 color: ui.Colors.parentIconSelectTextColor,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 6.h,
+                            right: 6.w,
+                            child: _CornerActionButton(
+                              onTap: () {
+                                VisitingCardLandscapeEditScreen.open(
+                                  context,
+                                  vm: vm,
+                                );
+                              },
+                              child: SvgPicture.asset(
+                                ui.AppAssets.visitingTemplateEditIcon,
+                                width: 15.w,
+                                height: 15.w,
                               ),
                             ),
                           ),

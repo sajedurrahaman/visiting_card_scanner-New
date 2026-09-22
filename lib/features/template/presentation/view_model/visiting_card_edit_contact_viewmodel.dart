@@ -349,7 +349,9 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       left: left,
       top: top.clamp(0.0, 1.0),
       size: size,
-      width: pos.width,
+      // Text width stays free until the user stretches the selection;
+      // template `pos.width` is applied only at layout time for portrait.
+      width: field.isImageOverlay ? pos.width : null,
     );
   }
 
@@ -425,6 +427,123 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         ? (current.size + pixelDeltaY / cardSize.width).clamp(0.06, 0.55)
         : (current.size + pixelDeltaY * 0.08).clamp(4.0, 28.0);
     currentOverlays[key] = current.copyWith(size: next);
+    notifyListeners();
+  }
+
+  /// Landscape: corner drag — keep opposite corner fixed while scaling.
+  void scaleOverlayUniform(
+    VisitingCardOverlayField field,
+    double pixelDelta,
+    Size cardSize, {
+    bool fixRight = false,
+    bool fixBottom = false,
+    double? seedWidthFraction,
+    double? seedHeightPx,
+  }) {
+    if (cardSize.width <= 0 || cardSize.height <= 0) return;
+    _ensureOverlay(field);
+    final key = VisitingCardFieldTransform.keyOf(field);
+    final current = currentOverlays[key]!;
+    var left = current.left;
+    var top = current.top;
+
+    if (field.isImageOverlay) {
+      final next =
+          (current.size + pixelDelta / cardSize.width).clamp(0.06, 0.55);
+      final applied = next - current.size;
+      if (fixRight) {
+        left = (left - applied).clamp(-0.2, 0.95);
+      }
+      if (fixBottom) {
+        top = (top - applied * cardSize.width / cardSize.height)
+            .clamp(-0.2, 0.95);
+      }
+      currentOverlays[key] =
+          current.copyWith(size: next, left: left, top: top);
+    } else {
+      final nextSize = (current.size + pixelDelta * 0.08).clamp(4.0, 28.0);
+      final baseW = current.width ?? seedWidthFraction ?? 0.2;
+      final nextW = (baseW + pixelDelta / cardSize.width).clamp(0.05, 1.0);
+      final appliedW = nextW - baseW;
+      if (fixRight) {
+        left = (left - appliedW).clamp(-0.2, 0.95);
+      }
+      if (fixBottom && current.size > 0) {
+        final oldH = seedHeightPx ?? (current.size * 1.2);
+        final newH = oldH * (nextSize / current.size);
+        top = (top - (newH - oldH) / cardSize.height).clamp(-0.2, 0.95);
+      }
+      currentOverlays[key] = current.copyWith(
+        size: nextSize,
+        width: nextW,
+        left: left,
+        top: top,
+      );
+    }
+    notifyListeners();
+  }
+
+  /// Landscape: edge-center drag — stretch one axis; optionally keep the
+  /// opposite edge fixed (left handle → fix right, top handle → fix bottom).
+  void stretchOverlayAxis(
+    VisitingCardOverlayField field, {
+    required bool horizontal,
+    required double pixelDelta,
+    required Size cardSize,
+    bool fixOpposite = false,
+    double? seedWidthFraction,
+    double? seedHeightPx,
+  }) {
+    if (cardSize.width <= 0 || cardSize.height <= 0) return;
+    _ensureOverlay(field);
+    final key = VisitingCardFieldTransform.keyOf(field);
+    final current = currentOverlays[key]!;
+    if (horizontal) {
+      if (field.isImageOverlay) {
+        final next =
+            (current.size + pixelDelta / cardSize.width).clamp(0.06, 0.55);
+        final applied = next - current.size;
+        final left = fixOpposite
+            ? (current.left - applied).clamp(-0.2, 0.95)
+            : current.left;
+        currentOverlays[key] =
+            current.copyWith(size: next, left: left);
+      } else {
+        // Seed from the current tight text box so the first drag doesn't
+        // jump to a large template fraction (extra empty right space).
+        final baseW = current.width ?? seedWidthFraction ?? 0.2;
+        final nextW =
+            (baseW + pixelDelta / cardSize.width).clamp(0.05, 1.0);
+        final applied = nextW - baseW;
+        final left = fixOpposite
+            ? (current.left - applied).clamp(-0.2, 0.95)
+            : current.left;
+        currentOverlays[key] =
+            current.copyWith(width: nextW, left: left);
+      }
+    } else {
+      if (field.isImageOverlay) {
+        final next =
+            (current.size + pixelDelta / cardSize.height).clamp(0.06, 0.55);
+        final appliedPx = (next - current.size) * cardSize.height;
+        final top = fixOpposite
+            ? (current.top - appliedPx / cardSize.height).clamp(-0.2, 0.95)
+            : current.top;
+        currentOverlays[key] =
+            current.copyWith(size: next, top: top);
+      } else {
+        final nextSize =
+            (current.size + pixelDelta * 0.08).clamp(4.0, 28.0);
+        var top = current.top;
+        if (fixOpposite && current.size > 0) {
+          final oldH = seedHeightPx ?? (current.size * 1.2);
+          final newH = oldH * (nextSize / current.size);
+          top = (top - (newH - oldH) / cardSize.height).clamp(-0.2, 0.95);
+        }
+        currentOverlays[key] =
+            current.copyWith(size: nextSize, top: top);
+      }
+    }
     notifyListeners();
   }
 

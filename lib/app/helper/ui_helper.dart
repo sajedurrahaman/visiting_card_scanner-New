@@ -616,6 +616,8 @@ class AppDialogs {
     String hintText = 'Office Document',
     String cancelText = 'Cancel',
     String confirmText = 'Save',
+    /// Landscape: ID-Scanner-style compact dialog (keyboard-safe).
+    bool compact = false,
   }) {
     return showDialog<String>(
       context: context,
@@ -626,6 +628,7 @@ class AppDialogs {
         hintText: hintText,
         cancelText: cancelText,
         confirmText: confirmText,
+        compact: compact,
       ),
     );
   }
@@ -717,6 +720,7 @@ class _RenameDialog extends StatefulWidget {
     required this.hintText,
     required this.cancelText,
     required this.confirmText,
+    this.compact = false,
   });
 
   final String title;
@@ -724,6 +728,7 @@ class _RenameDialog extends StatefulWidget {
   final String hintText;
   final String cancelText;
   final String confirmText;
+  final bool compact;
 
   @override
   State<_RenameDialog> createState() => _RenameDialogState();
@@ -754,6 +759,88 @@ class _RenameDialogState extends State<_RenameDialog> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.compact) {
+      return _buildLandscapeRenameDialog();
+    }
+    return _buildDefaultRenameDialog();
+  }
+
+  /// Same pattern as other apps (ID Scanner): AlertDialog + Rename File.
+  Widget _buildLandscapeRenameDialog() {
+    final viewInsets = MediaQuery.viewInsetsOf(context);
+    return Padding(
+      padding: EdgeInsets.only(bottom: viewInsets.bottom),
+      child: Center(
+        child: SingleChildScrollView(
+          child: AlertDialog(
+            backgroundColor: const Color(0xFFFFFFFF),
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 48,
+              vertical: 12,
+            ),
+            titlePadding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            actionsPadding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+            title: Text(
+              widget.title,
+              style: const TextStyle(
+                color: Color(0xFF000000),
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            content: SizedBox(
+              width: 280,
+              child: TextField(
+                controller: _controller,
+                autofocus: true,
+                maxLines: 1,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _submit(),
+                style: const TextStyle(
+                  color: Color(0xFF1A1A1A),
+                  fontSize: 14,
+                ),
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: widget.hintText,
+                  hintStyle: const TextStyle(
+                    color: Color(0xFFB0B0B0),
+                    fontSize: 14,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 10,
+                  ),
+                  border: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF05B560)),
+                  ),
+                  enabledBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF05B560)),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF05B560)),
+                  ),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(widget.cancelText),
+              ),
+              TextButton(
+                onPressed: _submit,
+                child: Text(widget.confirmText),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDefaultRenameDialog() {
     return Dialog(
       backgroundColor: const Color(0xFFFFFFFF),
       insetPadding: EdgeInsets.symmetric(horizontal: 28.w),
