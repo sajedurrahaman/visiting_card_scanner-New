@@ -42,13 +42,24 @@ class VisitingCardLandscapeEditScreen extends StatefulWidget {
   }) {
     return Navigator.push<bool>(
       context,
-      MaterialPageRoute(
-        builder: (_) => ChangeNotifierProvider.value(
+      PageRouteBuilder<bool>(
+        transitionDuration: const Duration(milliseconds: 380),
+        reverseTransitionDuration: const Duration(milliseconds: 320),
+        pageBuilder: (_, _, _) => ChangeNotifierProvider.value(
           value: vm,
           child: VisitingCardLandscapeEditScreen(
             persistToRecent: persistToRecent,
           ),
         ),
+        transitionsBuilder: (_, animation, _, child) {
+          return FadeTransition(
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOut,
+            ),
+            child: child,
+          );
+        },
       ),
     );
   }
@@ -69,32 +80,67 @@ class _VisitingCardLandscapeEditScreenState
   bool _busy = false;
   bool _booting = true;
   bool _previewing = false;
+  bool _leaving = false;
+  bool _allowPop = false;
   String _panel = '';
 
   @override
   void initState() {
     super.initState();
-    SystemChrome.setPreferredOrientations(const [
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await SystemChrome.setPreferredOrientations(const [
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
       if (!mounted) return;
       context.read<VisitingCardEditContactViewModel>().clearOverlaySelection();
-      _finishBoot();
+      await _finishBoot();
     });
   }
 
+  Future<void> _waitUntil({required bool landscape}) async {
+    final deadline = DateTime.now().add(const Duration(milliseconds: 1600));
+    while (DateTime.now().isBefore(deadline)) {
+      if (!mounted) return;
+      final size = MediaQuery.sizeOf(context);
+      final ready = landscape
+          ? size.width > size.height + 24
+          : size.height > size.width + 24;
+      if (ready) return;
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+    }
+  }
+
   Future<void> _finishBoot() async {
-    // Keep loader visible a few seconds while orientation + template settle.
-    await Future<void>.delayed(const Duration(milliseconds: 1600));
-    if (!mounted) return;
-    await WidgetsBinding.instance.endOfFrame;
+    await _waitUntil(landscape: true);
     if (!mounted) return;
     await WidgetsBinding.instance.endOfFrame;
     if (!mounted) return;
     setState(() => _booting = false);
+  }
+
+  /// Cover the editor, rotate back to portrait, then reveal the previous page.
+  Future<void> _leaveToPortrait({Object? result, bool toRoot = false}) async {
+    if (_leaving) return;
+    _leaving = true;
+    if (mounted) setState(() => _booting = true);
+    await WidgetsBinding.instance.endOfFrame;
+    await SystemChrome.setPreferredOrientations(const [
+      DeviceOrientation.portraitUp,
+    ]);
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    await _waitUntil(landscape: false);
+    if (!mounted) return;
+    setState(() => _allowPop = true);
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+    if (toRoot) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } else {
+      Navigator.of(context).pop(result);
+    }
   }
 
   @override
@@ -125,7 +171,7 @@ class _VisitingCardLandscapeEditScreenState
 
   Future<void> _onExit() async {
     if (_busy) return;
-    Navigator.pop(context);
+    await _leaveToPortrait();
   }
 
   Future<void> _onSave() async {
@@ -153,7 +199,7 @@ class _VisitingCardLandscapeEditScreenState
 
     if (!widget.persistToRecent) {
       ui.AppToast.success(context, 'Name updated');
-      Navigator.pop(context, true);
+      await _leaveToPortrait(result: true);
       return;
     }
 
@@ -187,14 +233,14 @@ class _VisitingCardLandscapeEditScreenState
 
     if (isUpdate) {
       ui.AppToast.success(context, 'Contact update Successfully');
-      Navigator.pop(context, true);
+      await _leaveToPortrait(result: true);
       return;
     }
 
     await VisitingCardShareHelper.saveContactToPhone(context, phoneContact);
     if (!mounted) return;
     context.read<ParentViewModel>().changeIndex(0);
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    await _leaveToPortrait(toRoot: true);
   }
 
   Future<void> _onDownload() async {
@@ -466,7 +512,13 @@ class _VisitingCardLandscapeEditScreenState
     final railWidth = (size.width * 0.24).clamp(148.0, 188.0);
     final pad = (shortest * 0.04).clamp(12.0, 20.0);
 
-    return Scaffold(
+    return PopScope(
+      canPop: _allowPop,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop || _leaving) return;
+        _onExit();
+      },
+      child: Scaffold(
       backgroundColor: _bg,
       body: SafeArea(
         child: Stack(
@@ -719,33 +771,7 @@ class _VisitingCardLandscapeEditScreenState
               ),
             if (_booting)
               const Positioned.fill(
-                child: ColoredBox(
-                  color: _bg,
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 36,
-                          height: 36,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 3,
-                            color: Color(0xFF05B560),
-                          ),
-                        ),
-                        SizedBox(height: 14),
-                        Text(
-                          'Loading card…',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                child: ColoredBox(color: _bg),
               ),
             if (!_booting && (_busy || _isDownloading || vm.isSaving))
               const Positioned.fill(
@@ -760,6 +786,7 @@ class _VisitingCardLandscapeEditScreenState
               ),
           ],
         ),
+      ),
       ),
     );
   }
