@@ -68,6 +68,7 @@ class _VisitingCardLandscapeEditScreenState
   bool _isDownloading = false;
   bool _busy = false;
   bool _booting = true;
+  bool _previewing = false;
   String _panel = '';
 
   @override
@@ -258,6 +259,20 @@ class _VisitingCardLandscapeEditScreenState
     final vm = context.read<VisitingCardEditContactViewModel>();
     final path = await vm.persistLogoFile(file);
     vm.applyLogoImage(path);
+  }
+
+  void _onPreview() {
+    final vm = context.read<VisitingCardEditContactViewModel>();
+    vm.clearOverlaySelection();
+    vm.setSide(0);
+    setState(() {
+      _panel = '';
+      _previewing = true;
+    });
+  }
+
+  void _closePreview() {
+    setState(() => _previewing = false);
   }
 
   void _comingSoon(String label) {
@@ -465,10 +480,11 @@ class _VisitingCardLandscapeEditScreenState
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         final ratio = vm.isHorizontal ? 1.75 : 0.63;
-                        const scale = 0.68;
+                        final scale = _previewing ? 0.82 : 0.68;
                         var cardW = constraints.maxWidth * scale;
                         var cardH = cardW / ratio;
-                        final maxH = constraints.maxHeight * 0.70;
+                        final maxH =
+                            constraints.maxHeight * (_previewing ? 0.82 : 0.70);
                         if (cardH > maxH) {
                           cardH = maxH;
                           cardW = cardH * ratio;
@@ -477,7 +493,8 @@ class _VisitingCardLandscapeEditScreenState
                         // LivePreview — do not apply ScreenUtil / textScaler.
                         return Column(
                           children: [
-                            SizedBox(height: pad * 1.00),
+                            if (_previewing) const Spacer(),
+                            if (!_previewing) SizedBox(height: pad),
                             Align(
                               alignment: Alignment.topCenter,
                               child: SizedBox(
@@ -494,7 +511,7 @@ class _VisitingCardLandscapeEditScreenState
                                       child: VisitingCardLivePreview(
                                         vm: vm,
                                         showPager: false,
-                                        enableFieldTransform: true,
+                                        enableFieldTransform: !_previewing,
                                         selectionBorderOnlyWhenSelected: true,
                                         pageGap: 4,
                                       ),
@@ -515,7 +532,8 @@ class _VisitingCardLandscapeEditScreenState
                               ),
                             ),
                             const Spacer(),
-                            if (_panel == 'Color' &&
+                            if (!_previewing &&
+                                _panel == 'Color' &&
                                 vm.hasSelection &&
                                 !vm.selectedIsImage)
                               _TextColorBar(
@@ -524,13 +542,16 @@ class _VisitingCardLandscapeEditScreenState
                                 onPick: vm.setSelectedOverlayColor,
                                 onCustom: _pickCustomColor,
                               )
-                            else if (_panel == 'Size' && vm.hasSelection)
+                            else if (!_previewing &&
+                                _panel == 'Size' &&
+                                vm.hasSelection)
                               _TextSizeBar(
                                 fraction: vm.selectedOverlaySizeFraction(),
                                 onClose: () => setState(() => _panel = ''),
                                 onChanged: vm.setSelectedOverlaySizeFraction,
                               )
-                            else if (_isAdjustPanel &&
+                            else if (!_previewing &&
+                                _isAdjustPanel &&
                                 vm.hasSelection &&
                                 !(vm.selectedIsImage &&
                                     (_panel == 'Spacing' ||
@@ -554,8 +575,9 @@ class _VisitingCardLandscapeEditScreenState
                       },
                     ),
                   ),
-                  SizedBox(width: pad * 0.75),
-                  SizedBox(
+                  if (!_previewing) SizedBox(width: pad * 0.75),
+                  if (!_previewing)
+                    SizedBox(
                     width: railWidth,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -632,13 +654,7 @@ class _VisitingCardLandscapeEditScreenState
                                       _RailItem(
                                         icon: Icons.visibility_outlined,
                                         label: 'Preview',
-                                        onTap: () {
-                                          vm.setSide(0);
-                                          ui.AppToast.show(
-                                            context,
-                                            message: 'Showing front preview',
-                                          );
-                                        },
+                                        onTap: _onPreview,
                                       ),
                                       _RailItem(
                                         icon: Icons.person_outline,
@@ -679,6 +695,28 @@ class _VisitingCardLandscapeEditScreenState
                 ],
               ),
             ),
+            if (_previewing && !_booting)
+              Positioned(
+                top: 16,
+                right: pad + 18,
+                child: Material(
+                  color: const Color(0xFFFFFFFF),
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: _closePreview,
+                    child: const SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: Icon(
+                        Icons.close,
+                        color: Color(0xFF000000),
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             if (_booting)
               const Positioned.fill(
                 child: ColoredBox(
