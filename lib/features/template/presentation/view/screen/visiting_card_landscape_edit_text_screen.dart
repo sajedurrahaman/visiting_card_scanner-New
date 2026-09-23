@@ -107,6 +107,9 @@ class _VisitingCardLandscapeEditTextScreenState
                           focusNode: _focusNode,
                           minLines: 3,
                           maxLines: 3,
+                          onTapOutside: (_) {
+                            FocusManager.instance.primaryFocus?.unfocus();
+                          },
                           textAlignVertical: TextAlignVertical.top,
                           textInputAction: TextInputAction.newline,
                           style: const TextStyle(

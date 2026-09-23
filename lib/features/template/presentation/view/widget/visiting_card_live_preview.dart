@@ -1005,11 +1005,21 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     }
 
     void paintDuplicate(String id, VisitingCardFieldTransform t) {
-      final source =
-          VisitingCardFieldTransform.fieldFromKey(t.duplicateOf ?? '');
-      if (source == null) return;
-      final pos = posFor(source);
+      final isCustom =
+          t.duplicateOf == VisitingCardEditContactViewModel.customTextSource;
+      final source = isCustom
+          ? null
+          : VisitingCardFieldTransform.fieldFromKey(t.duplicateOf ?? '');
+      if (!isCustom && source == null) return;
+      final pos = isCustom
+          ? const VisitingCardFieldPosition(
+              fontSize: 14,
+              color: Color(0xFF1A1A1A),
+              heightFactor: 1.15,
+            )
+          : posFor(source!);
       if (pos == null) return;
+      final gestureField = source ?? VisitingCardOverlayField.name;
       final selected = vm.selectedDuplicateId == id;
       void place(Widget overlay) {
         if (selected) {
@@ -1019,7 +1029,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         }
       }
 
-      if (source.isImageOverlay) {
+      if (source != null && source.isImageOverlay) {
         final path = t.duplicateImagePath;
         if (path == null || path.isEmpty) return;
         final isAsset = path.startsWith('assets/');
@@ -1037,12 +1047,13 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
             onSelect: () => vm.selectDuplicate(id),
             onDeselect: vm.clearOverlaySelection,
             onMove: (dx, dy) =>
-                vm.moveOverlay(source, dx, dy, size, duplicateId: id),
-            onResize: (d) => vm.resizeOverlay(source, d, size, duplicateId: id),
+                vm.moveOverlay(gestureField, dx, dy, size, duplicateId: id),
+            onResize: (d) =>
+                vm.resizeOverlay(gestureField, d, size, duplicateId: id),
             onUniformScale: widget.selectionBorderOnlyWhenSelected
                 ? (d, {required fixRight, required fixBottom}) =>
                     vm.scaleOverlayUniform(
-                      source,
+                      gestureField,
                       d,
                       size,
                       fixRight: fixRight,
@@ -1052,7 +1063,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
                 : null,
             onStretchHorizontal: widget.selectionBorderOnlyWhenSelected
                 ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
-                      source,
+                      gestureField,
                       horizontal: true,
                       pixelDelta: d,
                       cardSize: size,
@@ -1062,7 +1073,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
                 : null,
             onStretchVertical: widget.selectionBorderOnlyWhenSelected
                 ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
-                      source,
+                      gestureField,
                       horizontal: false,
                       pixelDelta: d,
                       cardSize: size,
@@ -1070,7 +1081,8 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
                       duplicateId: id,
                     )
                 : null,
-            onRotate: (r) => vm.rotateOverlay(source, r, duplicateId: id),
+            onRotate: (r) =>
+                vm.rotateOverlay(gestureField, r, duplicateId: id),
             onGestureStart: vm.beginOverlayGesture,
             onGestureEnd: vm.endOverlayGesture,
           ),
@@ -1217,12 +1229,13 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           onSelect: () => vm.selectDuplicate(id),
           onDeselect: vm.clearOverlaySelection,
           onMove: (dx, dy) =>
-              vm.moveOverlay(source, dx, dy, size, duplicateId: id),
-          onResize: (d) => vm.resizeOverlay(source, d, size, duplicateId: id),
+              vm.moveOverlay(gestureField, dx, dy, size, duplicateId: id),
+          onResize: (d) =>
+              vm.resizeOverlay(gestureField, d, size, duplicateId: id),
           onUniformScale: widget.selectionBorderOnlyWhenSelected
               ? (d, {required fixRight, required fixBottom}) =>
                   vm.scaleOverlayUniform(
-                    source,
+                    gestureField,
                     d,
                     size,
                     fixRight: fixRight,
@@ -1234,7 +1247,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
               : null,
           onStretchHorizontal: widget.selectionBorderOnlyWhenSelected
               ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
-                    source,
+                    gestureField,
                     horizontal: true,
                     pixelDelta: d,
                     cardSize: size,
@@ -1245,7 +1258,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
               : null,
           onStretchVertical: widget.selectionBorderOnlyWhenSelected
               ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
-                    source,
+                    gestureField,
                     horizontal: false,
                     pixelDelta: d,
                     cardSize: size,
@@ -1254,7 +1267,8 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
                     duplicateId: id,
                   )
               : null,
-          onRotate: (r) => vm.rotateOverlay(source, r, duplicateId: id),
+          onRotate: (r) =>
+              vm.rotateOverlay(gestureField, r, duplicateId: id),
           onGestureStart: vm.beginOverlayGesture,
           onGestureEnd: vm.endOverlayGesture,
           child: _flipField(text, t),
@@ -1262,7 +1276,10 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       );
     }
 
-    for (final entry in vm.currentOverlays.entries) {
+    final sideOverlays = landscape
+        ? (isFront ? vm.frontOverlays : vm.backOverlays)
+        : vm.currentOverlays;
+    for (final entry in sideOverlays.entries) {
       if (!entry.key.startsWith('dup:')) continue;
       paintDuplicate(entry.key.substring(4), entry.value);
     }

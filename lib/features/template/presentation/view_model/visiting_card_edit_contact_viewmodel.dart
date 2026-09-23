@@ -59,10 +59,10 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     );
   }
 
-  final String templateId;
-  final bool isHorizontal;
-  final String frontAssetWithoutData;
-  final String backAssetWithoutData;
+  String templateId;
+  bool isHorizontal;
+  String frontAssetWithoutData;
+  String backAssetWithoutData;
 
   final ScreenshotController screenshotController = ScreenshotController();
 
@@ -384,6 +384,9 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
 
   static String duplicateKey(String id) => 'dup:$id';
 
+  /// Free text added from the landscape Text tool. Not a template field.
+  static const customTextSource = 'custom';
+
   bool _sourceIsImage(String? source) => source == 'logo' || source == 'qr';
 
   bool get selectedIsImage {
@@ -436,6 +439,47 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     selectedOverlay = null;
     selectedDuplicateId = null;
     overlayGestureActive = false;
+    notifyListeners();
+  }
+
+  /// Swaps the card design. Contact text stays; field positions reset
+  /// so the new template's layout is used.
+  void applyTemplate(
+    VisitingCardTemplateItem item, {
+    required bool horizontal,
+  }) {
+    if (templateId == item.id && isHorizontal == horizontal) return;
+    templateId = item.id;
+    isHorizontal = horizontal;
+    frontAssetWithoutData = item.frontAssetWithoutData;
+    backAssetWithoutData = item.backAssetWithoutData;
+    frontOverlays.clear();
+    backOverlays.clear();
+    selectedOverlay = null;
+    selectedDuplicateId = null;
+    overlayGestureActive = false;
+    sideIndex = 0;
+    notifyListeners();
+  }
+
+  /// Adds a new text field on the current side and selects it.
+  void addCustomText(String text) {
+    final value = text.trim();
+    if (value.isEmpty) return;
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+    final existing = currentOverlays.values
+        .where((t) => t.duplicateOf == customTextSource)
+        .length;
+    final nudge = (existing % 6) * 0.035;
+    currentOverlays[duplicateKey(id)] = VisitingCardFieldTransform(
+      left: (0.30 + nudge).clamp(0.06, 0.72),
+      top: (0.36 + nudge).clamp(0.06, 0.78),
+      size: 14,
+      duplicateOf: customTextSource,
+      duplicateText: value,
+    );
+    selectedOverlay = null;
+    selectedDuplicateId = id;
     notifyListeners();
   }
 

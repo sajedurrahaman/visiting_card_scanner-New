@@ -16,6 +16,7 @@ import 'package:visiting_card/features/template/domain/visiting_card_export_util
 import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_edit_text_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_font_style_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_template_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_rename_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_logo_picker_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
@@ -261,6 +262,15 @@ class _VisitingCardLandscapeEditScreenState
 
   void _comingSoon(String label) {
     ui.AppToast.show(context, message: '$label coming soon');
+  }
+
+  Future<void> _onAddText() async {
+    final next = await VisitingCardLandscapeEditTextScreen.open(
+      context,
+      initialValue: '',
+    );
+    if (next == null || next.isEmpty || !mounted) return;
+    context.read<VisitingCardEditContactViewModel>().addCustomText(next);
   }
 
   Future<void> _onEditText() async {
@@ -590,7 +600,7 @@ class _VisitingCardLandscapeEditScreenState
                                       _RailItem(
                                         icon: Icons.playlist_add_outlined,
                                         label: 'Text',
-                                        onTap: () => _comingSoon('Text'),
+                                        onTap: _onAddText,
                                       ),
                                       _RailItem(
                                         icon: Icons.widgets_outlined,
@@ -615,7 +625,9 @@ class _VisitingCardLandscapeEditScreenState
                                       _RailItem(
                                         icon: Icons.dashboard_outlined,
                                         label: 'Template',
-                                        onTap: () => _comingSoon('Template'),
+                                        onTap: () =>
+                                            VisitingCardLandscapeTemplateScreen
+                                                .open(context),
                                       ),
                                       _RailItem(
                                         icon: Icons.visibility_outlined,
