@@ -29,6 +29,7 @@ class VisitingCardTransformOverlay extends StatefulWidget {
     this.onGestureEnd,
     this.tightBorder = false,
     this.borderOnlyWhenSelected = false,
+    this.showHandles = true,
   });
 
   final Size cardSize;
@@ -77,6 +78,9 @@ class VisitingCardTransformOverlay extends StatefulWidget {
   /// use 10px pad + corner/center 8pt handles.
   final bool borderOnlyWhenSelected;
 
+  /// Landscape selection chrome. False hides the eight resize dots.
+  final bool showHandles;
+
   @override
   State<VisitingCardTransformOverlay> createState() =>
       _VisitingCardTransformOverlayState();
@@ -114,6 +118,7 @@ class _VisitingCardTransformOverlayState
       width: widget.boxWidth,
       height: widget.boxHeight,
       child: Transform.rotate(
+        alignment: Alignment.topLeft,
         angle: widget.rotation,
         child: GestureDetector(
           behavior: HitTestBehavior.translucent,
@@ -213,95 +218,128 @@ class _VisitingCardTransformOverlayState
   Widget _buildLandscapeSelected() {
     const pad = _landscapePad;
     const handle = _landscapeHandle;
+    final showHandles = widget.showHandles;
+    final outer = showHandles ? handle : 0.0;
     final frameW = widget.boxWidth + pad * 2;
     final frameH = widget.boxHeight + pad * 2;
 
     return Positioned(
-      left: widget.left - pad - handle / 2,
-      top: widget.top - pad - handle / 2,
-      width: frameW + handle,
-      height: frameH + handle,
+      left: widget.left - pad - outer / 2,
+      top: widget.top - pad - outer / 2,
+      width: frameW + outer,
+      height: frameH + outer,
       child: Transform.rotate(
+        alignment: _topLeftOfContent(
+          outerWidth: frameW + outer,
+          outerHeight: frameH + outer,
+          originX: outer / 2 + pad,
+          originY: outer / 2 + pad,
+        ),
         angle: widget.rotation,
         child: Stack(
           clipBehavior: Clip.none,
           children: [
             Positioned(
-              left: handle / 2,
-              top: handle / 2,
+              left: outer / 2,
+              top: outer / 2,
               width: frameW,
               height: frameH,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: widget.onDeselect,
-                onPanStart: (d) {
-                  widget.onGestureStart?.call();
-                  _lastGlobal = d.globalPosition;
-                },
-                onPanUpdate: (d) {
-                  final last = _lastGlobal;
-                  if (last == null) return;
-                  final delta = d.globalPosition - last;
-                  _lastGlobal = d.globalPosition;
-                  widget.onMove(delta.dx, delta.dy);
-                },
-                onPanEnd: (_) {
-                  _lastGlobal = null;
-                  widget.onGestureEnd?.call();
-                },
-                onPanCancel: () {
-                  _lastGlobal = null;
-                  widget.onGestureEnd?.call();
-                },
-                child: Container(
+                onPanStart: showHandles
+                    ? (d) {
+                        widget.onGestureStart?.call();
+                        _lastGlobal = d.globalPosition;
+                      }
+                    : null,
+                onPanUpdate: showHandles
+                    ? (d) {
+                        final last = _lastGlobal;
+                        if (last == null) return;
+                        final delta = d.globalPosition - last;
+                        _lastGlobal = d.globalPosition;
+                        widget.onMove(delta.dx, delta.dy);
+                      }
+                    : null,
+                onPanEnd: showHandles
+                    ? (_) {
+                        _lastGlobal = null;
+                        widget.onGestureEnd?.call();
+                      }
+                    : null,
+                onPanCancel: showHandles
+                    ? () {
+                        _lastGlobal = null;
+                        widget.onGestureEnd?.call();
+                      }
+                    : null,
+                child: DecoratedBox(
                   key: _boxKey,
-                  padding: const EdgeInsets.all(pad),
-                  clipBehavior: Clip.none,
                   decoration: BoxDecoration(
                     border: Border.all(
                       color: _borderColor,
                       width: _landscapeBorderWidth,
                     ),
                   ),
-                  child: SizedBox(
-                    width: widget.boxWidth,
-                    height: widget.boxHeight,
-                    child: widget.child,
+                  child: Padding(
+                    padding: const EdgeInsets.all(pad),
+                    child: SizedBox(
+                      width: widget.boxWidth,
+                      height: widget.boxHeight,
+                      child: widget.child,
+                    ),
                   ),
                 ),
               ),
             ),
-            _cornerHandle(left: 0, top: 0, signX: -1, signY: -1),
-            _cornerHandle(left: frameW, top: 0, signX: 1, signY: -1),
-            _cornerHandle(left: 0, top: frameH, signX: -1, signY: 1),
-            _cornerHandle(left: frameW, top: frameH, signX: 1, signY: 1),
-            _edgeHandle(
-              left: frameW / 2,
-              top: 0,
-              horizontal: false,
-              sign: -1,
-            ),
-            _edgeHandle(
-              left: frameW / 2,
-              top: frameH,
-              horizontal: false,
-              sign: 1,
-            ),
-            _edgeHandle(
-              left: 0,
-              top: frameH / 2,
-              horizontal: true,
-              sign: -1,
-            ),
-            _edgeHandle(
-              left: frameW,
-              top: frameH / 2,
-              horizontal: true,
-              sign: 1,
-            ),
+            if (showHandles) ...[
+              _cornerHandle(left: 0, top: 0, signX: -1, signY: -1),
+              _cornerHandle(left: frameW, top: 0, signX: 1, signY: -1),
+              _cornerHandle(left: 0, top: frameH, signX: -1, signY: 1),
+              _cornerHandle(left: frameW, top: frameH, signX: 1, signY: 1),
+              _edgeHandle(
+                left: frameW / 2,
+                top: 0,
+                horizontal: false,
+                sign: -1,
+              ),
+              _edgeHandle(
+                left: frameW / 2,
+                top: frameH,
+                horizontal: false,
+                sign: 1,
+              ),
+              _edgeHandle(
+                left: 0,
+                top: frameH / 2,
+                horizontal: true,
+                sign: -1,
+              ),
+              _edgeHandle(
+                left: frameW,
+                top: frameH / 2,
+                horizontal: true,
+                sign: 1,
+              ),
+            ],
           ],
         ),
       ),
+    );
+  }
+
+  /// Rotation pivot is the field's top-left, not the handle frame's corner.
+  Alignment _topLeftOfContent({
+    required double outerWidth,
+    required double outerHeight,
+    required double originX,
+    required double originY,
+  }) {
+    if (outerWidth <= 0 || outerHeight <= 0) return Alignment.topLeft;
+    return Alignment(
+      (originX / outerWidth) * 2 - 1,
+      (originY / outerHeight) * 2 - 1,
     );
   }
 

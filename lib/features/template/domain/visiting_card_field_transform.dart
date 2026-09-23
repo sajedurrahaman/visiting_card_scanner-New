@@ -1,4 +1,8 @@
 /// Interactive overlay fields that users can drag / resize / rotate.
+library;
+
+import 'dart:ui' show Color;
+
 enum VisitingCardOverlayField {
   name,
   designation,
@@ -32,6 +36,24 @@ class VisitingCardFieldTransform {
     required this.size,
     this.rotation = 0,
     this.width,
+    this.flipX = false,
+    this.flipY = false,
+    this.textColorValue,
+    this.opacity = 1,
+    this.letterSpacing = 0,
+    this.strokeWidth = 0,
+    this.strokeColorValue,
+    this.shadowBlur = 0,
+    this.shadowColorValue,
+    this.duplicateOf,
+    this.duplicateText,
+    this.duplicateImagePath,
+    this.locked = false,
+    this.fontPreset,
+    this.fontBoldMode = 0,
+    this.fontItalicMode = 0,
+    this.fontUnderline = false,
+    this.fontStrike = false,
   });
 
   final double left;
@@ -39,6 +61,52 @@ class VisitingCardFieldTransform {
   final double size;
   final double rotation;
   final double? width;
+  final bool flipX;
+  final bool flipY;
+
+  /// Override text color as ARGB. Null keeps the template color.
+  final int? textColorValue;
+  final double opacity;
+  final double letterSpacing;
+  final double strokeWidth;
+  final int? strokeColorValue;
+  final double shadowBlur;
+  final int? shadowColorValue;
+
+  /// Set on copies created by Duplicate. Value is the source field name.
+  final String? duplicateOf;
+  final String? duplicateText;
+  final String? duplicateImagePath;
+
+  /// When true, the landscape selection border has no resize handles.
+  final bool locked;
+
+  /// Index into [VisitingCardFontPreset.presets]. Null keeps the template font.
+  final int? fontPreset;
+
+  /// 0 = follow template/preset, 1 = force bold, 2 = force regular.
+  final int fontBoldMode;
+
+  /// 0 = follow template, 1 = italic, 2 = upright.
+  final int fontItalicMode;
+  final bool fontUnderline;
+  final bool fontStrike;
+
+  bool get hasFontOverride =>
+      fontPreset != null ||
+      fontBoldMode != 0 ||
+      fontItalicMode != 0 ||
+      fontUnderline ||
+      fontStrike;
+
+  Color? get textColor =>
+      textColorValue == null ? null : Color(textColorValue!);
+
+  Color? get strokeColor =>
+      strokeColorValue == null ? null : Color(strokeColorValue!);
+
+  Color? get shadowColor =>
+      shadowColorValue == null ? null : Color(shadowColorValue!);
 
   VisitingCardFieldTransform copyWith({
     double? left,
@@ -46,6 +114,24 @@ class VisitingCardFieldTransform {
     double? size,
     double? rotation,
     double? width,
+    bool? flipX,
+    bool? flipY,
+    int? textColorValue,
+    double? opacity,
+    double? letterSpacing,
+    double? strokeWidth,
+    int? strokeColorValue,
+    double? shadowBlur,
+    int? shadowColorValue,
+    String? duplicateOf,
+    String? duplicateText,
+    String? duplicateImagePath,
+    bool? locked,
+    int? fontPreset,
+    int? fontBoldMode,
+    int? fontItalicMode,
+    bool? fontUnderline,
+    bool? fontStrike,
   }) {
     return VisitingCardFieldTransform(
       left: left ?? this.left,
@@ -53,6 +139,24 @@ class VisitingCardFieldTransform {
       size: size ?? this.size,
       rotation: rotation ?? this.rotation,
       width: width ?? this.width,
+      flipX: flipX ?? this.flipX,
+      flipY: flipY ?? this.flipY,
+      textColorValue: textColorValue ?? this.textColorValue,
+      opacity: opacity ?? this.opacity,
+      letterSpacing: letterSpacing ?? this.letterSpacing,
+      strokeWidth: strokeWidth ?? this.strokeWidth,
+      strokeColorValue: strokeColorValue ?? this.strokeColorValue,
+      shadowBlur: shadowBlur ?? this.shadowBlur,
+      shadowColorValue: shadowColorValue ?? this.shadowColorValue,
+      duplicateOf: duplicateOf ?? this.duplicateOf,
+      duplicateText: duplicateText ?? this.duplicateText,
+      duplicateImagePath: duplicateImagePath ?? this.duplicateImagePath,
+      locked: locked ?? this.locked,
+      fontPreset: fontPreset ?? this.fontPreset,
+      fontBoldMode: fontBoldMode ?? this.fontBoldMode,
+      fontItalicMode: fontItalicMode ?? this.fontItalicMode,
+      fontUnderline: fontUnderline ?? this.fontUnderline,
+      fontStrike: fontStrike ?? this.fontStrike,
     );
   }
 
@@ -62,6 +166,24 @@ class VisitingCardFieldTransform {
         'size': size,
         'rotation': rotation,
         if (width != null) 'width': width,
+        if (flipX) 'flipX': flipX,
+        if (flipY) 'flipY': flipY,
+        if (textColorValue != null) 'textColor': textColorValue,
+        if (opacity != 1) 'opacity': opacity,
+        if (letterSpacing != 0) 'letterSpacing': letterSpacing,
+        if (strokeWidth != 0) 'strokeWidth': strokeWidth,
+        if (strokeColorValue != null) 'strokeColor': strokeColorValue,
+        if (shadowBlur != 0) 'shadowBlur': shadowBlur,
+        if (shadowColorValue != null) 'shadowColor': shadowColorValue,
+        if (duplicateOf != null) 'duplicateOf': duplicateOf,
+        if (duplicateText != null) 'duplicateText': duplicateText,
+        if (duplicateImagePath != null) 'duplicateImagePath': duplicateImagePath,
+        if (locked) 'locked': locked,
+        if (fontPreset != null) 'fontPreset': fontPreset,
+        if (fontBoldMode != 0) 'fontBoldMode': fontBoldMode,
+        if (fontItalicMode != 0) 'fontItalicMode': fontItalicMode,
+        if (fontUnderline) 'fontUnderline': fontUnderline,
+        if (fontStrike) 'fontStrike': fontStrike,
       };
 
   factory VisitingCardFieldTransform.fromJson(Map<String, dynamic> json) {
@@ -71,6 +193,24 @@ class VisitingCardFieldTransform {
       size: (json['size'] as num?)?.toDouble() ?? 0.14,
       rotation: (json['rotation'] as num?)?.toDouble() ?? 0,
       width: (json['width'] as num?)?.toDouble(),
+      flipX: json['flipX'] == true,
+      flipY: json['flipY'] == true,
+      textColorValue: (json['textColor'] as num?)?.toInt(),
+      opacity: (json['opacity'] as num?)?.toDouble() ?? 1,
+      letterSpacing: (json['letterSpacing'] as num?)?.toDouble() ?? 0,
+      strokeWidth: (json['strokeWidth'] as num?)?.toDouble() ?? 0,
+      strokeColorValue: (json['strokeColor'] as num?)?.toInt(),
+      shadowBlur: (json['shadowBlur'] as num?)?.toDouble() ?? 0,
+      shadowColorValue: (json['shadowColor'] as num?)?.toInt(),
+      duplicateOf: json['duplicateOf'] as String?,
+      duplicateText: json['duplicateText'] as String?,
+      duplicateImagePath: json['duplicateImagePath'] as String?,
+      locked: json['locked'] == true,
+      fontPreset: (json['fontPreset'] as num?)?.toInt(),
+      fontBoldMode: (json['fontBoldMode'] as num?)?.toInt() ?? 0,
+      fontItalicMode: (json['fontItalicMode'] as num?)?.toInt() ?? 0,
+      fontUnderline: json['fontUnderline'] == true,
+      fontStrike: json['fontStrike'] == true,
     );
   }
 

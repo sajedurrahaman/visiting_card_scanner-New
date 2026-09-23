@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -14,6 +15,7 @@ import 'package:visiting_card/features/home/domain/model/saved_file_model.dart';
 import 'package:visiting_card/features/home/presentation/view_model/home_view_model.dart';
 import 'package:visiting_card/features/scan/domain/saved_contact_info.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
+import 'package:visiting_card/features/template/domain/visiting_card_font_style.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_position_config.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_template_viewmodel.dart';
 
@@ -99,8 +101,15 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   final Map<String, VisitingCardFieldTransform> backOverlays = {};
   VisitingCardOverlayField? selectedOverlay;
 
+  /// Id of a Duplicate copy when that copy is selected.
+  String? selectedDuplicateId;
+
   /// True while user is dragging / resizing a field overlay (skip scroll toast).
   bool overlayGestureActive = false;
+
+  /// Download/save capture jumps to the side instead of animating the pager,
+  /// so the PNG is not a mid-swipe mix of the front and back.
+  bool jumpSideForCapture = false;
 
   final List<ContactFieldEntry> names = [ContactFieldEntry()];
   final List<ContactFieldEntry> designations = [ContactFieldEntry()];
@@ -272,9 +281,14 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   }
 
   void setSide(int index) {
-    if (index < 0 || index > 1 || index == sideIndex) return;
+    if (index < 0 || index > 1) return;
+    final changed = index != sideIndex;
+    if (!changed && !jumpSideForCapture) return;
     sideIndex = index;
-    selectedOverlay = null;
+    if (changed) {
+      selectedOverlay = null;
+      selectedDuplicateId = null;
+    }
     notifyListeners();
   }
 
@@ -298,6 +312,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       ..clear()
       ..addAll(transforms.back);
     selectedOverlay = null;
+    selectedDuplicateId = null;
     notifyListeners();
   }
 
@@ -364,15 +379,115 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         const VisitingCardFieldTransform(left: 0.4, top: 0.1, size: 0.14);
   }
 
+  bool get hasSelection =>
+      selectedOverlay != null || selectedDuplicateId != null;
+
+  static String duplicateKey(String id) => 'dup:$id';
+
+  bool _sourceIsImage(String? source) => source == 'logo' || source == 'qr';
+
+  bool get selectedIsImage {
+    if (selectedDuplicateId != null) {
+      return _sourceIsImage(
+        currentOverlays[duplicateKey(selectedDuplicateId!)]?.duplicateOf,
+      );
+    }
+    return selectedOverlay?.isImageOverlay ?? false;
+  }
+
+  VisitingCardFieldTransform? get activeTransform {
+    if (selectedDuplicateId != null) {
+      return currentOverlays[duplicateKey(selectedDuplicateId!)];
+    }
+    final field = selectedOverlay;
+    if (field == null) return null;
+    return resolvedTransform(field);
+  }
+
+  void _putActive(VisitingCardFieldTransform next) {
+    if (selectedDuplicateId != null) {
+      currentOverlays[duplicateKey(selectedDuplicateId!)] = next;
+    } else if (selectedOverlay != null) {
+      _ensureOverlay(selectedOverlay!);
+      currentOverlays[VisitingCardFieldTransform.keyOf(selectedOverlay!)] =
+          next;
+    }
+    notifyListeners();
+  }
+
   void selectOverlay(VisitingCardOverlayField field) {
     FocusManager.instance.primaryFocus?.unfocus();
     _ensureOverlay(field);
     selectedOverlay = field;
+    selectedDuplicateId = null;
+    notifyListeners();
+  }
+
+  void selectDuplicate(String id) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (currentOverlays[duplicateKey(id)] == null) return;
+    selectedOverlay = null;
+    selectedDuplicateId = id;
     notifyListeners();
   }
 
   void clearOverlaySelection() {
-    if (selectedOverlay == null) return;
+    if (selectedOverlay == null && selectedDuplicateId == null) return;
+    selectedOverlay = null;
+    selectedDuplicateId = null;
+    overlayGestureActive = false;
+    notifyListeners();
+  }
+
+  /// Copies the selected field slightly down and to the right, then selects it.
+  void duplicateSelectedOverlay() {
+    final current = activeTransform;
+    if (current == null) return;
+    final sourceName = current.duplicateOf ?? selectedOverlay?.name;
+    if (sourceName == null) return;
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+    final text = current.duplicateText ??
+        (selectedOverlay == null ? '' : overlayText(selectedOverlay!));
+    final image = current.duplicateImagePath ??
+        (sourceName == 'logo'
+            ? logoAssetPath
+            : sourceName == 'qr'
+                ? qrAssetPath
+                : null);
+    currentOverlays[duplicateKey(id)] = current.copyWith(
+      left: (current.left + 0.04).clamp(-0.2, 0.9),
+      top: (current.top + 0.06).clamp(-0.2, 0.9),
+      duplicateOf: sourceName,
+      duplicateText: text,
+      duplicateImagePath: image,
+    );
+    selectedOverlay = null;
+    selectedDuplicateId = id;
+    notifyListeners();
+  }
+
+  /// Removes the selected field from the card and clears the selection.
+  void deleteSelectedOverlay() {
+    if (selectedDuplicateId != null) {
+      currentOverlays.remove(duplicateKey(selectedDuplicateId!));
+      selectedDuplicateId = null;
+      overlayGestureActive = false;
+      notifyListeners();
+      return;
+    }
+    final field = selectedOverlay;
+    if (field == null) return;
+    switch (field) {
+      case VisitingCardOverlayField.logo:
+        hasChosenLogo = false;
+        logoAssetPath = null;
+      case VisitingCardOverlayField.qr:
+        hasChosenQr = false;
+        qrAssetPath = null;
+      default:
+        setOverlayText(field, '');
+    }
+    currentOverlays.remove(VisitingCardFieldTransform.keyOf(field));
     selectedOverlay = null;
     overlayGestureActive = false;
     notifyListeners();
@@ -400,12 +515,16 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     VisitingCardOverlayField field,
     double pixelDx,
     double pixelDy,
-    Size cardSize,
-  ) {
+    Size cardSize, {
+    String? duplicateId,
+  }) {
     if (cardSize.width <= 0 || cardSize.height <= 0) return;
-    _ensureOverlay(field);
-    final key = VisitingCardFieldTransform.keyOf(field);
-    final current = currentOverlays[key]!;
+    final key = duplicateId == null
+        ? VisitingCardFieldTransform.keyOf(field)
+        : duplicateKey(duplicateId);
+    if (duplicateId == null) _ensureOverlay(field);
+    final current = currentOverlays[key];
+    if (current == null) return;
     currentOverlays[key] = current.copyWith(
       left: (current.left + pixelDx / cardSize.width).clamp(-0.2, 0.95),
       top: (current.top + pixelDy / cardSize.height).clamp(-0.2, 0.95),
@@ -413,21 +532,291 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Landscape arrow pad: nudge the selected field by a fraction of the card.
+  void nudgeSelectedOverlay(double dxFraction, double dyFraction) {
+    final current = activeTransform;
+    if (current == null) return;
+    _putActive(
+      current.copyWith(
+        left: (current.left + dxFraction).clamp(-0.2, 0.95),
+        top: (current.top + dyFraction).clamp(-0.2, 0.95),
+      ),
+    );
+  }
+
+  /// Text currently on the selected field, including a duplicate copy.
+  String get selectedOverlaySample {
+    if (selectedDuplicateId != null) {
+      final copy =
+          currentOverlays[duplicateKey(selectedDuplicateId!)]?.duplicateText;
+      if (copy != null && copy.trim().isNotEmpty) return copy.trim();
+    }
+    final field = selectedOverlay ?? _fontSourceField;
+    if (field == null || field.isImageOverlay) return '';
+    return overlayText(field).trim();
+  }
+
+  String overlayText(VisitingCardOverlayField field) {
+    return switch (field) {
+      VisitingCardOverlayField.name => displayName,
+      VisitingCardOverlayField.designation => displayDesignation,
+      VisitingCardOverlayField.company => displayCompany,
+      VisitingCardOverlayField.tagline => displayTagline,
+      VisitingCardOverlayField.phone =>
+        phones.isEmpty ? '' : phones.first.value,
+      VisitingCardOverlayField.email =>
+        emails.isEmpty ? '' : emails.first.value,
+      VisitingCardOverlayField.website =>
+        websites.isEmpty ? '' : websites.first.value,
+      VisitingCardOverlayField.address => displayAddress,
+      VisitingCardOverlayField.logo || VisitingCardOverlayField.qr => '',
+    };
+  }
+
+  void setOverlayText(VisitingCardOverlayField field, String value) {
+    if (selectedDuplicateId != null && selectedOverlay == null) {
+      final current = currentOverlays[duplicateKey(selectedDuplicateId!)];
+      if (current == null) return;
+      currentOverlays[duplicateKey(selectedDuplicateId!)] =
+          current.copyWith(duplicateText: value);
+      notifyListeners();
+      return;
+    }
+    switch (field) {
+      case VisitingCardOverlayField.name:
+        updateSimpleField(names, 0, value);
+      case VisitingCardOverlayField.designation:
+        updateSimpleField(designations, 0, value);
+      case VisitingCardOverlayField.company:
+        updateSimpleField(companies, 0, value);
+      case VisitingCardOverlayField.tagline:
+        updateSimpleField(taglines, 0, value);
+      case VisitingCardOverlayField.phone:
+        updateTypedField(phones, 0, value: value);
+      case VisitingCardOverlayField.email:
+        updateTypedField(emails, 0, value: value);
+      case VisitingCardOverlayField.website:
+        updateTypedField(websites, 0, value: value);
+      case VisitingCardOverlayField.address:
+        updateSimpleField(addresses, 0, value);
+      case VisitingCardOverlayField.logo:
+      case VisitingCardOverlayField.qr:
+        break;
+    }
+  }
+
   void resizeOverlay(
     VisitingCardOverlayField field,
     double pixelDeltaY,
-    Size cardSize,
-  ) {
+    Size cardSize, {
+    String? duplicateId,
+  }) {
     if (cardSize.width <= 0) return;
-    _ensureOverlay(field);
-    final key = VisitingCardFieldTransform.keyOf(field);
-    final current = currentOverlays[key]!;
-    final isImage = field.isImageOverlay;
+    final key = duplicateId == null
+        ? VisitingCardFieldTransform.keyOf(field)
+        : duplicateKey(duplicateId);
+    if (duplicateId == null) _ensureOverlay(field);
+    final current = currentOverlays[key];
+    if (current == null) return;
+    final isImage = duplicateId == null
+        ? field.isImageOverlay
+        : _sourceIsImage(current.duplicateOf);
     final next = isImage
         ? (current.size + pixelDeltaY / cardSize.width).clamp(0.06, 0.55)
         : (current.size + pixelDeltaY * 0.08).clamp(4.0, 28.0);
     currentOverlays[key] = current.copyWith(size: next);
     notifyListeners();
+  }
+
+  bool get selectedIsLocked => activeTransform?.locked ?? false;
+
+  /// Landscape Lock: hide the eight resize dots on the selected field.
+  void toggleSelectedOverlayLock() {
+    final current = activeTransform;
+    if (current == null) return;
+    _putActive(current.copyWith(locked: !current.locked));
+  }
+
+  VisitingCardOverlayField? get _fontSourceField {
+    if (selectedDuplicateId != null) {
+      final source =
+          currentOverlays[duplicateKey(selectedDuplicateId!)]?.duplicateOf;
+      return VisitingCardFieldTransform.fieldFromKey(source ?? '');
+    }
+    return selectedOverlay;
+  }
+
+  VisitingCardFieldPosition? selectedTextPosition() {
+    final field = _fontSourceField;
+    if (field == null || field.isImageOverlay) return null;
+    final layout = VisitingCardPositionConfig.forTemplate(
+      templateId: templateId,
+      isHorizontal: isHorizontal,
+    );
+    final side = isFront ? layout.front : layout.back;
+    return switch (field) {
+      VisitingCardOverlayField.name => side.name,
+      VisitingCardOverlayField.designation => side.designation,
+      VisitingCardOverlayField.company => side.company,
+      VisitingCardOverlayField.tagline => side.tagline,
+      VisitingCardOverlayField.phone => side.phone,
+      VisitingCardOverlayField.email => side.email,
+      VisitingCardOverlayField.website => side.website,
+      VisitingCardOverlayField.address => side.address,
+      VisitingCardOverlayField.logo || VisitingCardOverlayField.qr => null,
+    };
+  }
+
+  bool get selectedFontIsBold {
+    final current = activeTransform;
+    if (current == null) return false;
+    if (current.fontBoldMode == 1) return true;
+    if (current.fontBoldMode == 2) return false;
+    final preset = VisitingCardFontPreset.of(current.fontPreset);
+    if (preset != null) return preset.bold;
+    final weight = selectedTextPosition()?.fontWeight ?? FontWeight.w400;
+    return weight.value >= FontWeight.w600.value;
+  }
+
+  bool get selectedFontIsItalic {
+    final current = activeTransform;
+    if (current == null) return false;
+    if (current.fontItalicMode == 1) return true;
+    if (current.fontItalicMode == 2) return false;
+    return selectedTextPosition()?.fontStyle == FontStyle.italic;
+  }
+
+  void setSelectedFontPreset(int index) {
+    final current = activeTransform;
+    if (current == null || selectedIsImage) return;
+    if (index < 0 || index >= VisitingCardFontPreset.presets.length) return;
+    final preset = VisitingCardFontPreset.presets[index];
+    _putActive(
+      current.copyWith(
+        fontPreset: index,
+        fontBoldMode: preset.bold ? 1 : 2,
+      ),
+    );
+  }
+
+  void toggleSelectedFontBold() {
+    final current = activeTransform;
+    if (current == null || selectedIsImage) return;
+    _putActive(current.copyWith(fontBoldMode: selectedFontIsBold ? 2 : 1));
+  }
+
+  void toggleSelectedFontItalic() {
+    final current = activeTransform;
+    if (current == null || selectedIsImage) return;
+    _putActive(current.copyWith(fontItalicMode: selectedFontIsItalic ? 2 : 1));
+  }
+
+  void toggleSelectedFontUnderline() {
+    final current = activeTransform;
+    if (current == null || selectedIsImage) return;
+    _putActive(current.copyWith(fontUnderline: !current.fontUnderline));
+  }
+
+  void toggleSelectedFontStrike() {
+    final current = activeTransform;
+    if (current == null || selectedIsImage) return;
+    _putActive(current.copyWith(fontStrike: !current.fontStrike));
+  }
+
+  void flipSelectedOverlay({required bool horizontal}) {
+    final current = activeTransform;
+    if (current == null) return;
+    _putActive(
+      horizontal
+          ? current.copyWith(flipX: !current.flipX)
+          : current.copyWith(flipY: !current.flipY),
+    );
+  }
+
+  void setSelectedOverlayColor(Color color) {
+    if (selectedIsImage) return;
+    final current = activeTransform;
+    if (current == null) return;
+    _putActive(current.copyWith(textColorValue: color.toARGB32()));
+  }
+
+  static const textSizeMin = 4.0;
+  static const textSizeMax = 28.0;
+  static const imageSizeMin = 0.06;
+  static const imageSizeMax = 0.55;
+
+  /// Slider position 0–1 for the selected field's current size.
+  double selectedOverlaySizeFraction() {
+    final current = activeTransform;
+    if (current == null) return 0;
+    final min = selectedIsImage ? imageSizeMin : textSizeMin;
+    final max = selectedIsImage ? imageSizeMax : textSizeMax;
+    return ((current.size - min) / (max - min)).clamp(0.0, 1.0);
+  }
+
+  /// Landscape Size slider. [fraction] is 0–1 across the field's size range.
+  void setSelectedOverlaySizeFraction(double fraction) {
+    final current = activeTransform;
+    if (current == null) return;
+    final t = fraction.clamp(0.0, 1.0);
+    final min = selectedIsImage ? imageSizeMin : textSizeMin;
+    final max = selectedIsImage ? imageSizeMax : textSizeMax;
+    _putActive(current.copyWith(size: min + t * (max - min)));
+  }
+
+  double selectedAdjustFraction(String tool) {
+    final current = activeTransform;
+    if (current == null) return tool == 'Opacity' ? 1 : 0;
+    return switch (tool) {
+      'Rotate' => _unitTurns(current.rotation),
+      'Opacity' => current.opacity.clamp(0.0, 1.0),
+      'Spacing' => (current.letterSpacing / 12).clamp(0.0, 1.0),
+      'Stroke' => (current.strokeWidth / 8).clamp(0.0, 1.0),
+      'Shadow' => (current.shadowBlur / 18).clamp(0.0, 1.0),
+      _ => 0,
+    };
+  }
+
+  void setSelectedAdjustFraction(String tool, double fraction) {
+    final current = activeTransform;
+    if (current == null) return;
+    if (tool != 'Rotate' && tool != 'Opacity' && selectedIsImage) return;
+    final f = fraction.clamp(0.0, 1.0);
+    _putActive(
+      switch (tool) {
+        'Rotate' => current.copyWith(rotation: f * math.pi * 2),
+        'Opacity' => current.copyWith(opacity: f),
+        'Spacing' => current.copyWith(letterSpacing: f * 12),
+        'Stroke' => current.copyWith(strokeWidth: f * 8),
+        'Shadow' => current.copyWith(shadowBlur: f * 18),
+        _ => current,
+      },
+    );
+  }
+
+  void setSelectedStrokeColor(Color color) =>
+      _setSelectedPaintColor(stroke: true, color: color);
+
+  void setSelectedShadowColor(Color color) =>
+      _setSelectedPaintColor(stroke: false, color: color);
+
+  void _setSelectedPaintColor({required bool stroke, required Color color}) {
+    if (selectedIsImage) return;
+    final current = activeTransform;
+    if (current == null) return;
+    final argb = color.toARGB32();
+    _putActive(
+      stroke
+          ? current.copyWith(strokeColorValue: argb)
+          : current.copyWith(shadowColorValue: argb),
+    );
+  }
+
+  double _unitTurns(double radians) {
+    var turns = radians / (math.pi * 2);
+    turns = turns - turns.floorToDouble();
+    if (turns < 0) turns += 1;
+    return turns.clamp(0.0, 1.0);
   }
 
   /// Landscape: corner drag — keep opposite corner fixed while scaling.
@@ -439,15 +828,22 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     bool fixBottom = false,
     double? seedWidthFraction,
     double? seedHeightPx,
+    String? duplicateId,
   }) {
     if (cardSize.width <= 0 || cardSize.height <= 0) return;
-    _ensureOverlay(field);
-    final key = VisitingCardFieldTransform.keyOf(field);
-    final current = currentOverlays[key]!;
+    final key = duplicateId == null
+        ? VisitingCardFieldTransform.keyOf(field)
+        : duplicateKey(duplicateId);
+    if (duplicateId == null) _ensureOverlay(field);
+    final current = currentOverlays[key];
+    if (current == null) return;
+    final isImage = duplicateId == null
+        ? field.isImageOverlay
+        : _sourceIsImage(current.duplicateOf);
     var left = current.left;
     var top = current.top;
 
-    if (field.isImageOverlay) {
+    if (isImage) {
       final next =
           (current.size + pixelDelta / cardSize.width).clamp(0.06, 0.55);
       final applied = next - current.size;
@@ -493,13 +889,20 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     bool fixOpposite = false,
     double? seedWidthFraction,
     double? seedHeightPx,
+    String? duplicateId,
   }) {
     if (cardSize.width <= 0 || cardSize.height <= 0) return;
-    _ensureOverlay(field);
-    final key = VisitingCardFieldTransform.keyOf(field);
-    final current = currentOverlays[key]!;
+    final key = duplicateId == null
+        ? VisitingCardFieldTransform.keyOf(field)
+        : duplicateKey(duplicateId);
+    if (duplicateId == null) _ensureOverlay(field);
+    final current = currentOverlays[key];
+    if (current == null) return;
+    final isImage = duplicateId == null
+        ? field.isImageOverlay
+        : _sourceIsImage(current.duplicateOf);
     if (horizontal) {
-      if (field.isImageOverlay) {
+      if (isImage) {
         final next =
             (current.size + pixelDelta / cardSize.width).clamp(0.06, 0.55);
         final applied = next - current.size;
@@ -522,7 +925,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
             current.copyWith(width: nextW, left: left);
       }
     } else {
-      if (field.isImageOverlay) {
+      if (isImage) {
         final next =
             (current.size + pixelDelta / cardSize.height).clamp(0.06, 0.55);
         final appliedPx = (next - current.size) * cardSize.height;
@@ -547,11 +950,18 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void rotateOverlay(VisitingCardOverlayField field, double absoluteRadians) {
-    _ensureOverlay(field);
-    final key = VisitingCardFieldTransform.keyOf(field);
-    currentOverlays[key] =
-        currentOverlays[key]!.copyWith(rotation: absoluteRadians);
+  void rotateOverlay(
+    VisitingCardOverlayField field,
+    double absoluteRadians, {
+    String? duplicateId,
+  }) {
+    final key = duplicateId == null
+        ? VisitingCardFieldTransform.keyOf(field)
+        : duplicateKey(duplicateId);
+    if (duplicateId == null) _ensureOverlay(field);
+    final current = currentOverlays[key];
+    if (current == null) return;
+    currentOverlays[key] = current.copyWith(rotation: absoluteRadians);
     notifyListeners();
   }
 
@@ -576,6 +986,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       ..clear()
       ..addAll(other.backOverlays);
     selectedOverlay = null;
+    selectedDuplicateId = null;
     notifyListeners();
   }
 
@@ -622,6 +1033,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         ..clear()
         ..addAll(fieldTransforms.back);
       selectedOverlay = null;
+      selectedDuplicateId = null;
     }
     notifyListeners();
   }

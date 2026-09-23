@@ -3,6 +3,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gal/gal.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
@@ -11,6 +13,9 @@ import 'package:visiting_card/features/home/presentation/view_model/home_view_mo
 import 'package:visiting_card/features/parent/presentation/view_model/parent_view_model.dart';
 import 'package:visiting_card/features/scan/presentation/helper/visiting_card_share_helper.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_export_utils.dart';
+import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_edit_text_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_font_style_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_rename_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_logo_picker_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
@@ -62,6 +67,7 @@ class _VisitingCardLandscapeEditScreenState
   bool _isDownloading = false;
   bool _busy = false;
   bool _booting = true;
+  String _panel = '';
 
   @override
   void initState() {
@@ -102,6 +108,7 @@ class _VisitingCardLandscapeEditScreenState
     VisitingCardEditContactViewModel vm,
     int side,
   ) async {
+    vm.jumpSideForCapture = true;
     vm.setSide(side);
     await waitForVisitingCardCaptureFrame();
     try {
@@ -155,12 +162,13 @@ class _VisitingCardLandscapeEditScreenState
     final isUpdate = vm.isUpdatingExisting;
     final phoneContact = vm.buildSavedContact();
 
+    vm.jumpSideForCapture = true;
     final ok = await vm.saveCard(
       homeViewModel: home,
       folderViewModel: folder,
       captureSide: (side) => _captureSide(vm, side),
     );
-
+    vm.jumpSideForCapture = false;
     if (!mounted) return;
     vm.setSide(previous);
     setState(() => _busy = false);
@@ -193,6 +201,7 @@ class _VisitingCardLandscapeEditScreenState
 
     final vm = context.read<VisitingCardEditContactViewModel>();
     final previous = vm.sideIndex;
+    vm.jumpSideForCapture = true;
 
     try {
       final hasAccess = await Gal.hasAccess();
@@ -201,6 +210,7 @@ class _VisitingCardLandscapeEditScreenState
       final frontBytes = await _captureSide(vm, 0);
       final backBytes = await _captureSide(vm, 1);
       if (!mounted) return;
+      vm.jumpSideForCapture = false;
       vm.setSide(previous);
 
       if (frontBytes == null || backBytes == null) {
@@ -224,9 +234,11 @@ class _VisitingCardLandscapeEditScreenState
       ui.AppToast.success(context, 'Downloaded to gallery');
     } catch (_) {
       if (!mounted) return;
+      vm.jumpSideForCapture = false;
       vm.setSide(previous);
       ui.AppToast.show(context, message: 'Failed to download visiting card');
     } finally {
+      vm.jumpSideForCapture = false;
       if (mounted) setState(() => _isDownloading = false);
     }
   }
@@ -251,6 +263,175 @@ class _VisitingCardLandscapeEditScreenState
     ui.AppToast.show(context, message: '$label coming soon');
   }
 
+  Future<void> _onEditText() async {
+    final vm = context.read<VisitingCardEditContactViewModel>();
+    if (!vm.hasSelection || vm.selectedIsImage) {
+      if (vm.selectedIsImage) {
+        ui.AppToast.show(context, message: 'This field has no text');
+      }
+      return;
+    }
+    final field = vm.selectedOverlay ?? VisitingCardOverlayField.name;
+    final next = await VisitingCardLandscapeEditTextScreen.open(
+      context,
+      initialValue: vm.selectedDuplicateId == null
+          ? vm.overlayText(field)
+          : vm.currentOverlays[VisitingCardEditContactViewModel.duplicateKey(
+                vm.selectedDuplicateId!,
+              )]
+                  ?.duplicateText ??
+              '',
+    );
+    if (next == null || !mounted) return;
+    vm.setOverlayText(field, next);
+  }
+
+  void _togglePanel(String name) {
+    final vm = context.read<VisitingCardEditContactViewModel>();
+    if (!vm.hasSelection) return;
+    const textOnly = {'Color', 'Spacing', 'Stroke', 'Shadow'};
+    if (textOnly.contains(name) && vm.selectedIsImage) {
+      ui.AppToast.show(context, message: 'Applies to text');
+      return;
+    }
+    setState(() => _panel = _panel == name ? '' : name);
+  }
+
+  void _onColor() => _togglePanel('Color');
+
+  void _onSize() => _togglePanel('Size');
+
+  Future<void> _onFontStyle() async {
+    final vm = context.read<VisitingCardEditContactViewModel>();
+    if (!vm.hasSelection || vm.selectedIsImage) {
+      if (vm.selectedIsImage) {
+        ui.AppToast.show(context, message: 'Applies to text');
+      }
+      return;
+    }
+    await VisitingCardLandscapeFontStyleScreen.open(context);
+  }
+
+  void _onDelete() {
+    context.read<VisitingCardEditContactViewModel>().deleteSelectedOverlay();
+    setState(() => _panel = '');
+  }
+
+  void _onDuplicate() {
+    context.read<VisitingCardEditContactViewModel>().duplicateSelectedOverlay();
+  }
+
+  void _onLock() {
+    context.read<VisitingCardEditContactViewModel>().toggleSelectedOverlayLock();
+  }
+
+  bool get _isAdjustPanel =>
+      _panel == 'Rotate' ||
+      _panel == 'Opacity' ||
+      _panel == 'Stroke' ||
+      _panel == 'Spacing' ||
+      _panel == 'Shadow';
+
+  Future<void> _pickEffectColor(String tool) async {
+    final vm = context.read<VisitingCardEditContactViewModel>();
+    final current = vm.activeTransform;
+    if (current == null) return;
+    final initial = tool == 'Stroke'
+        ? (current.strokeColor ?? const Color(0xFF000000))
+        : (current.shadowColor ?? const Color(0xFF000000));
+    final chosen = await _chooseColor(initial);
+    if (chosen == null || !mounted) return;
+    if (tool == 'Stroke') {
+      vm.setSelectedStrokeColor(chosen);
+    } else {
+      vm.setSelectedShadowColor(chosen);
+    }
+  }
+
+  Future<void> _pickCustomColor() async {
+    final vm = context.read<VisitingCardEditContactViewModel>();
+    final current = vm.activeTransform;
+    if (current == null) return;
+    final chosen = await _chooseColor(
+      current.textColor ?? const Color(0xFF1A1A1A),
+    );
+    if (chosen == null || !mounted) return;
+    vm.setSelectedOverlayColor(chosen);
+  }
+
+  Future<Color?> _chooseColor(Color initial) {
+    var picked = initial;
+    return showDialog<Color>(
+      context: context,
+      barrierColor: const Color(0x99000000),
+      builder: (dialogContext) {
+        final viewHeight = MediaQuery.sizeOf(dialogContext).height;
+        final ring = (viewHeight * 0.62).clamp(160.0, 240.0);
+        return Dialog(
+          backgroundColor: const Color(0xFF003303),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: StatefulBuilder(
+            builder: (context, setDialogState) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _LandscapeHueRing(
+                      color: picked,
+                      size: ring,
+                      onChanged: (color) {
+                        setDialogState(() => picked = color);
+                      },
+                    ),
+                    const SizedBox(width: 18),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: picked,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: const Color(0x66FFFFFF)),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _ColorPickerButton(
+                          label: 'Apply',
+                          gradient: const LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              Color(0xFF3DCB6A),
+                              Color(0xFF0B5D2A),
+                            ],
+                          ),
+                          onTap: () => Navigator.pop(dialogContext, picked),
+                        ),
+                        const SizedBox(height: 10),
+                        _ColorPickerButton(
+                          label: 'Cancel',
+                          color: const Color(0xFFE53935),
+                          onTap: () => Navigator.pop(dialogContext),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<VisitingCardEditContactViewModel>();
@@ -266,7 +447,7 @@ class _VisitingCardLandscapeEditScreenState
         child: Stack(
           children: [
             Padding(
-              padding: EdgeInsets.all(pad),
+              padding: EdgeInsets.fromLTRB(pad, pad, pad, 0),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -274,10 +455,10 @@ class _VisitingCardLandscapeEditScreenState
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         final ratio = vm.isHorizontal ? 1.75 : 0.63;
-                        const scale = 0.80;
+                        const scale = 0.68;
                         var cardW = constraints.maxWidth * scale;
                         var cardH = cardW / ratio;
-                        final maxH = constraints.maxHeight * 0.84;
+                        final maxH = constraints.maxHeight * 0.70;
                         if (cardH > maxH) {
                           cardH = maxH;
                           cardW = cardH * ratio;
@@ -305,13 +486,14 @@ class _VisitingCardLandscapeEditScreenState
                                         showPager: false,
                                         enableFieldTransform: true,
                                         selectionBorderOnlyWhenSelected: true,
+                                        pageGap: 4,
                                       ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 10),
                             Opacity(
                               opacity: _booting ? 0 : 1,
                               child: _LandscapeSidePager(
@@ -323,6 +505,40 @@ class _VisitingCardLandscapeEditScreenState
                               ),
                             ),
                             const Spacer(),
+                            if (_panel == 'Color' &&
+                                vm.hasSelection &&
+                                !vm.selectedIsImage)
+                              _TextColorBar(
+                                selected: vm.activeTransform?.textColor,
+                                onClose: () => setState(() => _panel = ''),
+                                onPick: vm.setSelectedOverlayColor,
+                                onCustom: _pickCustomColor,
+                              )
+                            else if (_panel == 'Size' && vm.hasSelection)
+                              _TextSizeBar(
+                                fraction: vm.selectedOverlaySizeFraction(),
+                                onClose: () => setState(() => _panel = ''),
+                                onChanged: vm.setSelectedOverlaySizeFraction,
+                              )
+                            else if (_isAdjustPanel &&
+                                vm.hasSelection &&
+                                !(vm.selectedIsImage &&
+                                    (_panel == 'Spacing' ||
+                                        _panel == 'Stroke' ||
+                                        _panel == 'Shadow')))
+                              _AdjustBar(
+                                label: _panel,
+                                fraction: vm.selectedAdjustFraction(_panel),
+                                showColorPicker: _panel == 'Stroke' ||
+                                    _panel == 'Shadow',
+                                onClose: () => setState(() => _panel = ''),
+                                onChanged: (value) =>
+                                    vm.setSelectedAdjustFraction(_panel, value),
+                                onPickColor: _panel == 'Stroke' ||
+                                        _panel == 'Shadow'
+                                    ? () => _pickEffectColor(_panel)
+                                    : null,
+                              ),
                           ],
                         );
                       },
@@ -357,67 +573,92 @@ class _VisitingCardLandscapeEditScreenState
                                 ],
                               ),
                             ),
-                            child: ListView(
-                              padding: EdgeInsets.zero,
-                              children: [
-                                _RailItem(
-                                  icon: Icons.save_outlined,
-                                  label: 'Save',
-                                  onTap: _onSave,
-                                ),
-                                _RailItem(
-                                  icon: Icons.download_outlined,
-                                  label: 'Download',
-                                  onTap: _onDownload,
-                                ),
-                                _RailItem(
-                                  icon: Icons.playlist_add_outlined,
-                                  label: 'Text',
-                                  onTap: () => _comingSoon('Text'),
-                                ),
-                                _RailItem(
-                                  icon: Icons.widgets_outlined,
-                                  label: 'Icon',
-                                  onTap: () => _comingSoon('Icon'),
-                                ),
-                                _RailItem(
-                                  icon: Icons.category_outlined,
-                                  label: 'Shape',
-                                  onTap: () => _comingSoon('Shape'),
-                                ),
-                                _RailItem(
-                                  icon: Icons.hexagon_outlined,
-                                  label: 'Logos',
-                                  onTap: _onPickLogo,
-                                ),
-                                _RailItem(
-                                  icon: Icons.add_photo_alternate_outlined,
-                                  label: 'Images',
-                                  onTap: _onPickImage,
-                                ),
-                                _RailItem(
-                                  icon: Icons.dashboard_outlined,
-                                  label: 'Template',
-                                  onTap: () => _comingSoon('Template'),
-                                ),
-                                _RailItem(
-                                  icon: Icons.visibility_outlined,
-                                  label: 'Preview',
-                                  onTap: () {
-                                    vm.setSide(0);
-                                    ui.AppToast.show(
-                                      context,
-                                      message: 'Showing front preview',
-                                    );
-                                  },
-                                ),
-                                _RailItem(
-                                  icon: Icons.person_outline,
-                                  label: 'Profile',
-                                  onTap: () => _comingSoon('Profile'),
-                                ),
-                              ],
-                            ),
+                            child: !vm.hasSelection
+                                ? ListView(
+                                    padding: EdgeInsets.zero,
+                                    children: [
+                                      _RailItem(
+                                        icon: Icons.save_outlined,
+                                        label: 'Save',
+                                        onTap: _onSave,
+                                      ),
+                                      _RailItem(
+                                        icon: Icons.download_outlined,
+                                        label: 'Download',
+                                        onTap: _onDownload,
+                                      ),
+                                      _RailItem(
+                                        icon: Icons.playlist_add_outlined,
+                                        label: 'Text',
+                                        onTap: () => _comingSoon('Text'),
+                                      ),
+                                      _RailItem(
+                                        icon: Icons.widgets_outlined,
+                                        label: 'Icon',
+                                        onTap: () => _comingSoon('Icon'),
+                                      ),
+                                      _RailItem(
+                                        icon: Icons.category_outlined,
+                                        label: 'Shape',
+                                        onTap: () => _comingSoon('Shape'),
+                                      ),
+                                      _RailItem(
+                                        icon: Icons.hexagon_outlined,
+                                        label: 'Logos',
+                                        onTap: _onPickLogo,
+                                      ),
+                                      _RailItem(
+                                        icon: Icons.add_photo_alternate_outlined,
+                                        label: 'Images',
+                                        onTap: _onPickImage,
+                                      ),
+                                      _RailItem(
+                                        icon: Icons.dashboard_outlined,
+                                        label: 'Template',
+                                        onTap: () => _comingSoon('Template'),
+                                      ),
+                                      _RailItem(
+                                        icon: Icons.visibility_outlined,
+                                        label: 'Preview',
+                                        onTap: () {
+                                          vm.setSide(0);
+                                          ui.AppToast.show(
+                                            context,
+                                            message: 'Showing front preview',
+                                          );
+                                        },
+                                      ),
+                                      _RailItem(
+                                        icon: Icons.person_outline,
+                                        label: 'Profile',
+                                        onTap: () => _comingSoon('Profile'),
+                                      ),
+                                    ],
+                                  )
+                                : _SelectedFieldRail(
+                                    showTextTools: !vm.selectedIsImage,
+                                    onItem: _comingSoon,
+                                    onEditText: _onEditText,
+                                    onColor: _onColor,
+                                    colorActive: _panel == 'Color',
+                                    onSize: _onSize,
+                                    sizeActive: _panel == 'Size',
+                                    onFontStyle: _onFontStyle,
+                                    onDelete: _onDelete,
+                                    onDuplicate: _onDuplicate,
+                                    onLock: _onLock,
+                                    locked: vm.selectedIsLocked,
+                                    onPanel: _togglePanel,
+                                    activePanel: _panel,
+                                    onClose: () {
+                                      setState(() => _panel = '');
+                                      vm.clearOverlaySelection();
+                                    },
+                                    onNudge: vm.nudgeSelectedOverlay,
+                                    onFlip: (horizontal) => vm.flipSelectedOverlay(
+                                      horizontal: horizontal,
+                                    ),
+                                  ),
                           ),
                         ),
                       ],
@@ -681,6 +922,897 @@ class _RailItem extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+const _selectIconDir = 'assets/visiting_card_select_text_icon';
+
+/// Right rail shown while a card field is selected (Figma text tools).
+class _SelectedFieldRail extends StatelessWidget {
+  const _SelectedFieldRail({
+    required this.showTextTools,
+    required this.onItem,
+    required this.onEditText,
+    required this.onColor,
+    required this.colorActive,
+    required this.onSize,
+    required this.sizeActive,
+    required this.onFontStyle,
+    required this.onDelete,
+    required this.onDuplicate,
+    required this.onLock,
+    required this.locked,
+    required this.onPanel,
+    required this.activePanel,
+    required this.onClose,
+    required this.onNudge,
+    required this.onFlip,
+  });
+
+  final bool showTextTools;
+  final void Function(String label) onItem;
+  final VoidCallback onEditText;
+  final VoidCallback onColor;
+  final bool colorActive;
+  final VoidCallback onSize;
+  final bool sizeActive;
+  final VoidCallback onFontStyle;
+  final VoidCallback onDelete;
+  final VoidCallback onDuplicate;
+  final VoidCallback onLock;
+  final bool locked;
+  final void Function(String name) onPanel;
+  final String activePanel;
+  final VoidCallback onClose;
+  final void Function(double dxFraction, double dyFraction) onNudge;
+  final void Function(bool horizontal) onFlip;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        if (showTextTools)
+          _SelectRailItem(
+            asset: '$_selectIconDir/edit_text_icon.svg',
+            label: 'Edit Text',
+            onTap: onEditText,
+          ),
+        if (showTextTools)
+          _SelectRailItem(
+            asset: '$_selectIconDir/color_icon.svg',
+            label: 'Color',
+            highlighted: colorActive,
+            onTap: onColor,
+          ),
+        _SelectRailItem(
+          asset: '$_selectIconDir/font_size_icon.svg',
+          label: 'Size',
+          highlighted: sizeActive,
+          onTap: onSize,
+        ),
+        if (showTextTools)
+          _SelectRailItem(
+            asset: '$_selectIconDir/font_style_icon.svg',
+            label: 'Font style',
+            onTap: onFontStyle,
+          ),
+        _SelectRailItem(
+          asset: '$_selectIconDir/rotate_icon.svg',
+          label: 'Rotate',
+          highlighted: activePanel == 'Rotate',
+          onTap: () => onPanel('Rotate'),
+        ),
+        _SelectRailItem(
+          asset: '$_selectIconDir/opacity_icon.svg',
+          label: 'Opacity',
+          highlighted: activePanel == 'Opacity',
+          onTap: () => onPanel('Opacity'),
+        ),
+        _MoveAndFlipCard(onNudge: onNudge, onFlip: onFlip),
+        if (showTextTools)
+          _SelectRailItem(
+            asset: '$_selectIconDir/stoke_icon.svg',
+            label: 'Stroke',
+            highlighted: activePanel == 'Stroke',
+            onTap: () => onPanel('Stroke'),
+          ),
+        if (showTextTools)
+          _SelectRailItem(
+            asset: '$_selectIconDir/spacing_icon.svg',
+            label: 'Spacing',
+            highlighted: activePanel == 'Spacing',
+            onTap: () => onPanel('Spacing'),
+          ),
+        if (showTextTools)
+          _SelectRailItem(
+            asset: '$_selectIconDir/shadow_icon.svg',
+            label: 'Shadow',
+            highlighted: activePanel == 'Shadow',
+            onTap: () => onPanel('Shadow'),
+          ),
+        _SelectRailItem(
+          asset: '$_selectIconDir/delete_icon.svg',
+          label: 'Delete',
+          onTap: onDelete,
+        ),
+        _SelectRailItem(
+          asset: '$_selectIconDir/send_back_icon.svg',
+          label: 'Send Back',
+          onTap: () => onItem('Send Back'),
+        ),
+        _SelectRailItem(
+          asset: '$_selectIconDir/send_front_icon.svg',
+          label: 'Send Front',
+          onTap: () => onItem('Send Front'),
+        ),
+        _SelectRailItem(
+          asset: '$_selectIconDir/duplicate_icon.svg',
+          label: 'Duplicate',
+          onTap: onDuplicate,
+        ),
+        _SelectRailItem(
+          asset: '$_selectIconDir/close_icon.svg',
+          label: 'Close',
+          onTap: onClose,
+        ),
+        _SelectRailItem(
+          asset: locked
+              ? '$_selectIconDir/unlock_icon.svg'
+              : '$_selectIconDir/lock_icon.svg',
+          label: locked ? 'Unlock' : 'Lock',
+          onTap: onLock,
+        ),
+      ],
+    );
+  }
+}
+
+class _SelectRailItem extends StatelessWidget {
+  const _SelectRailItem({
+    required this.asset,
+    required this.label,
+    required this.onTap,
+    this.highlighted = false,
+  });
+
+  final String asset;
+  final String label;
+  final VoidCallback onTap;
+  final bool highlighted;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+        child: Material(
+        color: highlighted
+            ? const Color(0x00000000)
+            : _VisitingCardLandscapeEditScreenState._itemFill,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            height: 36,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              gradient: highlighted
+                  ? const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Color(0xFF00973D),
+                        Color(0xFF008825),
+                      ],
+                    )
+                  : null,
+              border: highlighted
+                  ? null
+                  : Border.all(
+                      color: _VisitingCardLandscapeEditScreenState._itemBorder,
+                    ),
+            ),
+            child: Row(
+              children: [
+                SvgPicture.asset(asset, width: 16, height: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      height: 1.1,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MoveAndFlipCard extends StatelessWidget {
+  const _MoveAndFlipCard({
+    required this.onNudge,
+    required this.onFlip,
+  });
+
+  final void Function(double dxFraction, double dyFraction) onNudge;
+  final void Function(bool horizontal) onFlip;
+
+  static const _step = 0.008;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
+        decoration: BoxDecoration(
+          color: _VisitingCardLandscapeEditScreenState._itemFill,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: _VisitingCardLandscapeEditScreenState._itemBorder,
+          ),
+        ),
+        child: Column(
+          children: [
+            _NudgeArrow(
+              Icons.keyboard_arrow_up_rounded,
+              onTap: () => onNudge(0, -_step),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _NudgeArrow(
+                  Icons.keyboard_arrow_left_rounded,
+                  onTap: () => onNudge(-_step, 0),
+                ),
+                const SizedBox(width: 36),
+                _NudgeArrow(
+                  Icons.keyboard_arrow_right_rounded,
+                  onTap: () => onNudge(_step, 0),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            _NudgeArrow(
+              Icons.keyboard_arrow_down_rounded,
+              onTap: () => onNudge(0, _step),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _AxisChip(
+                    asset: '$_selectIconDir/horizontal_icon.svg',
+                    label: 'Horizontal',
+                    onTap: () => onFlip(true),
+                  ),
+                ),
+                Expanded(
+                  child: _AxisChip(
+                    asset: '$_selectIconDir/vertical_icon.svg',
+                    label: 'Vertical',
+                    onTap: () => onFlip(false),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NudgeArrow extends StatelessWidget {
+  const _NudgeArrow(this.icon, {required this.onTap});
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0x00000000),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Container(
+          width: 26,
+          height: 26,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white70, width: 1),
+          ),
+          child: Icon(icon, color: Colors.white, size: 16),
+        ),
+      ),
+    );
+  }
+}
+
+class _AxisChip extends StatelessWidget {
+  const _AxisChip({
+    required this.asset,
+    required this.label,
+    required this.onTap,
+  });
+
+  final String asset;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SvgPicture.asset(asset, width: 16, height: 16),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+const _textSwatches = <Color>[
+  Color(0xFF000000),
+  Color(0xFFFFFFFF),
+  Color(0xFFBCBCBC),
+  Color(0xFFFF222B),
+  Color(0xFF5EFF3B),
+  Color(0xFF115BED),
+  Color(0xFF009EEF),
+  Color(0xFF00B3CD),
+  Color(0xFF00AF24),
+  Color(0xFFFFBA30),
+  Color(0xFFFFE94B),
+];
+
+class _TextColorBar extends StatelessWidget {
+  const _TextColorBar({
+    required this.selected,
+    required this.onClose,
+    required this.onPick,
+    required this.onCustom,
+  });
+
+  final Color? selected;
+  final VoidCallback onClose;
+  final ValueChanged<Color> onPick;
+  final VoidCallback onCustom;
+
+  @override
+  Widget build(BuildContext context) {
+    final dots = <Widget>[
+      _ColorDot(
+        fill: Colors.white,
+        onTap: onClose,
+        child: const Icon(Icons.close, size: 16, color: Color(0xFF1A1A1A)),
+      ),
+      _ColorDot(
+        fill: const Color(0x00000000),
+        onTap: onCustom,
+        child: const Stack(
+          fit: StackFit.expand,
+          alignment: Alignment.center,
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: SweepGradient(
+                  colors: [
+                    Color(0xFFFF3B30),
+                    Color(0xFFFFE14A),
+                    Color(0xFF34C759),
+                    Color(0xFF00C2FF),
+                    Color(0xFF2F80ED),
+                    Color(0xFF9C27B0),
+                    Color(0xFFFF3B30),
+                  ],
+                ),
+              ),
+              child: SizedBox.expand(),
+            ),
+            Icon(Icons.colorize, size: 15, color: Colors.white),
+          ],
+        ),
+      ),
+      for (final color in _textSwatches)
+        _ColorDot(
+          fill: color,
+          selected: selected?.toARGB32() == color.toARGB32(),
+          onTap: () => onPick(color),
+        ),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Container(
+        height: 64,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF00330C),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x66000000),
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: dots,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _TextSizeBar extends StatelessWidget {
+  const _TextSizeBar({
+    required this.fraction,
+    required this.onClose,
+    required this.onChanged,
+  });
+
+  final double fraction;
+  final VoidCallback onClose;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final percent = (fraction.clamp(0.0, 1.0) * 100).round();
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Container(
+        height: 64,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF00330C),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x66000000),
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            GestureDetector(
+              onTap: onClose,
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, size: 16, color: Color(0xFF1A1A1A)),
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'Size',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  inactiveTrackColor: Colors.white,
+                  thumbColor: const Color(0xFF11B342),
+                  overlayColor: const Color(0x3311B342),
+                  trackHeight: 6,
+                  trackShape: const _SizeSliderTrackShape(),
+                  thumbShape: const RoundSliderThumbShape(
+                    enabledThumbRadius: 11,
+                  ),
+                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+                ),
+                child: Slider(
+                  value: fraction.clamp(0.0, 1.0),
+                  onChanged: onChanged,
+                ),
+              ),
+            ),
+            SizedBox(
+              width: 42,
+              child: Text(
+                '$percent%',
+                textAlign: TextAlign.right,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AdjustBar extends StatelessWidget {
+  const _AdjustBar({
+    required this.label,
+    required this.fraction,
+    required this.onClose,
+    required this.onChanged,
+    this.showColorPicker = false,
+    this.onPickColor,
+  });
+
+  final String label;
+  final double fraction;
+  final VoidCallback onClose;
+  final ValueChanged<double> onChanged;
+  final bool showColorPicker;
+  final VoidCallback? onPickColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final percent = (fraction.clamp(0.0, 1.0) * 100).round();
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Container(
+        height: 64,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF00330C),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x66000000),
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            GestureDetector(
+              onTap: onClose,
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.close,
+                  size: 16,
+                  color: Color(0xFF1A1A1A),
+                ),
+              ),
+            ),
+            if (showColorPicker) ...[
+              const SizedBox(width: 10),
+              GestureDetector(
+                onTap: onPickColor,
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: SweepGradient(
+                      colors: [
+                        Color(0xFFFF3B30),
+                        Color(0xFFFFE14A),
+                        Color(0xFF34C759),
+                        Color(0xFF00C2FF),
+                        Color(0xFF2F80ED),
+                        Color(0xFF9C27B0),
+                        Color(0xFFFF3B30),
+                      ],
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.colorize,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  inactiveTrackColor: Colors.white,
+                  thumbColor: const Color(0xFF11B342),
+                  overlayColor: const Color(0x3311B342),
+                  trackHeight: 6,
+                  trackShape: const _SizeSliderTrackShape(),
+                  thumbShape: const RoundSliderThumbShape(
+                    enabledThumbRadius: 11,
+                  ),
+                  overlayShape: const RoundSliderOverlayShape(
+                    overlayRadius: 16,
+                  ),
+                ),
+                child: Slider(
+                  value: fraction.clamp(0.0, 1.0),
+                  onChanged: onChanged,
+                ),
+              ),
+            ),
+            SizedBox(
+              width: 42,
+              child: Text(
+                '$percent%',
+                textAlign: TextAlign.right,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SizeSliderTrackShape extends SliderTrackShape with BaseSliderTrackShape {
+  const _SizeSliderTrackShape();
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset offset, {
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required Animation<double> enableAnimation,
+    required Offset thumbCenter,
+    Offset? secondaryOffset,
+    bool isEnabled = false,
+    bool isDiscrete = false,
+    required TextDirection textDirection,
+  }) {
+    final trackRect = getPreferredRect(
+      parentBox: parentBox,
+      offset: offset,
+      sliderTheme: sliderTheme,
+      isEnabled: isEnabled,
+      isDiscrete: isDiscrete,
+    );
+    final radius = Radius.circular(trackRect.height / 2);
+    final canvas = context.canvas;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(trackRect, radius),
+      Paint()..color = sliderTheme.inactiveTrackColor ?? const Color(0xFFFFFFFF),
+    );
+
+    final ltr = textDirection == TextDirection.ltr;
+    final active = Rect.fromLTRB(
+      ltr ? trackRect.left : thumbCenter.dx,
+      trackRect.top,
+      ltr ? thumbCenter.dx : trackRect.right,
+      trackRect.bottom,
+    );
+    if (active.width <= 0) return;
+    canvas.save();
+    canvas.clipRRect(RRect.fromRectAndRadius(active, radius));
+    canvas.drawRect(
+      trackRect,
+      Paint()
+        ..shader = const LinearGradient(
+          colors: [Color(0xFF11B342), Color(0xFF016C31)],
+        ).createShader(trackRect),
+    );
+    canvas.restore();
+  }
+}
+
+class _LandscapeHueRing extends StatefulWidget {
+  const _LandscapeHueRing({
+    required this.color,
+    required this.onChanged,
+    required this.size,
+  });
+
+  final Color color;
+  final ValueChanged<Color> onChanged;
+  final double size;
+
+  @override
+  State<_LandscapeHueRing> createState() => _LandscapeHueRingState();
+}
+
+class _LandscapeHueRingState extends State<_LandscapeHueRing> {
+  late HSVColor _hsv;
+
+  @override
+  void initState() {
+    super.initState();
+    _hsv = HSVColor.fromColor(widget.color);
+  }
+
+  void _update(HSVColor next) {
+    setState(() => _hsv = next);
+    widget.onChanged(next.toColor());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final inner = widget.size / 1.7;
+    return SizedBox(
+      width: widget.size,
+      height: widget.size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned.fill(
+            child: ColorPickerHueRing(
+              _hsv,
+              _update,
+              displayThumbColor: true,
+              strokeWidth: 22,
+            ),
+          ),
+          SizedBox(
+            width: inner,
+            height: inner,
+            child: ColorPickerArea(_hsv, _update, PaletteType.hsv),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ColorPickerButton extends StatelessWidget {
+  const _ColorPickerButton({
+    required this.label,
+    required this.onTap,
+    this.color,
+    this.gradient,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final Color? color;
+  final Gradient? gradient;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0x00000000),
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Ink(
+          width: 108,
+          height: 36,
+          decoration: BoxDecoration(
+            color: color,
+            gradient: gradient,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ColorDot extends StatelessWidget {
+  const _ColorDot({
+    required this.fill,
+    required this.onTap,
+    this.selected = false,
+    this.child,
+  });
+
+  final Color fill;
+  final VoidCallback onTap;
+  final bool selected;
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: selected ? const Color(0xFF008839) : const Color(0x00000000),
+            width: 2,
+          ),
+        ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: fill,
+            shape: BoxShape.circle,
+          ),
+          child: child,
         ),
       ),
     );
