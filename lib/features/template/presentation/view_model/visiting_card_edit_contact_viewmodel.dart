@@ -393,11 +393,15 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   /// Shape added from the landscape Shape picker. Not a template field.
   static const customShapeSource = 'shape';
 
+  /// Photo added from the landscape Images tool. Not a template field.
+  static const customImageSource = 'image';
+
   bool _sourceIsImage(String? source) =>
       source == 'logo' ||
       source == 'qr' ||
       source == customIconSource ||
-      source == customShapeSource;
+      source == customShapeSource ||
+      source == customImageSource;
 
   bool get selectedIsShape {
     if (selectedDuplicateId == null) return false;
@@ -543,6 +547,27 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       top: (0.12 + nudge).clamp(0.06, 0.72),
       size: 0.14,
       duplicateOf: 'logo',
+      duplicateImagePath: path,
+    );
+    selectedOverlay = null;
+    selectedDuplicateId = id;
+    notifyListeners();
+  }
+
+  /// Places a gallery photo on the current side and selects it.
+  void addCustomImage(String filePath) {
+    final path = filePath.trim();
+    if (path.isEmpty) return;
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+    final existing = currentOverlays.values
+        .where((t) => t.duplicateOf == customImageSource)
+        .length;
+    final nudge = (existing % 6) * 0.04;
+    currentOverlays[duplicateKey(id)] = VisitingCardFieldTransform(
+      left: (0.28 + nudge).clamp(0.06, 0.62),
+      top: (0.22 + nudge).clamp(0.06, 0.62),
+      size: 0.32,
+      duplicateOf: customImageSource,
       duplicateImagePath: path,
     );
     selectedOverlay = null;

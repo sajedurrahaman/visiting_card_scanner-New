@@ -1023,11 +1023,15 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           t.duplicateOf == VisitingCardEditContactViewModel.customIconSource;
       final isShape =
           t.duplicateOf == VisitingCardEditContactViewModel.customShapeSource;
-      final source = isCustom || isIcon || isShape
+      final isPhoto =
+          t.duplicateOf == VisitingCardEditContactViewModel.customImageSource;
+      final source = isCustom || isIcon || isShape || isPhoto
           ? null
           : VisitingCardFieldTransform.fieldFromKey(t.duplicateOf ?? '');
-      if (!isCustom && !isIcon && !isShape && source == null) return;
-      final pos = isIcon || isShape
+      if (!isCustom && !isIcon && !isShape && !isPhoto && source == null) {
+        return;
+      }
+      final pos = isIcon || isShape || isPhoto
           ? null
           : isCustom
               ? const VisitingCardFieldPosition(
@@ -1048,7 +1052,10 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         );
       }
 
-      if (isIcon || isShape || (source != null && source.isImageOverlay)) {
+      if (isIcon ||
+          isShape ||
+          isPhoto ||
+          (source != null && source.isImageOverlay)) {
         final path = t.duplicateImagePath;
         if (path == null || path.isEmpty) return;
         final isAsset = path.startsWith('assets/');

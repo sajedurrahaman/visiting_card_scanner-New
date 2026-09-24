@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gal/gal.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/folder/presentation/view_model/folder_viewmodel.dart';
@@ -21,7 +22,6 @@ import 'package:visiting_card/features/template/presentation/view/screen/visitin
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_font_style_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_template_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_rename_screen.dart';
-import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_logo_picker_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
 
@@ -299,11 +299,15 @@ class _VisitingCardLandscapeEditScreenState
   }
 
   Future<void> _onPickImage() async {
-    final file = await VisitingCardLogoPickerScreen.open(context);
-    if (file == null || !mounted) return;
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 90,
+    );
+    if (picked == null || !mounted) return;
     final vm = context.read<VisitingCardEditContactViewModel>();
-    final path = await vm.persistLogoFile(file);
-    vm.applyLogoImage(path);
+    final path = await vm.persistLogoFile(File(picked.path));
+    if (!mounted) return;
+    vm.addCustomImage(path);
   }
 
   void _onPreview() {
