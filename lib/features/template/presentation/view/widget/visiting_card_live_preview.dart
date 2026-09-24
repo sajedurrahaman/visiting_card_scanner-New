@@ -1019,18 +1019,21 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     void paintDuplicate(String id, VisitingCardFieldTransform t) {
       final isCustom =
           t.duplicateOf == VisitingCardEditContactViewModel.customTextSource;
-      final source = isCustom
+      final isIcon =
+          t.duplicateOf == VisitingCardEditContactViewModel.customIconSource;
+      final source = isCustom || isIcon
           ? null
           : VisitingCardFieldTransform.fieldFromKey(t.duplicateOf ?? '');
-      if (!isCustom && source == null) return;
-      final pos = isCustom
-          ? const VisitingCardFieldPosition(
-              fontSize: 14,
-              color: Color(0xFF1A1A1A),
-              heightFactor: 1.15,
-            )
-          : posFor(source!);
-      if (pos == null) return;
+      if (!isCustom && !isIcon && source == null) return;
+      final pos = isIcon
+          ? null
+          : isCustom
+              ? const VisitingCardFieldPosition(
+                  fontSize: 14,
+                  color: Color(0xFF1A1A1A),
+                  heightFactor: 1.15,
+                )
+              : posFor(source!);
       final gestureField = source ?? VisitingCardOverlayField.name;
       final selected = vm.selectedDuplicateId == id;
       void place(Widget overlay) {
@@ -1043,7 +1046,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         );
       }
 
-      if (source != null && source.isImageOverlay) {
+      if (isIcon || (source != null && source.isImageOverlay)) {
         final path = t.duplicateImagePath;
         if (path == null || path.isEmpty) return;
         final isAsset = path.startsWith('assets/');
@@ -1104,6 +1107,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         return;
       }
 
+      if (pos == null) return;
       final raw = t.duplicateText ?? '';
       if (raw.trim().isEmpty) return;
       final display = visitingCardStyledText(
@@ -1368,10 +1372,16 @@ class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
   /// width / height; null until decoded.
   double? _aspect;
 
+  bool get _isSvg => widget.assetPath.toLowerCase().endsWith('.svg');
+
   @override
   void initState() {
     super.initState();
-    _resolveAspect();
+    if (_isSvg) {
+      _aspect = 1;
+    } else {
+      _resolveAspect();
+    }
   }
 
   @override
@@ -1421,23 +1431,34 @@ class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
     final left = widget.cardSize.width * widget.transform.left;
     final top = widget.cardSize.height * widget.transform.top;
 
-    final image = widget.isAsset
-        ? Image.asset(
-            widget.assetPath,
-            key: ValueKey(widget.assetPath),
-            fit: BoxFit.fill,
-            width: boxW,
-            height: boxH,
-            errorBuilder: (_, _, _) => const SizedBox.shrink(),
-          )
-        : Image.file(
-            File(widget.assetPath),
-            key: ValueKey(widget.assetPath),
-            fit: BoxFit.fill,
-            width: boxW,
-            height: boxH,
-            errorBuilder: (_, _, _) => const SizedBox.shrink(),
-          );
+    final Widget image;
+    if (_isSvg && widget.isAsset) {
+      image = SvgPicture.asset(
+        widget.assetPath,
+        key: ValueKey(widget.assetPath),
+        width: boxW,
+        height: boxH,
+        fit: BoxFit.contain,
+      );
+    } else if (widget.isAsset) {
+      image = Image.asset(
+        widget.assetPath,
+        key: ValueKey(widget.assetPath),
+        fit: BoxFit.fill,
+        width: boxW,
+        height: boxH,
+        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+      );
+    } else {
+      image = Image.file(
+        File(widget.assetPath),
+        key: ValueKey(widget.assetPath),
+        fit: BoxFit.fill,
+        width: boxW,
+        height: boxH,
+        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+      );
+    }
 
     if (!widget.interactive) {
       return Positioned(

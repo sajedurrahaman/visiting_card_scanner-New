@@ -387,7 +387,11 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   /// Free text added from the landscape Text tool. Not a template field.
   static const customTextSource = 'custom';
 
-  bool _sourceIsImage(String? source) => source == 'logo' || source == 'qr';
+  /// Icon added from the landscape Icon picker. Not a template field.
+  static const customIconSource = 'icon';
+
+  bool _sourceIsImage(String? source) =>
+      source == 'logo' || source == 'qr' || source == customIconSource;
 
   bool get selectedIsImage {
     if (selectedDuplicateId != null) {
@@ -459,6 +463,27 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     selectedDuplicateId = null;
     overlayGestureActive = false;
     sideIndex = 0;
+    notifyListeners();
+  }
+
+  /// Places a scanner icon on the current side and selects it.
+  void addCustomIcon(String assetPath) {
+    final path = assetPath.trim();
+    if (path.isEmpty) return;
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+    final existing = currentOverlays.values
+        .where((t) => t.duplicateOf == customIconSource)
+        .length;
+    final nudge = (existing % 6) * 0.04;
+    currentOverlays[duplicateKey(id)] = VisitingCardFieldTransform(
+      left: (0.42 + nudge).clamp(0.06, 0.78),
+      top: (0.34 + nudge).clamp(0.06, 0.78),
+      size: 0.10,
+      duplicateOf: customIconSource,
+      duplicateImagePath: path,
+    );
+    selectedOverlay = null;
+    selectedDuplicateId = id;
     notifyListeners();
   }
 

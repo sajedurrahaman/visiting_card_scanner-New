@@ -15,6 +15,7 @@ import 'package:visiting_card/features/scan/presentation/helper/visiting_card_sh
 import 'package:visiting_card/features/template/domain/visiting_card_export_utils.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_edit_text_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_icon_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_font_style_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_template_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_rename_screen.dart';
@@ -323,6 +324,10 @@ class _VisitingCardLandscapeEditScreenState
 
   void _comingSoon(String label) {
     ui.AppToast.show(context, message: '$label coming soon');
+  }
+
+  Future<void> _onAddIcon() {
+    return VisitingCardLandscapeIconScreen.open(context);
   }
 
   Future<void> _onAddText() async {
@@ -679,7 +684,7 @@ class _VisitingCardLandscapeEditScreenState
                                       _RailItem(
                                         icon: Icons.widgets_outlined,
                                         label: 'Icon',
-                                        onTap: () => _comingSoon('Icon'),
+                                        onTap: _onAddIcon,
                                       ),
                                       _RailItem(
                                         icon: Icons.category_outlined,
