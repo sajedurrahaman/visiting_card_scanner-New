@@ -21,6 +21,7 @@ import 'package:visiting_card/features/scan/presentation/view_model/visiting_car
 import 'package:visiting_card/features/template/domain/visiting_card_export_utils.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_edit_contact_info_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_edit_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_vertical_edit_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_template_viewmodel.dart';
@@ -633,7 +634,9 @@ class _VisitingCardContactDetailsScreenState
     );
     if (!mounted) return;
 
-    final saved = await VisitingCardLandscapeEditScreen.open(context, vm: vm);
+    final saved = vm.isHorizontal
+        ? await VisitingCardLandscapeEditScreen.open(context, vm: vm)
+        : await VisitingCardVerticalEditScreen.open(context, vm: vm);
     if (!mounted) return;
     if (saved == true) {
       _previewVm.applyContactLists(

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
 
@@ -39,15 +38,6 @@ class VisitingCardLandscapeShapeScreen extends StatefulWidget {
 class _VisitingCardLandscapeShapeScreenState
     extends State<VisitingCardLandscapeShapeScreen> {
   static const _bg = Color(0xFF003303);
-
-  @override
-  void initState() {
-    super.initState();
-    SystemChrome.setPreferredOrientations(const [
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-  }
 
   void _place(String assetPath) {
     context.read<VisitingCardEditContactViewModel>().addCustomShape(assetPath);

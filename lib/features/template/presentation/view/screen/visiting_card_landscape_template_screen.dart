@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_template_viewmodel.dart';
@@ -40,10 +39,6 @@ class _VisitingCardLandscapeTemplateScreenState
     super.initState();
     _horizontal =
         context.read<VisitingCardEditContactViewModel>().isHorizontal;
-    SystemChrome.setPreferredOrientations(const [
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
   }
 
   List<VisitingCardTemplateItem> get _templates => _horizontal

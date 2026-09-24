@@ -19,6 +19,7 @@ import 'package:visiting_card/features/scan/presentation/view_model/visiting_car
 import 'package:visiting_card/features/template/domain/visiting_card_export_utils.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_edit_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_vertical_edit_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_edit_field_cards.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
@@ -168,11 +169,19 @@ class _VisitingCardScannedDetailsScreenState
   Future<void> _onLandscapeEdit() async {
     final scan = context.read<VisitingCardScanViewModel>();
     scan.selectedTemplateId = _selectedTemplateId;
-    await VisitingCardLandscapeEditScreen.open(
-      context,
-      vm: _previewVm,
-      persistToRecent: false,
-    );
+    if (_previewVm.isHorizontal) {
+      await VisitingCardLandscapeEditScreen.open(
+        context,
+        vm: _previewVm,
+        persistToRecent: false,
+      );
+    } else {
+      await VisitingCardVerticalEditScreen.open(
+        context,
+        vm: _previewVm,
+        persistToRecent: false,
+      );
+    }
     if (!mounted) return;
     _syncScanFromPreview();
     setState(() {});

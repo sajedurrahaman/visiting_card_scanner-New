@@ -65,10 +65,6 @@ class _VisitingCardLandscapeProfileScreenState
     _savedHasLogo = vm.hasChosenLogo;
     _savedQrPath = vm.qrAssetPath;
     _savedHasQr = vm.hasChosenQr;
-    SystemChrome.setPreferredOrientations(const [
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
   }
 
   void _revertAssets() {
@@ -109,14 +105,18 @@ class _VisitingCardLandscapeProfileScreenState
   Future<void> _chooseQr(VisitingCardEditContactViewModel vm) async {
     if (!vm.canEditQr || _orienting) return;
     FocusManager.instance.primaryFocus?.unfocus();
-    setState(() => _orienting = true);
-    await WidgetsBinding.instance.endOfFrame;
-    await SystemChrome.setPreferredOrientations(const [
-      DeviceOrientation.portraitUp,
-    ]);
-    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    await _waitUntil(landscape: false);
-    if (!mounted) return;
+    final alreadyPortrait = MediaQuery.sizeOf(context).height >
+        MediaQuery.sizeOf(context).width + 24;
+    if (!alreadyPortrait) {
+      setState(() => _orienting = true);
+      await WidgetsBinding.instance.endOfFrame;
+      await SystemChrome.setPreferredOrientations(const [
+        DeviceOrientation.portraitUp,
+      ]);
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      await _waitUntil(landscape: false);
+      if (!mounted) return;
+    }
 
     final path = await Navigator.push<String>(
       context,
@@ -128,14 +128,16 @@ class _VisitingCardLandscapeProfileScreenState
     );
 
     if (!mounted) return;
-    await SystemChrome.setPreferredOrientations(const [
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    await _waitUntil(landscape: true);
-    if (!mounted) return;
-    setState(() => _orienting = false);
+    if (!alreadyPortrait) {
+      await SystemChrome.setPreferredOrientations(const [
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      await _waitUntil(landscape: true);
+      if (!mounted) return;
+      setState(() => _orienting = false);
+    }
     if (path == null || path.isEmpty) return;
     vm.applyQrImage(path);
     ui.AppToast.success(context, 'QR Code uploaded successfully');
@@ -245,19 +247,28 @@ class _VisitingCardLandscapeProfileScreenState
             Expanded(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(pad, 4, pad, 10),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(child: _fields(vm)),
-                    SizedBox(width: pad),
-                    SizedBox(
-                      width: sideWidth,
-                      child: SingleChildScrollView(
-                        child: _logoSide(vm),
+                child: size.height > size.width
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(child: _fields(vm)),
+                          const SizedBox(height: 8),
+                          _logoSide(vm),
+                        ],
+                      )
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(child: _fields(vm)),
+                          SizedBox(width: pad),
+                          SizedBox(
+                            width: sideWidth,
+                            child: SingleChildScrollView(
+                              child: _logoSide(vm),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
               ),
             ),
           ],

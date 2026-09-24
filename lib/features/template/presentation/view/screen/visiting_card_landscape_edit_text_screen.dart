@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 /// Landscape Edit Text: type a new value, then Apply or Cancel.
 ///
@@ -42,10 +41,6 @@ class _VisitingCardLandscapeEditTextScreenState
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialValue);
-    SystemChrome.setPreferredOrientations(const [
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _focusNode.requestFocus();

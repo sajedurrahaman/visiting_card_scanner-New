@@ -26,11 +26,11 @@ import 'package:visiting_card/features/template/presentation/view/screen/visitin
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
 
-/// Figma landscape card editor: canvas + right tool rail.
+/// Vertical card editor: portrait canvas, landscape tools along the bottom.
 ///
-/// Avoids ScreenUtil (.w/.h/.sp) — portrait designSize breaks layout in landscape.
-class VisitingCardLandscapeEditScreen extends StatefulWidget {
-  const VisitingCardLandscapeEditScreen({
+/// Avoids ScreenUtil (.w/.h/.sp).
+class VisitingCardVerticalEditScreen extends StatefulWidget {
+  const VisitingCardVerticalEditScreen({
     super.key,
     this.persistToRecent = true,
   });
@@ -51,7 +51,7 @@ class VisitingCardLandscapeEditScreen extends StatefulWidget {
         reverseTransitionDuration: const Duration(milliseconds: 320),
         pageBuilder: (_, _, _) => ChangeNotifierProvider.value(
           value: vm,
-          child: VisitingCardLandscapeEditScreen(
+          child: VisitingCardVerticalEditScreen(
             persistToRecent: persistToRecent,
           ),
         ),
@@ -69,15 +69,13 @@ class VisitingCardLandscapeEditScreen extends StatefulWidget {
   }
 
   @override
-  State<VisitingCardLandscapeEditScreen> createState() =>
-      _VisitingCardLandscapeEditScreenState();
+  State<VisitingCardVerticalEditScreen> createState() =>
+      _VisitingCardVerticalEditScreenState();
 }
 
-class _VisitingCardLandscapeEditScreenState
-    extends State<VisitingCardLandscapeEditScreen> {
+class _VisitingCardVerticalEditScreenState
+    extends State<VisitingCardVerticalEditScreen> {
   static const _bg = Color(0xFF003303);
-  static const _itemFill = Color(0xFF0A3D0A);
-  static const _itemBorder = Color(0xFF2E6B2E);
 
   final GlobalKey _cardCaptureKey = GlobalKey();
   bool _isDownloading = false;
@@ -94,10 +92,9 @@ class _VisitingCardLandscapeEditScreenState
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       await SystemChrome.setPreferredOrientations(const [
-        DeviceOrientation.landscapeLeft,
-        DeviceOrientation.landscapeRight,
+        DeviceOrientation.portraitUp,
       ]);
-      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
       if (!mounted) return;
       context.read<VisitingCardEditContactViewModel>().clearOverlaySelection();
       context.read<VisitingCardEditContactViewModel>().beginUndoHistory();
@@ -119,7 +116,7 @@ class _VisitingCardLandscapeEditScreenState
   }
 
   Future<void> _finishBoot() async {
-    await _waitUntil(landscape: true);
+    await _waitUntil(landscape: false);
     if (!mounted) return;
     await WidgetsBinding.instance.endOfFrame;
     if (!mounted) return;
@@ -130,15 +127,7 @@ class _VisitingCardLandscapeEditScreenState
   Future<void> _leaveToPortrait({Object? result, bool toRoot = false}) async {
     if (_leaving) return;
     _leaving = true;
-    if (mounted) setState(() => _booting = true);
-    await WidgetsBinding.instance.endOfFrame;
-    await SystemChrome.setPreferredOrientations(const [
-      DeviceOrientation.portraitUp,
-    ]);
-    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    await _waitUntil(landscape: false);
-    if (!mounted) return;
-    setState(() => _allowPop = true);
+    if (mounted) setState(() => _allowPop = true);
     await WidgetsBinding.instance.endOfFrame;
     if (!mounted) return;
     if (toRoot) {
@@ -517,14 +506,223 @@ class _VisitingCardLandscapeEditScreenState
     );
   }
 
+  Widget _verticalToolBar(VisitingCardEditContactViewModel vm) {
+    final items = vm.hasSelection ? _selectedBarItems(vm) : _mainBarItems();
+    return ColoredBox(
+      color: _bg,
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 72,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final itemW = constraints.maxWidth / 6;
+              return ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: items.length,
+                itemBuilder: (_, index) {
+                  final item = items[index];
+                  return SizedBox(
+                    width: itemW,
+                    child: _VerticalBarItem(
+                      icon: item.icon,
+                      asset: item.asset,
+                      label: item.label,
+                      highlighted: item.highlighted,
+                      onTap: item.onTap,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<_BarSpec> _mainBarItems() {
+    const dir = 'assets/visiting_card_option_icon';
+    return [
+      _BarSpec(asset: '$dir/save_option_icon.svg', label: 'Save', onTap: _onSave),
+      _BarSpec(
+        asset: '$dir/download_option_icon.svg',
+        label: 'Download',
+        onTap: _onDownload,
+      ),
+      _BarSpec(
+        asset: '$dir/text_option_icon.svg',
+        label: 'Text',
+        onTap: _onAddText,
+      ),
+      _BarSpec(
+        asset: '$dir/icon_option_icon.svg',
+        label: 'Icon',
+        onTap: _onAddIcon,
+      ),
+      _BarSpec(
+        asset: '$dir/shape_option-icon.svg',
+        label: 'Shape',
+        onTap: _onAddShape,
+      ),
+      _BarSpec(
+        asset: '$dir/logo_option_icon.svg',
+        label: 'Logos',
+        onTap: _onPickLogo,
+      ),
+      _BarSpec(
+        asset: '$dir/image_option_icon.svg',
+        label: 'Images',
+        onTap: _onPickImage,
+      ),
+      _BarSpec(
+        asset: '$dir/template_option_icon.svg',
+        label: 'Template',
+        onTap: () => VisitingCardLandscapeTemplateScreen.open(context),
+      ),
+      _BarSpec(
+        asset: '$dir/preview_option_icon.svg',
+        label: 'Preview',
+        onTap: _onPreview,
+      ),
+      _BarSpec(
+        asset: '$dir/profile_option_icon.svg',
+        label: 'Profile',
+        onTap: _onProfile,
+      ),
+    ];
+  }
+
+  List<_BarSpec> _selectedBarItems(VisitingCardEditContactViewModel vm) {
+    final showText = !vm.selectedIsImage;
+    final showColor = !vm.selectedIsImage || vm.selectedIsShape;
+    return [
+      if (vm.selectedIsLogo)
+        _BarSpec(
+          asset: 'assets/visiting_card_option_icon/logo_option_icon.svg',
+          label: 'Replace',
+          onTap: _onPickLogo,
+        ),
+      if (showText)
+        _BarSpec(
+          asset: '$_selectIconDir/edit_text_icon.svg',
+          label: 'Edit Text',
+          onTap: _onEditText,
+        ),
+      if (showColor)
+        _BarSpec(
+          asset: '$_selectIconDir/color_icon.svg',
+          label: 'Color',
+          highlighted: _panel == 'Color',
+          onTap: _onColor,
+        ),
+      _BarSpec(
+        asset: '$_selectIconDir/font_size_icon.svg',
+        label: 'Size',
+        highlighted: _panel == 'Size',
+        onTap: _onSize,
+      ),
+      if (showText)
+        _BarSpec(
+          asset: '$_selectIconDir/font_style_icon.svg',
+          label: 'Font',
+          onTap: _onFontStyle,
+        ),
+      _BarSpec(
+        asset: '$_selectIconDir/rotate_icon.svg',
+        label: 'Rotate',
+        highlighted: _panel == 'Rotate',
+        onTap: () => _togglePanel('Rotate'),
+      ),
+      _BarSpec(
+        asset: '$_selectIconDir/opacity_icon.svg',
+        label: 'Opacity',
+        highlighted: _panel == 'Opacity',
+        onTap: () => _togglePanel('Opacity'),
+      ),
+      if (showText)
+        _BarSpec(
+          asset: '$_selectIconDir/stoke_icon.svg',
+          label: 'Stroke',
+          highlighted: _panel == 'Stroke',
+          onTap: () => _togglePanel('Stroke'),
+        ),
+      if (showText)
+        _BarSpec(
+          asset: '$_selectIconDir/spacing_icon.svg',
+          label: 'Spacing',
+          highlighted: _panel == 'Spacing',
+          onTap: () => _togglePanel('Spacing'),
+        ),
+      if (showText)
+        _BarSpec(
+          asset: '$_selectIconDir/shadow_icon.svg',
+          label: 'Shadow',
+          highlighted: _panel == 'Shadow',
+          onTap: () => _togglePanel('Shadow'),
+        ),
+      _BarSpec(
+        icon: Icons.keyboard_arrow_up_rounded,
+        label: 'Up',
+        onTap: () => vm.nudgeSelectedOverlay(0, -0.008),
+      ),
+      _BarSpec(
+        icon: Icons.keyboard_arrow_down_rounded,
+        label: 'Down',
+        onTap: () => vm.nudgeSelectedOverlay(0, 0.008),
+      ),
+      _BarSpec(
+        icon: Icons.keyboard_arrow_left_rounded,
+        label: 'Left',
+        onTap: () => vm.nudgeSelectedOverlay(-0.008, 0),
+      ),
+      _BarSpec(
+        icon: Icons.keyboard_arrow_right_rounded,
+        label: 'Right',
+        onTap: () => vm.nudgeSelectedOverlay(0.008, 0),
+      ),
+      _BarSpec(
+        asset: '$_selectIconDir/delete_icon.svg',
+        label: 'Delete',
+        onTap: _onDelete,
+      ),
+      _BarSpec(
+        asset: '$_selectIconDir/duplicate_icon.svg',
+        label: 'Duplicate',
+        onTap: _onDuplicate,
+      ),
+      _BarSpec(
+        asset: '$_selectIconDir/send_back_icon.svg',
+        label: 'Back',
+        onTap: vm.sendSelectedOverlayBack,
+      ),
+      _BarSpec(
+        asset: '$_selectIconDir/send_front_icon.svg',
+        label: 'Front',
+        onTap: vm.sendSelectedOverlayFront,
+      ),
+      _BarSpec(
+        asset: vm.selectedIsLocked
+            ? '$_selectIconDir/unlock_icon.svg'
+            : '$_selectIconDir/lock_icon.svg',
+        label: vm.selectedIsLocked ? 'Unlock' : 'Lock',
+        onTap: _onLock,
+      ),
+      _BarSpec(
+        asset: '$_selectIconDir/close_icon.svg',
+        label: 'Close',
+        onTap: () {
+          setState(() => _panel = '');
+          vm.clearOverlaySelection();
+        },
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<VisitingCardEditContactViewModel>();
-    final size = MediaQuery.sizeOf(context);
-    final shortest = math.min(size.width, size.height);
-
-    final railWidth = (size.width * 0.24).clamp(148.0, 188.0);
-    final pad = (shortest * 0.04).clamp(12.0, 20.0);
+    const pad = 16.0;
 
     return PopScope(
       canPop: _allowPop,
@@ -533,45 +731,81 @@ class _VisitingCardLandscapeEditScreenState
         _onExit();
       },
       child: Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: Colors.white,
       resizeToAvoidBottomInset: false,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(pad, pad, pad, 0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+      appBar: _previewing
+          ? null
+          : AppBar(
+              backgroundColor: _bg,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              systemOverlayStyle: SystemUiOverlayStyle.light.copyWith(
+                statusBarColor: _bg,
+              ),
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: _onExit,
+              ),
+              actions: [
+                IconButton(
+                  icon: Icon(
+                    Icons.undo_rounded,
+                    color: vm.canUndo ? Colors.white : Colors.white38,
+                  ),
+                  onPressed: vm.canUndo ? vm.undo : null,
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.redo_rounded,
+                    color: vm.canRedo ? Colors.white : Colors.white38,
+                  ),
+                  onPressed: vm.canRedo ? vm.redo : null,
+                ),
+                IconButton(
+                  onPressed: _onSave,
+                  icon: SvgPicture.asset(
+                    'assets/visiting_card_option_icon/save_option_icon.svg',
+                    width: 22,
+                    height: 22,
+                  ),
+                ),
+                IconButton(
+                  onPressed: _onDownload,
+                  icon: SvgPicture.asset(
+                    'assets/visiting_card_option_icon/download_option_icon.svg',
+                    width: 22,
+                    height: 22,
+                  ),
+                ),
+              ],
+            ),
+      body: Stack(
+        children: [
+            Column(
+              children: [
                   Expanded(
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         final ratio = vm.isHorizontal ? 1.75 : 0.63;
-                        final scale = _previewing ? 0.82 : 0.68;
-                        final topGap = _previewing ? 0.0 : pad;
-                        // Pager plus the gap under the card. Kept out of the
-                        // card budget so the column cannot overflow.
-                        const belowCard = 56.0;
+                        final scale = _previewing ? 0.82 : 0.84;
+                        const pagerRoom = 64.0;
                         final room = math.max(
                           40.0,
-                          constraints.maxHeight - topGap - belowCard,
+                          constraints.maxHeight - pagerRoom,
                         );
                         var cardW = constraints.maxWidth * scale;
                         var cardH = cardW / ratio;
                         final maxH = math.min(
-                          constraints.maxHeight * (_previewing ? 0.82 : 0.70),
+                          constraints.maxHeight * (_previewing ? 0.86 : 0.78),
                           room,
                         );
                         if (cardH > maxH) {
                           cardH = maxH;
                           cardW = cardH * ratio;
                         }
-                        // Landscape card fonts scale from card width inside
-                        // LivePreview — do not apply ScreenUtil / textScaler.
                         return Column(
                           children: [
-                            if (_previewing) const Spacer(),
-                            if (!_previewing) SizedBox(height: pad),
+                            const Spacer(),
                             Align(
                               alignment: Alignment.topCenter,
                               child: SizedBox(
@@ -597,7 +831,7 @@ class _VisitingCardLandscapeEditScreenState
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 22),
                             Opacity(
                               opacity: _booting ? 0 : 1,
                               child: _LandscapeSidePager(
@@ -652,142 +886,8 @@ class _VisitingCardLandscapeEditScreenState
                       },
                     ),
                   ),
-                  if (!_previewing) SizedBox(width: pad * 0.75),
-                  if (!_previewing)
-                    SizedBox(
-                    width: railWidth,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _TopTools(
-                          onUndo: vm.undo,
-                          onRedo: vm.redo,
-                          onExit: _onExit,
-                          canUndo: vm.canUndo,
-                          canRedo: vm.canRedo,
-                        ),
-                        SizedBox(height: pad * 0.5),
-                        Expanded(
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              gradient: const LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Color(0xFF015719),
-                                  Color(0xFF003F14),
-                                  Color(0xFF003516),
-                                ],
-                              ),
-                            ),
-                            child: !vm.hasSelection
-                                ? ListView(
-                                    padding: EdgeInsets.zero,
-                                    children: [
-                                      _RailItem(
-                                        asset:
-                                            'assets/visiting_card_option_icon/save_option_icon.svg',
-                                        label: 'Save',
-                                        onTap: _onSave,
-                                      ),
-                                      _RailItem(
-                                        asset:
-                                            'assets/visiting_card_option_icon/download_option_icon.svg',
-                                        label: 'Download',
-                                        onTap: _onDownload,
-                                      ),
-                                      _RailItem(
-                                        asset:
-                                            'assets/visiting_card_option_icon/text_option_icon.svg',
-                                        label: 'Text',
-                                        onTap: _onAddText,
-                                      ),
-                                      _RailItem(
-                                        asset:
-                                            'assets/visiting_card_option_icon/icon_option_icon.svg',
-                                        label: 'Icon',
-                                        onTap: _onAddIcon,
-                                      ),
-                                      _RailItem(
-                                        asset:
-                                            'assets/visiting_card_option_icon/shape_option-icon.svg',
-                                        label: 'Shape',
-                                        onTap: _onAddShape,
-                                      ),
-                                      _RailItem(
-                                        asset:
-                                            'assets/visiting_card_option_icon/logo_option_icon.svg',
-                                        label: 'Logos',
-                                        onTap: _onPickLogo,
-                                      ),
-                                      _RailItem(
-                                        asset:
-                                            'assets/visiting_card_option_icon/image_option_icon.svg',
-                                        label: 'Images',
-                                        onTap: _onPickImage,
-                                      ),
-                                      _RailItem(
-                                        asset:
-                                            'assets/visiting_card_option_icon/template_option_icon.svg',
-                                        label: 'Template',
-                                        onTap: () =>
-                                            VisitingCardLandscapeTemplateScreen
-                                                .open(context),
-                                      ),
-                                      _RailItem(
-                                        asset:
-                                            'assets/visiting_card_option_icon/preview_option_icon.svg',
-                                        label: 'Preview',
-                                        onTap: _onPreview,
-                                      ),
-                                      _RailItem(
-                                        asset:
-                                            'assets/visiting_card_option_icon/profile_option_icon.svg',
-                                        label: 'Profile',
-                                        onTap: _onProfile,
-                                      ),
-                                    ],
-                                  )
-                                : _SelectedFieldRail(
-                                    showTextTools: !vm.selectedIsImage,
-                                    showColor:
-                                        !vm.selectedIsImage || vm.selectedIsShape,
-                                    onReplaceLogo: vm.selectedIsLogo
-                                        ? _onPickLogo
-                                        : null,
-                                    onEditText: _onEditText,
-                                    onColor: _onColor,
-                                    colorActive: _panel == 'Color',
-                                    onSize: _onSize,
-                                    sizeActive: _panel == 'Size',
-                                    onFontStyle: _onFontStyle,
-                                    onDelete: _onDelete,
-                                    onDuplicate: _onDuplicate,
-                                    onSendBack: vm.sendSelectedOverlayBack,
-                                    onSendFront: vm.sendSelectedOverlayFront,
-                                    onLock: _onLock,
-                                    locked: vm.selectedIsLocked,
-                                    onPanel: _togglePanel,
-                                    activePanel: _panel,
-                                    onClose: () {
-                                      setState(() => _panel = '');
-                                      vm.clearOverlaySelection();
-                                    },
-                                    onNudge: vm.nudgeSelectedOverlay,
-                                    onFlip: (horizontal) => vm.flipSelectedOverlay(
-                                      horizontal: horizontal,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                  if (!_previewing) _verticalToolBar(vm),
+              ],
             ),
             if (_previewing && !_booting)
               Positioned(
@@ -813,7 +913,7 @@ class _VisitingCardLandscapeEditScreenState
               ),
             if (_booting)
               const Positioned.fill(
-                child: ColoredBox(color: _bg),
+                child: ColoredBox(color: Colors.white),
               ),
             if (!_booting && (_busy || _isDownloading || vm.isSaving))
               const Positioned.fill(
@@ -829,6 +929,81 @@ class _VisitingCardLandscapeEditScreenState
           ],
         ),
       ),
+    );
+  }
+}
+
+class _BarSpec {
+  const _BarSpec({
+    required this.label,
+    required this.onTap,
+    this.icon,
+    this.asset,
+    this.highlighted = false,
+  });
+
+  final IconData? icon;
+  final String? asset;
+  final String label;
+  final VoidCallback onTap;
+  final bool highlighted;
+}
+
+class _VerticalBarItem extends StatelessWidget {
+  const _VerticalBarItem({
+    required this.label,
+    required this.onTap,
+    this.icon,
+    this.asset,
+    this.highlighted = false,
+  });
+
+  final IconData? icon;
+  final String? asset;
+  final String label;
+  final VoidCallback onTap;
+  final bool highlighted;
+
+  @override
+  Widget build(BuildContext context) {
+    final glyph = icon != null
+        ? Icon(icon, color: Colors.white, size: 22)
+        : SvgPicture.asset(
+            asset!,
+            width: 22,
+            height: 22,
+            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+          );
+    return InkWell(
+      onTap: onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 36,
+            height: 32,
+            alignment: Alignment.center,
+            decoration: highlighted
+                ? BoxDecoration(
+                    color: const Color(0xFF149944),
+                    borderRadius: BorderRadius.circular(8),
+                  )
+                : null,
+            child: glyph,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              height: 1.1,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -906,9 +1081,8 @@ class _PagerArrow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: const Color(0xFFEDEDED),
       shape: const CircleBorder(),
-      elevation: 1,
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: enabled ? onTap : null,
@@ -926,511 +1100,8 @@ class _PagerArrow extends StatelessWidget {
   }
 }
 
-class _TopTools extends StatelessWidget {
-  const _TopTools({
-    required this.onUndo,
-    required this.onRedo,
-    required this.onExit,
-    this.canUndo = true,
-    this.canRedo = true,
-  });
-
-  final VoidCallback onUndo;
-  final VoidCallback onRedo;
-  final VoidCallback onExit;
-  final bool canUndo;
-  final bool canRedo;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        _ToolIcon(
-          icon: Icons.undo_rounded,
-          onTap: canUndo ? onUndo : null,
-          enabled: canUndo,
-        ),
-        const SizedBox(width: 10),
-        _ToolIcon(
-          icon: Icons.redo_rounded,
-          onTap: canRedo ? onRedo : null,
-          enabled: canRedo,
-        ),
-        const SizedBox(width: 10),
-        _ToolIcon(icon: Icons.logout_rounded, onTap: onExit),
-      ],
-    );
-  }
-}
-
-class _ToolIcon extends StatelessWidget {
-  const _ToolIcon({
-    required this.icon,
-    required this.onTap,
-    this.enabled = true,
-  });
-
-  final IconData icon;
-  final VoidCallback? onTap;
-  final bool enabled;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: enabled ? onTap : null,
-      borderRadius: BorderRadius.circular(6),
-      child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: Icon(
-          icon,
-          color: enabled ? Colors.white : Colors.white38,
-          size: 22,
-        ),
-      ),
-    );
-  }
-}
-
-class _RailItem extends StatelessWidget {
-  const _RailItem({
-    required this.asset,
-    required this.label,
-    required this.onTap,
-  });
-
-  final String asset;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Material(
-        color: _VisitingCardLandscapeEditScreenState._itemFill,
-        borderRadius: BorderRadius.circular(8),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            height: 38,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: _VisitingCardLandscapeEditScreenState._itemBorder,
-              ),
-            ),
-            child: Row(
-              children: [
-                SvgPicture.asset(asset, width: 17, height: 17),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      height: 1.1,
-                    ),
-                  ),
-                ),
-                const Icon(
-                  Icons.chevron_right,
-                  color: Colors.white,
-                  size: 18,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 const _selectIconDir = 'assets/visiting_card_select_text_icon';
-
-/// Right rail shown while a card field is selected (Figma text tools).
-class _SelectedFieldRail extends StatelessWidget {
-  const _SelectedFieldRail({
-    required this.showTextTools,
-    required this.showColor,
-    required this.onReplaceLogo,
-    required this.onEditText,
-    required this.onColor,
-    required this.colorActive,
-    required this.onSize,
-    required this.sizeActive,
-    required this.onFontStyle,
-    required this.onDelete,
-    required this.onDuplicate,
-    required this.onSendBack,
-    required this.onSendFront,
-    required this.onLock,
-    required this.locked,
-    required this.onPanel,
-    required this.activePanel,
-    required this.onClose,
-    required this.onNudge,
-    required this.onFlip,
-  });
-
-  final bool showTextTools;
-  final bool showColor;
-  final VoidCallback? onReplaceLogo;
-  final VoidCallback onEditText;
-  final VoidCallback onColor;
-  final bool colorActive;
-  final VoidCallback onSize;
-  final bool sizeActive;
-  final VoidCallback onFontStyle;
-  final VoidCallback onDelete;
-  final VoidCallback onDuplicate;
-  final VoidCallback onSendBack;
-  final VoidCallback onSendFront;
-  final VoidCallback onLock;
-  final bool locked;
-  final void Function(String name) onPanel;
-  final String activePanel;
-  final VoidCallback onClose;
-  final void Function(double dxFraction, double dyFraction) onNudge;
-  final void Function(bool horizontal) onFlip;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: EdgeInsets.zero,
-      children: [
-        if (onReplaceLogo != null)
-          _SelectRailItem(
-            asset: 'assets/visiting_card_option_icon/logo_option_icon.svg',
-            label: 'Replace logo',
-            onTap: onReplaceLogo!,
-          ),
-        if (showTextTools)
-          _SelectRailItem(
-            asset: '$_selectIconDir/edit_text_icon.svg',
-            label: 'Edit Text',
-            onTap: onEditText,
-          ),
-        if (showColor)
-          _SelectRailItem(
-            asset: '$_selectIconDir/color_icon.svg',
-            label: 'Color',
-            highlighted: colorActive,
-            onTap: onColor,
-          ),
-        _SelectRailItem(
-          asset: '$_selectIconDir/font_size_icon.svg',
-          label: 'Size',
-          highlighted: sizeActive,
-          onTap: onSize,
-        ),
-        if (showTextTools)
-          _SelectRailItem(
-            asset: '$_selectIconDir/font_style_icon.svg',
-            label: 'Font style',
-            onTap: onFontStyle,
-          ),
-        _SelectRailItem(
-          asset: '$_selectIconDir/rotate_icon.svg',
-          label: 'Rotate',
-          highlighted: activePanel == 'Rotate',
-          onTap: () => onPanel('Rotate'),
-        ),
-        _SelectRailItem(
-          asset: '$_selectIconDir/opacity_icon.svg',
-          label: 'Opacity',
-          highlighted: activePanel == 'Opacity',
-          onTap: () => onPanel('Opacity'),
-        ),
-        _MoveAndFlipCard(onNudge: onNudge, onFlip: onFlip),
-        if (showTextTools)
-          _SelectRailItem(
-            asset: '$_selectIconDir/stoke_icon.svg',
-            label: 'Stroke',
-            highlighted: activePanel == 'Stroke',
-            onTap: () => onPanel('Stroke'),
-          ),
-        if (showTextTools)
-          _SelectRailItem(
-            asset: '$_selectIconDir/spacing_icon.svg',
-            label: 'Spacing',
-            highlighted: activePanel == 'Spacing',
-            onTap: () => onPanel('Spacing'),
-          ),
-        if (showTextTools)
-          _SelectRailItem(
-            asset: '$_selectIconDir/shadow_icon.svg',
-            label: 'Shadow',
-            highlighted: activePanel == 'Shadow',
-            onTap: () => onPanel('Shadow'),
-          ),
-        _SelectRailItem(
-          asset: '$_selectIconDir/delete_icon.svg',
-          label: 'Delete',
-          onTap: onDelete,
-        ),
-        _SelectRailItem(
-          asset: '$_selectIconDir/send_back_icon.svg',
-          label: 'Send Back',
-          onTap: onSendBack,
-        ),
-        _SelectRailItem(
-          asset: '$_selectIconDir/send_front_icon.svg',
-          label: 'Send Front',
-          onTap: onSendFront,
-        ),
-        _SelectRailItem(
-          asset: '$_selectIconDir/duplicate_icon.svg',
-          label: 'Duplicate',
-          onTap: onDuplicate,
-        ),
-        _SelectRailItem(
-          asset: '$_selectIconDir/close_icon.svg',
-          label: 'Close',
-          onTap: onClose,
-        ),
-        _SelectRailItem(
-          asset: locked
-              ? '$_selectIconDir/unlock_icon.svg'
-              : '$_selectIconDir/lock_icon.svg',
-          label: locked ? 'Unlock' : 'Lock',
-          onTap: onLock,
-        ),
-      ],
-    );
-  }
-}
-
-class _SelectRailItem extends StatelessWidget {
-  const _SelectRailItem({
-    required this.asset,
-    required this.label,
-    required this.onTap,
-    this.highlighted = false,
-  });
-
-  final String asset;
-  final String label;
-  final VoidCallback onTap;
-  final bool highlighted;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-        child: Material(
-        color: highlighted
-            ? const Color(0x00000000)
-            : _VisitingCardLandscapeEditScreenState._itemFill,
-        borderRadius: BorderRadius.circular(8),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            height: 36,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              gradient: highlighted
-                  ? const LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [
-                        Color(0xFF00973D),
-                        Color(0xFF008825),
-                      ],
-                    )
-                  : null,
-              border: highlighted
-                  ? null
-                  : Border.all(
-                      color: _VisitingCardLandscapeEditScreenState._itemBorder,
-                    ),
-            ),
-            child: Row(
-              children: [
-                SvgPicture.asset(asset, width: 16, height: 16),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      height: 1.1,
-                    ),
-                  ),
-                ),
-                const Icon(
-                  Icons.chevron_right,
-                  color: Colors.white,
-                  size: 18,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MoveAndFlipCard extends StatelessWidget {
-  const _MoveAndFlipCard({
-    required this.onNudge,
-    required this.onFlip,
-  });
-
-  final void Function(double dxFraction, double dyFraction) onNudge;
-  final void Function(bool horizontal) onFlip;
-
-  static const _step = 0.008;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
-        decoration: BoxDecoration(
-          color: _VisitingCardLandscapeEditScreenState._itemFill,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: _VisitingCardLandscapeEditScreenState._itemBorder,
-          ),
-        ),
-        child: Column(
-          children: [
-            _NudgeArrow(
-              Icons.keyboard_arrow_up_rounded,
-              onTap: () => onNudge(0, -_step),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _NudgeArrow(
-                  Icons.keyboard_arrow_left_rounded,
-                  onTap: () => onNudge(-_step, 0),
-                ),
-                const SizedBox(width: 36),
-                _NudgeArrow(
-                  Icons.keyboard_arrow_right_rounded,
-                  onTap: () => onNudge(_step, 0),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            _NudgeArrow(
-              Icons.keyboard_arrow_down_rounded,
-              onTap: () => onNudge(0, _step),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: _AxisChip(
-                    asset: '$_selectIconDir/horizontal_icon.svg',
-                    label: 'Horizontal',
-                    onTap: () => onFlip(true),
-                  ),
-                ),
-                Expanded(
-                  child: _AxisChip(
-                    asset: '$_selectIconDir/vertical_icon.svg',
-                    label: 'Vertical',
-                    onTap: () => onFlip(false),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NudgeArrow extends StatelessWidget {
-  const _NudgeArrow(this.icon, {required this.onTap});
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0x00000000),
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: Container(
-          width: 26,
-          height: 26,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white70, width: 1),
-          ),
-          child: Icon(icon, color: Colors.white, size: 16),
-        ),
-      ),
-    );
-  }
-}
-
-class _AxisChip extends StatelessWidget {
-  const _AxisChip({
-    required this.asset,
-    required this.label,
-    required this.onTap,
-  });
-
-  final String asset;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SvgPicture.asset(asset, width: 16, height: 16),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 const _textSwatches = <Color>[
   Color(0xFF000000),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 
 /// Landscape Save → full-screen rename (other-app style).
@@ -49,10 +48,6 @@ class _VisitingCardLandscapeRenameScreenState
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialValue);
-    SystemChrome.setPreferredOrientations(const [
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _focusNode.requestFocus();
     });

@@ -15,6 +15,7 @@ import 'package:visiting_card/features/parent/presentation/view_model/parent_vie
 import 'package:visiting_card/features/scan/presentation/helper/visiting_card_share_helper.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_export_utils.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_edit_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_vertical_edit_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_edit_field_cards.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
@@ -330,13 +331,20 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
                             right: 6.w,
                             child: _CornerActionButton(
                               onTap: () {
-                                VisitingCardLandscapeEditScreen.open(
-                                  context,
-                                  vm: vm,
-                                );
+                                if (vm.isHorizontal) {
+                                  VisitingCardLandscapeEditScreen.open(
+                                    context,
+                                    vm: vm,
+                                  );
+                                } else {
+                                  VisitingCardVerticalEditScreen.open(
+                                    context,
+                                    vm: vm,
+                                  );
+                                }
                               },
                               child: SvgPicture.asset(
-                                ui.AppAssets.visitingTemplateEditIcon,
+                                ui.AppAssets.visitingTemplateEditIconOne,
                                 width: 15.w,
                                 height: 15.w,
                               ),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_font_style.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
@@ -31,15 +30,6 @@ class VisitingCardLandscapeFontStyleScreen extends StatefulWidget {
 class _VisitingCardLandscapeFontStyleScreenState
     extends State<VisitingCardLandscapeFontStyleScreen> {
   static const _bg = Color(0xFF003303);
-
-  @override
-  void initState() {
-    super.initState();
-    SystemChrome.setPreferredOrientations(const [
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-  }
 
   @override
   Widget build(BuildContext context) {

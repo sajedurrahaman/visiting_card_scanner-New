@@ -114,6 +114,7 @@ flutter:
      - assets/visiting_card_scanner_icon/
      - assets/visiting_card_scanner_shape/
      - assets/visiting_card_scanner_logo/
+     - assets/visiting_card_option_icon/
      - assets/svg/
      - assets/svg/genertor/
      - assets/svg/genertor/qrcode/

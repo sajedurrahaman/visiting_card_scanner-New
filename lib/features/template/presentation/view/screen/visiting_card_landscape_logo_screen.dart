@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -65,15 +64,6 @@ class _VisitingCardLandscapeLogoScreenState
 
   bool _library = true;
   bool _picking = false;
-
-  @override
-  void initState() {
-    super.initState();
-    SystemChrome.setPreferredOrientations(const [
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-  }
 
   void _apply(String path) {
     final vm = context.read<VisitingCardEditContactViewModel>();
