@@ -646,18 +646,6 @@ class _VisitingCardScannedDetailsScreenState
                             ),
                           ),
                         ),
-                        Positioned(
-                          bottom: 6.h,
-                          right: 6.w,
-                          child: _CornerActionButton(
-                            onTap: _onEditSelectedTemplate,
-                            child: SvgPicture.asset(
-                              ui.AppAssets.visitingTemplateEditIcon,
-                              width: 15.w,
-                              height: 15.w,
-                            ),
-                          ),
-                        ),
                         if (_isDownloadingScan)
                           Positioned.fill(
                             child: ColoredBox(
@@ -735,7 +723,7 @@ class _VisitingCardScannedDetailsScreenState
                           child: _CornerActionButton(
                             onTap: _onEditSelectedTemplate,
                             child: SvgPicture.asset(
-                              ui.AppAssets.visitingTemplateEditIcon,
+                              ui.AppAssets.visitingTemplateEditIconOne,
                               width: 15.w,
                               height: 15.w,
                             ),

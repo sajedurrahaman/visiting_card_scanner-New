@@ -249,6 +249,7 @@ class AppAssets {
   static const defaultQrcodeIcon = 'assets/icons/default_qrcode.png';
   static const visitingTemplateLocalFileUploadIcon = 'assets/icons/local_upload_icon.png';
   static const visitingTemplateEditIcon = 'assets/icons/green_edit.svg';
+  static const visitingTemplateEditIconOne = 'assets/icons/landscape_edit_icon.svg';
   static const visitingTemplateLocationIcon = 'assets/icons/green_location.svg';
   static const visitingTemplateMailIcon = 'assets/icons/green_mail.svg';
   static const visitingTemplatePhoneIcon = 'assets/icons/green_phone.svg';

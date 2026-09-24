@@ -615,7 +615,7 @@ class _VisitingCardContactDetailsScreenState
               child: _CornerActionButton(
                 onTap: _openEdit,
                 child: SvgPicture.asset(
-                  ui.AppAssets.visitingTemplateEditIcon,
+                  ui.AppAssets.visitingTemplateEditIconOne,
                   width: 15.w,
                   height: 15.w,
                 ),

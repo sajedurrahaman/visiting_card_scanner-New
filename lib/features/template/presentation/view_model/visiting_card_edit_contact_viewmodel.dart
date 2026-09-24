@@ -674,6 +674,82 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
 
   bool get selectedIsLocked => activeTransform?.locked ?? false;
 
+  /// Puts the selected field behind every other field, including text.
+  void sendSelectedOverlayBack() => _moveSelectedStack(toFront: false);
+
+  /// Puts the selected field in front of every other field.
+  void sendSelectedOverlayFront() => _moveSelectedStack(toFront: true);
+
+  /// Fields currently painted on this side, back to front.
+  List<String> _visibleStackKeys() {
+    final keys = <String>[];
+    for (final field in VisitingCardOverlayField.values) {
+      if (field.isImageOverlay) {
+        final shown = field == VisitingCardOverlayField.logo
+            ? hasChosenLogo
+            : hasChosenQr;
+        if (shown) keys.add(VisitingCardFieldTransform.keyOf(field));
+      } else if (overlayText(field).trim().isNotEmpty) {
+        keys.add(VisitingCardFieldTransform.keyOf(field));
+      }
+    }
+    for (final entry in currentOverlays.entries) {
+      if (!entry.key.startsWith('dup:')) continue;
+      final text = entry.value.duplicateText?.trim() ?? '';
+      final image = entry.value.duplicateImagePath ?? '';
+      if (text.isNotEmpty || image.isNotEmpty) keys.add(entry.key);
+    }
+    final dupOrder = [
+      for (final key in currentOverlays.keys)
+        if (key.startsWith('dup:')) key,
+    ];
+    int tie(String key) {
+      if (key.startsWith('dup:')) return 1000 + dupOrder.indexOf(key);
+      final field = VisitingCardFieldTransform.fieldFromKey(key);
+      if (field == null) return 0;
+      return VisitingCardFieldTransform.naturalZ(field);
+    }
+
+    keys.sort((a, b) {
+      final byZ = VisitingCardFieldTransform
+          .stackZ(a, currentOverlays[a])
+          .compareTo(VisitingCardFieldTransform.stackZ(b, currentOverlays[b]));
+      if (byZ != 0) return byZ;
+      return tie(a).compareTo(tie(b));
+    });
+    return keys;
+  }
+
+  void _moveSelectedStack({required bool toFront}) {
+    final field = selectedOverlay;
+    final dupId = selectedDuplicateId;
+    if (field == null && dupId == null) return;
+    final key = dupId != null
+        ? duplicateKey(dupId)
+        : VisitingCardFieldTransform.keyOf(field!);
+    final ordered = _visibleStackKeys();
+    if (!ordered.contains(key)) ordered.add(key);
+    final already = toFront ? ordered.last == key : ordered.first == key;
+    if (already) return;
+    ordered.remove(key);
+    if (toFront) {
+      ordered.add(key);
+    } else {
+      ordered.insert(0, key);
+    }
+    for (var i = 0; i < ordered.length; i++) {
+      final itemKey = ordered[i];
+      if (!itemKey.startsWith('dup:')) {
+        final itemField = VisitingCardFieldTransform.fieldFromKey(itemKey);
+        if (itemField != null) _ensureOverlay(itemField);
+      }
+      final current = currentOverlays[itemKey];
+      if (current == null || current.zIndex == i) continue;
+      currentOverlays[itemKey] = current.copyWith(zIndex: i);
+    }
+    notifyListeners();
+  }
+
   /// Landscape Lock: hide the eight resize dots on the selected field.
   void toggleSelectedOverlayLock() {
     final current = activeTransform;

@@ -345,8 +345,8 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     required bool interactive,
   }) {
     final vm = widget.vm;
-    final below = <Widget>[];
-    final above = <Widget>[];
+    final layers = <(int, int, Widget)>[];
+    var layerSeq = 0;
     // Landscape editor uses its own sizing (no ScreenUtil .sp) so the
     // selection border matches the painted glyphs exactly.
     final landscape = widget.selectionBorderOnlyWhenSelected;
@@ -362,15 +362,19 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       return designSize.sp;
     }
 
-    void addOverlay(Widget overlay, VisitingCardOverlayField field) {
-      if (landscape && vm.selectedOverlay == field) {
-        above.add(overlay);
-      } else {
-        below.add(overlay);
-      }
+    void addLayer(Widget overlay, int z) {
+      layers.add((z, layerSeq++, overlay));
     }
 
-    final children = below;
+    void addOverlay(Widget overlay, VisitingCardOverlayField field) {
+      addLayer(
+        overlay,
+        VisitingCardFieldTransform.stackZ(
+          VisitingCardFieldTransform.keyOf(field),
+          vm.overlayFor(field, isFront: isFront),
+        ),
+      );
+    }
 
     TextStyle styleFor(VisitingCardFieldPosition pos, {double? fontSize}) {
       final resolved = resolveFont(fontSize ?? pos.fontSize);
@@ -569,7 +573,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       );
 
       if (!interactive) {
-        children.add(
+        addLayer(
           Positioned(
             left: size.width * t.left,
             top: size.height * t.top,
@@ -580,6 +584,10 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
               angle: t.rotation,
               child: _flipField(text, t),
             ),
+          ),
+          VisitingCardFieldTransform.stackZ(
+            VisitingCardFieldTransform.keyOf(field),
+            t,
           ),
         );
         return;
@@ -797,7 +805,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       );
 
       if (!interactive) {
-        children.add(
+        addLayer(
           Positioned(
             left: size.width * t.left,
             top: size.height * t.top,
@@ -808,6 +816,10 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
               angle: t.rotation,
               child: _flipField(text, t),
             ),
+          ),
+          VisitingCardFieldTransform.stackZ(
+            VisitingCardFieldTransform.keyOf(field),
+            t,
           ),
         );
         return;
@@ -1022,11 +1034,13 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       final gestureField = source ?? VisitingCardOverlayField.name;
       final selected = vm.selectedDuplicateId == id;
       void place(Widget overlay) {
-        if (selected) {
-          above.add(overlay);
-        } else {
-          below.add(overlay);
-        }
+        addLayer(
+          overlay,
+          VisitingCardFieldTransform.stackZ(
+            VisitingCardEditContactViewModel.duplicateKey(id),
+            t,
+          ),
+        );
       }
 
       if (source != null && source.isImageOverlay) {
@@ -1284,7 +1298,12 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       paintDuplicate(entry.key.substring(4), entry.value);
     }
 
-    return [...below, ...above];
+    layers.sort((a, b) {
+      final byZ = a.$1.compareTo(b.$1);
+      if (byZ != 0) return byZ;
+      return a.$2.compareTo(b.$2);
+    });
+    return [for (final layer in layers) layer.$3];
   }
 }
 

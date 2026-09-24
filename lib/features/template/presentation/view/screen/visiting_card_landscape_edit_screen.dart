@@ -717,7 +717,6 @@ class _VisitingCardLandscapeEditScreenState
                                   )
                                 : _SelectedFieldRail(
                                     showTextTools: !vm.selectedIsImage,
-                                    onItem: _comingSoon,
                                     onEditText: _onEditText,
                                     onColor: _onColor,
                                     colorActive: _panel == 'Color',
@@ -726,6 +725,8 @@ class _VisitingCardLandscapeEditScreenState
                                     onFontStyle: _onFontStyle,
                                     onDelete: _onDelete,
                                     onDuplicate: _onDuplicate,
+                                    onSendBack: vm.sendSelectedOverlayBack,
+                                    onSendFront: vm.sendSelectedOverlayFront,
                                     onLock: _onLock,
                                     locked: vm.selectedIsLocked,
                                     onPanel: _togglePanel,
@@ -1011,7 +1012,6 @@ const _selectIconDir = 'assets/visiting_card_select_text_icon';
 class _SelectedFieldRail extends StatelessWidget {
   const _SelectedFieldRail({
     required this.showTextTools,
-    required this.onItem,
     required this.onEditText,
     required this.onColor,
     required this.colorActive,
@@ -1020,6 +1020,8 @@ class _SelectedFieldRail extends StatelessWidget {
     required this.onFontStyle,
     required this.onDelete,
     required this.onDuplicate,
+    required this.onSendBack,
+    required this.onSendFront,
     required this.onLock,
     required this.locked,
     required this.onPanel,
@@ -1030,7 +1032,6 @@ class _SelectedFieldRail extends StatelessWidget {
   });
 
   final bool showTextTools;
-  final void Function(String label) onItem;
   final VoidCallback onEditText;
   final VoidCallback onColor;
   final bool colorActive;
@@ -1039,6 +1040,8 @@ class _SelectedFieldRail extends StatelessWidget {
   final VoidCallback onFontStyle;
   final VoidCallback onDelete;
   final VoidCallback onDuplicate;
+  final VoidCallback onSendBack;
+  final VoidCallback onSendFront;
   final VoidCallback onLock;
   final bool locked;
   final void Function(String name) onPanel;
@@ -1119,12 +1122,12 @@ class _SelectedFieldRail extends StatelessWidget {
         _SelectRailItem(
           asset: '$_selectIconDir/send_back_icon.svg',
           label: 'Send Back',
-          onTap: () => onItem('Send Back'),
+          onTap: onSendBack,
         ),
         _SelectRailItem(
           asset: '$_selectIconDir/send_front_icon.svg',
           label: 'Send Front',
-          onTap: () => onItem('Send Front'),
+          onTap: onSendFront,
         ),
         _SelectRailItem(
           asset: '$_selectIconDir/duplicate_icon.svg',

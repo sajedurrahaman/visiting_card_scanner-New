@@ -54,6 +54,7 @@ class VisitingCardFieldTransform {
     this.fontItalicMode = 0,
     this.fontUnderline = false,
     this.fontStrike = false,
+    this.zIndex,
   });
 
   final double left;
@@ -91,6 +92,34 @@ class VisitingCardFieldTransform {
   final int fontItalicMode;
   final bool fontUnderline;
   final bool fontStrike;
+
+  /// Paint order on the card. Null keeps the template's default stack.
+  /// Higher values are in front.
+  final int? zIndex;
+
+  static int naturalZ(VisitingCardOverlayField field) => switch (field) {
+        VisitingCardOverlayField.name => 0,
+        VisitingCardOverlayField.designation => 10,
+        VisitingCardOverlayField.company => 20,
+        VisitingCardOverlayField.tagline => 30,
+        VisitingCardOverlayField.phone => 40,
+        VisitingCardOverlayField.email => 50,
+        VisitingCardOverlayField.website => 60,
+        VisitingCardOverlayField.address => 70,
+        VisitingCardOverlayField.logo => 80,
+        VisitingCardOverlayField.qr => 90,
+      };
+
+  /// Stack position for a stored overlay. Duplicates sit above template fields
+  /// until Send Back / Send Front assigns [zIndex].
+  static int stackZ(String key, VisitingCardFieldTransform? transform) {
+    final stored = transform?.zIndex;
+    if (stored != null) return stored;
+    if (key.startsWith('dup:')) return 100;
+    final field = fieldFromKey(key);
+    if (field == null) return 0;
+    return naturalZ(field);
+  }
 
   bool get hasFontOverride =>
       fontPreset != null ||
@@ -132,6 +161,7 @@ class VisitingCardFieldTransform {
     int? fontItalicMode,
     bool? fontUnderline,
     bool? fontStrike,
+    int? zIndex,
   }) {
     return VisitingCardFieldTransform(
       left: left ?? this.left,
@@ -157,6 +187,7 @@ class VisitingCardFieldTransform {
       fontItalicMode: fontItalicMode ?? this.fontItalicMode,
       fontUnderline: fontUnderline ?? this.fontUnderline,
       fontStrike: fontStrike ?? this.fontStrike,
+      zIndex: zIndex ?? this.zIndex,
     );
   }
 
@@ -184,6 +215,7 @@ class VisitingCardFieldTransform {
         if (fontItalicMode != 0) 'fontItalicMode': fontItalicMode,
         if (fontUnderline) 'fontUnderline': fontUnderline,
         if (fontStrike) 'fontStrike': fontStrike,
+        if (zIndex != null) 'zIndex': zIndex,
       };
 
   factory VisitingCardFieldTransform.fromJson(Map<String, dynamic> json) {
@@ -211,6 +243,7 @@ class VisitingCardFieldTransform {
       fontItalicMode: (json['fontItalicMode'] as num?)?.toInt() ?? 0,
       fontUnderline: json['fontUnderline'] == true,
       fontStrike: json['fontStrike'] == true,
+      zIndex: (json['zIndex'] as num?)?.toInt(),
     );
   }
 
