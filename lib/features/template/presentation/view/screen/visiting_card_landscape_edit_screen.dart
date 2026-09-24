@@ -16,6 +16,7 @@ import 'package:visiting_card/features/template/domain/visiting_card_export_util
 import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_edit_text_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_icon_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_logo_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_shape_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_font_style_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_template_screen.dart';
@@ -293,12 +294,8 @@ class _VisitingCardLandscapeEditScreenState
     }
   }
 
-  Future<void> _onPickLogo() async {
-    final file = await VisitingCardLogoPickerScreen.open(context);
-    if (file == null || !mounted) return;
-    final vm = context.read<VisitingCardEditContactViewModel>();
-    final path = await vm.persistLogoFile(file);
-    vm.applyLogoImage(path);
+  Future<void> _onPickLogo() {
+    return VisitingCardLandscapeLogoScreen.open(context);
   }
 
   Future<void> _onPickImage() async {
@@ -730,6 +727,9 @@ class _VisitingCardLandscapeEditScreenState
                                     showTextTools: !vm.selectedIsImage,
                                     showColor:
                                         !vm.selectedIsImage || vm.selectedIsShape,
+                                    onReplaceLogo: vm.selectedIsLogo
+                                        ? _onPickLogo
+                                        : null,
                                     onEditText: _onEditText,
                                     onColor: _onColor,
                                     colorActive: _panel == 'Color',
@@ -1026,6 +1026,7 @@ class _SelectedFieldRail extends StatelessWidget {
   const _SelectedFieldRail({
     required this.showTextTools,
     required this.showColor,
+    required this.onReplaceLogo,
     required this.onEditText,
     required this.onColor,
     required this.colorActive,
@@ -1047,6 +1048,7 @@ class _SelectedFieldRail extends StatelessWidget {
 
   final bool showTextTools;
   final bool showColor;
+  final VoidCallback? onReplaceLogo;
   final VoidCallback onEditText;
   final VoidCallback onColor;
   final bool colorActive;
@@ -1070,6 +1072,12 @@ class _SelectedFieldRail extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.zero,
       children: [
+        if (onReplaceLogo != null)
+          _SelectRailItem(
+            icon: Icons.hexagon_outlined,
+            label: 'Replace logo',
+            onTap: onReplaceLogo!,
+          ),
         if (showTextTools)
           _SelectRailItem(
             asset: '$_selectIconDir/edit_text_icon.svg',
@@ -1168,13 +1176,15 @@ class _SelectedFieldRail extends StatelessWidget {
 
 class _SelectRailItem extends StatelessWidget {
   const _SelectRailItem({
-    required this.asset,
+    this.asset,
+    this.icon,
     required this.label,
     required this.onTap,
     this.highlighted = false,
   });
 
-  final String asset;
+  final String? asset;
+  final IconData? icon;
   final String label;
   final VoidCallback onTap;
   final bool highlighted;
@@ -1214,7 +1224,10 @@ class _SelectRailItem extends StatelessWidget {
             ),
             child: Row(
               children: [
-                SvgPicture.asset(asset, width: 16, height: 16),
+                if (icon != null)
+                  Icon(icon, color: Colors.white, size: 16)
+                else
+                  SvgPicture.asset(asset!, width: 16, height: 16),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(

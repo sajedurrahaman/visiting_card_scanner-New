@@ -405,6 +405,15 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         customShapeSource;
   }
 
+  /// Template logo field, or an extra logo added from the Logos tool.
+  bool get selectedIsLogo {
+    if (selectedDuplicateId != null) {
+      return currentOverlays[duplicateKey(selectedDuplicateId!)]?.duplicateOf ==
+          'logo';
+    }
+    return selectedOverlay == VisitingCardOverlayField.logo;
+  }
+
   bool get selectedIsImage {
     if (selectedDuplicateId != null) {
       return _sourceIsImage(
@@ -518,6 +527,47 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     selectedOverlay = null;
     selectedDuplicateId = id;
     notifyListeners();
+  }
+
+  /// Adds another logo on the current side. The logo already on the card stays.
+  void addCustomLogo(String assetPath) {
+    final path = assetPath.trim();
+    if (path.isEmpty) return;
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+    final existing = currentOverlays.values
+        .where((t) => t.duplicateOf == 'logo')
+        .length;
+    final nudge = (existing % 6) * 0.05;
+    currentOverlays[duplicateKey(id)] = VisitingCardFieldTransform(
+      left: (0.58 + nudge).clamp(0.06, 0.78),
+      top: (0.12 + nudge).clamp(0.06, 0.72),
+      size: 0.14,
+      duplicateOf: 'logo',
+      duplicateImagePath: path,
+    );
+    selectedOverlay = null;
+    selectedDuplicateId = id;
+    notifyListeners();
+  }
+
+  /// Replaces the selected logo, or adds a new one when no logo is selected.
+  void placeLogo(String path) {
+    final value = path.trim();
+    if (value.isEmpty) return;
+    if (!selectedIsLogo) {
+      addCustomLogo(value);
+      return;
+    }
+    if (selectedDuplicateId != null) {
+      final key = duplicateKey(selectedDuplicateId!);
+      final current = currentOverlays[key];
+      if (current != null) {
+        currentOverlays[key] = current.copyWith(duplicateImagePath: value);
+        notifyListeners();
+      }
+      return;
+    }
+    applyLogoImage(value);
   }
 
   /// Adds a new text field on the current side and selects it.
