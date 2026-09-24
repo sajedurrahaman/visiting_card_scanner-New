@@ -46,6 +46,8 @@ class _VisitingCardLandscapeIconScreenState
   Widget build(BuildContext context) {
     final pad =
         (MediaQuery.sizeOf(context).shortestSide * 0.035).clamp(12.0, 18.0);
+    final size = MediaQuery.sizeOf(context);
+    final columns = size.height > size.width ? 5 : 11;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -92,8 +94,8 @@ class _VisitingCardLandscapeIconScreenState
             Expanded(
               child: GridView.builder(
                 padding: EdgeInsets.fromLTRB(pad + 8, 16, pad + 8, 16),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 11,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
                   mainAxisSpacing: 14,
                   crossAxisSpacing: 14,
                 ),

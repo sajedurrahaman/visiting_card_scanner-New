@@ -58,6 +58,13 @@ class _VisitingCardLandscapeTemplateScreenState
     final vm = context.watch<VisitingCardEditContactViewModel>();
     final pad = (MediaQuery.sizeOf(context).shortestSide * 0.035)
         .clamp(12.0, 18.0);
+    final portrait =
+        MediaQuery.sizeOf(context).height > MediaQuery.sizeOf(context).width;
+    final side = _horizontal
+        ? pad + 24
+        : portrait
+        ? pad + 12
+        : pad + 80;
     final templates = _templates;
 
     return Scaffold(
@@ -70,17 +77,6 @@ class _VisitingCardLandscapeTemplateScreenState
               padding: EdgeInsets.fromLTRB(pad, 20, pad, 12),
               child: Row(
                 children: [
-                  _OrientationChip(
-                    label: 'Horizontal',
-                    selected: _horizontal,
-                    onTap: () => setState(() => _horizontal = true),
-                  ),
-                  const SizedBox(width: 22),
-                  _OrientationChip(
-                    label: 'Vertical',
-                    selected: !_horizontal,
-                    onTap: () => setState(() => _horizontal = false),
-                  ),
                   const Spacer(),
                   Material(
                     color: const Color(0xFFFFFFFF),
@@ -104,16 +100,19 @@ class _VisitingCardLandscapeTemplateScreenState
             ),
             Expanded(
               child: GridView.builder(
-                padding: EdgeInsets.fromLTRB(
-                  _horizontal ? pad + 24 : pad + 80,
-                  4,
-                  _horizontal ? pad + 24 : pad + 80,
-                  pad,
-                ),
+                padding: EdgeInsets.fromLTRB(side, 4, side, pad),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: _horizontal ? 2 : 3,
-                  mainAxisSpacing: _horizontal ? 16 : 28,
-                  crossAxisSpacing: _horizontal ? 20 : 48,
+                  mainAxisSpacing: _horizontal
+                      ? 16
+                      : portrait
+                      ? 16
+                      : 28,
+                  crossAxisSpacing: _horizontal
+                      ? 20
+                      : portrait
+                      ? 14
+                      : 48,
                   childAspectRatio: _horizontal ? 1.75 : 0.63,
                 ),
                 itemCount: templates.length,
@@ -160,59 +159,6 @@ class _VisitingCardLandscapeTemplateScreenState
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _OrientationChip extends StatelessWidget {
-  const _OrientationChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0x00000000),
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Ink(
-          height: 34,
-          padding: const EdgeInsets.symmetric(horizontal: 18),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: selected
-                ? const LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      Color(0xFF3DCB6A),
-                      Color(0xFF149944),
-                    ],
-                  )
-                : null,
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: selected
-                    ? const Color(0xFFFFFFFF)
-                    : const Color(0xFF9AA89A),
-                fontSize: 14,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-              ),
-            ),
-          ),
         ),
       ),
     );

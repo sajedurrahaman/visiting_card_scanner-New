@@ -176,10 +176,12 @@ class _VisitingCardLandscapeLogoScreenState
   }
 
   Widget _libraryGrid(double pad) {
+    final size = MediaQuery.sizeOf(context);
+    final portrait = size.height > size.width;
     return GridView.builder(
       padding: EdgeInsets.fromLTRB(pad + 6, 6, pad + 6, 10),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 9,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: portrait ? 4 : 9,
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
       ),

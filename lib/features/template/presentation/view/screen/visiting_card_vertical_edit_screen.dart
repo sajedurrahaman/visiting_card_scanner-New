@@ -506,6 +506,40 @@ class _VisitingCardVerticalEditScreenState
     );
   }
 
+  Widget? _openPanel(VisitingCardEditContactViewModel vm) {
+    if (!vm.hasSelection) return null;
+    if (_panel == 'Color' && (!vm.selectedIsImage || vm.selectedIsShape)) {
+      return _TextColorBar(
+        selected: vm.activeTransform?.textColor,
+        onClose: () => setState(() => _panel = ''),
+        onPick: vm.setSelectedOverlayColor,
+        onCustom: _pickCustomColor,
+      );
+    }
+    if (_panel == 'Size') {
+      return _TextSizeBar(
+        fraction: vm.selectedOverlaySizeFraction(),
+        onClose: () => setState(() => _panel = ''),
+        onChanged: vm.setSelectedOverlaySizeFraction,
+      );
+    }
+    if (_isAdjustPanel &&
+        !(vm.selectedIsImage &&
+            (_panel == 'Spacing' || _panel == 'Stroke' || _panel == 'Shadow'))) {
+      return _AdjustBar(
+        label: _panel,
+        fraction: vm.selectedAdjustFraction(_panel),
+        showColorPicker: _panel == 'Stroke' || _panel == 'Shadow',
+        onClose: () => setState(() => _panel = ''),
+        onChanged: (value) => vm.setSelectedAdjustFraction(_panel, value),
+        onPickColor: _panel == 'Stroke' || _panel == 'Shadow'
+            ? () => _pickEffectColor(_panel)
+            : null,
+      );
+    }
+    return null;
+  }
+
   Widget _verticalToolBar(VisitingCardEditContactViewModel vm) {
     final items = vm.hasSelection ? _selectedBarItems(vm) : _mainBarItems();
     return ColoredBox(
@@ -722,7 +756,6 @@ class _VisitingCardVerticalEditScreenState
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<VisitingCardEditContactViewModel>();
-    const pad = 16.0;
 
     return PopScope(
       canPop: _allowPop,
@@ -843,69 +876,37 @@ class _VisitingCardVerticalEditScreenState
                               ),
                             ),
                             const Spacer(),
-                            if (!_previewing &&
-                                _panel == 'Color' &&
-                                vm.hasSelection &&
-                                (!vm.selectedIsImage || vm.selectedIsShape))
-                              _TextColorBar(
-                                selected: vm.activeTransform?.textColor,
-                                onClose: () => setState(() => _panel = ''),
-                                onPick: vm.setSelectedOverlayColor,
-                                onCustom: _pickCustomColor,
-                              )
-                            else if (!_previewing &&
-                                _panel == 'Size' &&
-                                vm.hasSelection)
-                              _TextSizeBar(
-                                fraction: vm.selectedOverlaySizeFraction(),
-                                onClose: () => setState(() => _panel = ''),
-                                onChanged: vm.setSelectedOverlaySizeFraction,
-                              )
-                            else if (!_previewing &&
-                                _isAdjustPanel &&
-                                vm.hasSelection &&
-                                !(vm.selectedIsImage &&
-                                    (_panel == 'Spacing' ||
-                                        _panel == 'Stroke' ||
-                                        _panel == 'Shadow')))
-                              _AdjustBar(
-                                label: _panel,
-                                fraction: vm.selectedAdjustFraction(_panel),
-                                showColorPicker: _panel == 'Stroke' ||
-                                    _panel == 'Shadow',
-                                onClose: () => setState(() => _panel = ''),
-                                onChanged: (value) =>
-                                    vm.setSelectedAdjustFraction(_panel, value),
-                                onPickColor: _panel == 'Stroke' ||
-                                        _panel == 'Shadow'
-                                    ? () => _pickEffectColor(_panel)
-                                    : null,
-                              ),
                           ],
                         );
                       },
                     ),
                   ),
-                  if (!_previewing) _verticalToolBar(vm),
+                  if (!_previewing) ...[
+                    ?_openPanel(vm),
+                    _verticalToolBar(vm),
+                  ],
               ],
             ),
             if (_previewing && !_booting)
               Positioned(
-                top: 16,
-                right: pad + 18,
-                child: Material(
-                  color: const Color(0xFFFFFFFF),
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: _closePreview,
-                    child: const SizedBox(
-                      width: 32,
-                      height: 32,
-                      child: Icon(
-                        Icons.close,
-                        color: Color(0xFF000000),
-                        size: 18,
+                top: MediaQuery.paddingOf(context).top + 60,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Material(
+                    color: const Color(0xFFFFFFFF),
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: _closePreview,
+                      child: const SizedBox(
+                        width: 32,
+                        height: 32,
+                        child: Icon(
+                          Icons.close,
+                          color: Color(0xFF000000),
+                          size: 18,
+                        ),
                       ),
                     ),
                   ),
@@ -974,36 +975,48 @@ class _VerticalBarItem extends StatelessWidget {
             height: 22,
             colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
           );
+    const labelStyle = TextStyle(
+      color: Colors.white,
+      fontSize: 11,
+      fontWeight: FontWeight.w500,
+      height: 1.1,
+    );
+    final content = Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        glyph,
+        const SizedBox(height: 2),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: labelStyle,
+        ),
+      ],
+    );
     return InkWell(
       onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 36,
-            height: 32,
-            alignment: Alignment.center,
-            decoration: highlighted
-                ? BoxDecoration(
-                    color: const Color(0xFF149944),
-                    borderRadius: BorderRadius.circular(8),
-                  )
-                : null,
-            child: glyph,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              height: 1.1,
-            ),
-          ),
-        ],
+      child: Center(
+        child: highlighted
+            ? Container(
+                width: 56,
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF11B342), Color(0xFF016C31)],
+                  ),
+                  border: Border.all(
+                    color: const Color(0xFF6ACA2B),
+                    width: 0.9,
+                  ),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: content,
+              )
+            : content,
       ),
     );
   }
@@ -1174,22 +1187,15 @@ class _TextColorBar extends StatelessWidget {
         ),
     ];
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Container(
-        height: 64,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xFF00330C),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x66000000),
-              blurRadius: 12,
-              offset: Offset(0, 4),
-            ),
-          ],
+    return Container(
+      height: 64,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: const BoxDecoration(
+        color: Color(0xFF003303),
+        border: Border(
+          bottom: BorderSide(color: Colors.white, width: 1),
         ),
+      ),
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
@@ -1204,7 +1210,6 @@ class _TextColorBar extends StatelessWidget {
             );
           },
         ),
-      ),
     );
   }
 }
@@ -1223,23 +1228,16 @@ class _TextSizeBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final percent = (fraction.clamp(0.0, 1.0) * 100).round();
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Container(
-        height: 64,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: const Color(0xFF00330C),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x66000000),
-              blurRadius: 12,
-              offset: Offset(0, 4),
-            ),
-          ],
+    return Container(
+      height: 64,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: const BoxDecoration(
+        color: Color(0xFF003303),
+        border: Border(
+          bottom: BorderSide(color: Colors.white, width: 1.5),
         ),
-        child: Row(
+      ),
+      child: Row(
           children: [
             GestureDetector(
               onTap: onClose,
@@ -1296,7 +1294,6 @@ class _TextSizeBar extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 }
@@ -1321,23 +1318,16 @@ class _AdjustBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final percent = (fraction.clamp(0.0, 1.0) * 100).round();
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Container(
-        height: 64,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: const Color(0xFF00330C),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x66000000),
-              blurRadius: 12,
-              offset: Offset(0, 4),
-            ),
-          ],
+    return Container(
+      height: 64,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: const BoxDecoration(
+        color: Color(0xFF003303),
+        border: Border(
+          bottom: BorderSide(color: Colors.white, width: 1.5),
         ),
-        child: Row(
+      ),
+      child: Row(
           children: [
             GestureDetector(
               onTap: onClose,
@@ -1429,7 +1419,6 @@ class _AdjustBar extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 }
