@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
 
 /// Landscape logo picker. Library logos and a gallery upload both set the
@@ -12,7 +13,17 @@ import 'package:visiting_card/features/template/presentation/view_model/visiting
 ///
 /// Avoids ScreenUtil — portrait designSize breaks layout in landscape.
 class VisitingCardLandscapeLogoScreen extends StatefulWidget {
-  const VisitingCardLandscapeLogoScreen({super.key});
+  const VisitingCardLandscapeLogoScreen({
+    super.key,
+    this.libraryOnly = false,
+    this.setCardLogo = false,
+  });
+
+  /// Profile Logos page: title and asset grid, without the upload tab.
+  final bool libraryOnly;
+
+  /// Sets the card's logo field instead of adding another logo.
+  final bool setCardLogo;
 
   static const _dir = 'assets/visiting_card_scanner_logo';
 
@@ -22,14 +33,21 @@ class VisitingCardLandscapeLogoScreen extends StatefulWidget {
     '$_dir/Group 1707498098.svg',
   ];
 
-  static Future<void> open(BuildContext context) {
+  static Future<void> open(
+    BuildContext context, {
+    bool libraryOnly = false,
+    bool setCardLogo = false,
+  }) {
     final vm = context.read<VisitingCardEditContactViewModel>();
     return Navigator.push<void>(
       context,
       MaterialPageRoute(
         builder: (_) => ChangeNotifierProvider.value(
           value: vm,
-          child: const VisitingCardLandscapeLogoScreen(),
+          child: VisitingCardLandscapeLogoScreen(
+            libraryOnly: libraryOnly,
+            setCardLogo: setCardLogo,
+          ),
         ),
       ),
     );
@@ -58,7 +76,13 @@ class _VisitingCardLandscapeLogoScreenState
   }
 
   void _apply(String path) {
-    context.read<VisitingCardEditContactViewModel>().placeLogo(path);
+    final vm = context.read<VisitingCardEditContactViewModel>();
+    if (widget.setCardLogo) {
+      vm.applyLogoImage(path);
+      vm.selectOverlay(VisitingCardOverlayField.logo);
+    } else {
+      vm.placeLogo(path);
+    }
     Navigator.pop(context);
   }
 
@@ -106,17 +130,28 @@ class _VisitingCardLandscapeLogoScreenState
                 padding: EdgeInsets.fromLTRB(pad + 4, 12, pad, 12),
                 child: Row(
                   children: [
-                    _LogoTab(
-                      label: 'Logo Library',
-                      selected: _library,
-                      onTap: () => setState(() => _library = true),
-                    ),
-                    const SizedBox(width: 10),
-                    _LogoTab(
-                      label: 'Upload Logo',
-                      selected: !_library,
-                      onTap: () => setState(() => _library = false),
-                    ),
+                    if (widget.libraryOnly)
+                      const Text(
+                        'Logos',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      )
+                    else ...[
+                      _LogoTab(
+                        label: 'Logo Library',
+                        selected: _library,
+                        onTap: () => setState(() => _library = true),
+                      ),
+                      const SizedBox(width: 10),
+                      _LogoTab(
+                        label: 'Upload Logo',
+                        selected: !_library,
+                        onTap: () => setState(() => _library = false),
+                      ),
+                    ],
                     const Spacer(),
                     Material(
                       color: Colors.white,
@@ -140,7 +175,9 @@ class _VisitingCardLandscapeLogoScreenState
               ),
             ),
             Expanded(
-              child: _library ? _libraryGrid(pad) : _uploadBody(),
+              child: widget.libraryOnly || _library
+                  ? _libraryGrid(pad)
+                  : _uploadBody(),
             ),
           ],
         ),

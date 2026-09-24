@@ -1339,6 +1339,21 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Puts logo and QR back to a previous snapshot. Used when Profile is closed
+  /// without Save.
+  void restoreLogoAndQr({
+    required String? logoPath,
+    required bool hasLogo,
+    required String? qrPath,
+    required bool hasQr,
+  }) {
+    logoAssetPath = logoPath;
+    hasChosenLogo = hasLogo;
+    qrAssetPath = qrPath;
+    hasChosenQr = hasQr;
+    notifyListeners();
+  }
+
   Future<String> persistLogoFile(File source) async {
     final dir = await getApplicationDocumentsDirectory();
     final logoDir = Directory('${dir.path}/visiting_card/logo_embed');

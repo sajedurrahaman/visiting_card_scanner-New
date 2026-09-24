@@ -18,6 +18,7 @@ import 'package:visiting_card/features/template/domain/visiting_card_field_trans
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_edit_text_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_icon_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_logo_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_profile_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_shape_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_font_style_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_template_screen.dart';
@@ -336,6 +337,10 @@ class _VisitingCardLandscapeEditScreenState
     return VisitingCardLandscapeShapeScreen.open(context);
   }
 
+  Future<void> _onProfile() {
+    return VisitingCardLandscapeProfileScreen.open(context);
+  }
+
   Future<void> _onAddText() async {
     final next = await VisitingCardLandscapeEditTextScreen.open(
       context,
@@ -532,6 +537,7 @@ class _VisitingCardLandscapeEditScreenState
       },
       child: Scaffold(
       backgroundColor: _bg,
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Stack(
           children: [
@@ -545,10 +551,20 @@ class _VisitingCardLandscapeEditScreenState
                       builder: (context, constraints) {
                         final ratio = vm.isHorizontal ? 1.75 : 0.63;
                         final scale = _previewing ? 0.82 : 0.68;
+                        final topGap = _previewing ? 0.0 : pad;
+                        // Pager plus the gap under the card. Kept out of the
+                        // card budget so the column cannot overflow.
+                        const belowCard = 56.0;
+                        final room = math.max(
+                          40.0,
+                          constraints.maxHeight - topGap - belowCard,
+                        );
                         var cardW = constraints.maxWidth * scale;
                         var cardH = cardW / ratio;
-                        final maxH =
-                            constraints.maxHeight * (_previewing ? 0.82 : 0.70);
+                        final maxH = math.min(
+                          constraints.maxHeight * (_previewing ? 0.82 : 0.70),
+                          room,
+                        );
                         if (cardH > maxH) {
                           cardH = maxH;
                           cardW = cardH * ratio;
@@ -723,7 +739,7 @@ class _VisitingCardLandscapeEditScreenState
                                       _RailItem(
                                         icon: Icons.person_outline,
                                         label: 'Profile',
-                                        onTap: () => _comingSoon('Profile'),
+                                        onTap: _onProfile,
                                       ),
                                     ],
                                   )
