@@ -390,8 +390,20 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   /// Icon added from the landscape Icon picker. Not a template field.
   static const customIconSource = 'icon';
 
+  /// Shape added from the landscape Shape picker. Not a template field.
+  static const customShapeSource = 'shape';
+
   bool _sourceIsImage(String? source) =>
-      source == 'logo' || source == 'qr' || source == customIconSource;
+      source == 'logo' ||
+      source == 'qr' ||
+      source == customIconSource ||
+      source == customShapeSource;
+
+  bool get selectedIsShape {
+    if (selectedDuplicateId == null) return false;
+    return currentOverlays[duplicateKey(selectedDuplicateId!)]?.duplicateOf ==
+        customShapeSource;
+  }
 
   bool get selectedIsImage {
     if (selectedDuplicateId != null) {
@@ -480,6 +492,27 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       top: (0.34 + nudge).clamp(0.06, 0.78),
       size: 0.10,
       duplicateOf: customIconSource,
+      duplicateImagePath: path,
+    );
+    selectedOverlay = null;
+    selectedDuplicateId = id;
+    notifyListeners();
+  }
+
+  /// Places a scanner shape on the current side and selects it.
+  void addCustomShape(String assetPath) {
+    final path = assetPath.trim();
+    if (path.isEmpty) return;
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+    final existing = currentOverlays.values
+        .where((t) => t.duplicateOf == customShapeSource)
+        .length;
+    final nudge = (existing % 6) * 0.04;
+    currentOverlays[duplicateKey(id)] = VisitingCardFieldTransform(
+      left: (0.38 + nudge).clamp(0.06, 0.78),
+      top: (0.30 + nudge).clamp(0.06, 0.78),
+      size: 0.10,
+      duplicateOf: customShapeSource,
       duplicateImagePath: path,
     );
     selectedOverlay = null;
@@ -879,7 +912,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   }
 
   void setSelectedOverlayColor(Color color) {
-    if (selectedIsImage) return;
+    if (selectedIsImage && !selectedIsShape) return;
     final current = activeTransform;
     if (current == null) return;
     _putActive(current.copyWith(textColorValue: color.toARGB32()));

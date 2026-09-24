@@ -16,6 +16,7 @@ import 'package:visiting_card/features/template/domain/visiting_card_export_util
 import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_edit_text_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_icon_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_shape_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_font_style_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_template_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_rename_screen.dart';
@@ -330,6 +331,10 @@ class _VisitingCardLandscapeEditScreenState
     return VisitingCardLandscapeIconScreen.open(context);
   }
 
+  Future<void> _onAddShape() {
+    return VisitingCardLandscapeShapeScreen.open(context);
+  }
+
   Future<void> _onAddText() async {
     final next = await VisitingCardLandscapeEditTextScreen.open(
       context,
@@ -366,7 +371,8 @@ class _VisitingCardLandscapeEditScreenState
     final vm = context.read<VisitingCardEditContactViewModel>();
     if (!vm.hasSelection) return;
     const textOnly = {'Color', 'Spacing', 'Stroke', 'Shadow'};
-    if (textOnly.contains(name) && vm.selectedIsImage) {
+    final shapeColor = name == 'Color' && vm.selectedIsShape;
+    if (textOnly.contains(name) && vm.selectedIsImage && !shapeColor) {
       ui.AppToast.show(context, message: 'Applies to text');
       return;
     }
@@ -592,7 +598,7 @@ class _VisitingCardLandscapeEditScreenState
                             if (!_previewing &&
                                 _panel == 'Color' &&
                                 vm.hasSelection &&
-                                !vm.selectedIsImage)
+                                (!vm.selectedIsImage || vm.selectedIsShape))
                               _TextColorBar(
                                 selected: vm.activeTransform?.textColor,
                                 onClose: () => setState(() => _panel = ''),
@@ -689,7 +695,7 @@ class _VisitingCardLandscapeEditScreenState
                                       _RailItem(
                                         icon: Icons.category_outlined,
                                         label: 'Shape',
-                                        onTap: () => _comingSoon('Shape'),
+                                        onTap: _onAddShape,
                                       ),
                                       _RailItem(
                                         icon: Icons.hexagon_outlined,
@@ -722,6 +728,8 @@ class _VisitingCardLandscapeEditScreenState
                                   )
                                 : _SelectedFieldRail(
                                     showTextTools: !vm.selectedIsImage,
+                                    showColor:
+                                        !vm.selectedIsImage || vm.selectedIsShape,
                                     onEditText: _onEditText,
                                     onColor: _onColor,
                                     colorActive: _panel == 'Color',
@@ -1017,6 +1025,7 @@ const _selectIconDir = 'assets/visiting_card_select_text_icon';
 class _SelectedFieldRail extends StatelessWidget {
   const _SelectedFieldRail({
     required this.showTextTools,
+    required this.showColor,
     required this.onEditText,
     required this.onColor,
     required this.colorActive,
@@ -1037,6 +1046,7 @@ class _SelectedFieldRail extends StatelessWidget {
   });
 
   final bool showTextTools;
+  final bool showColor;
   final VoidCallback onEditText;
   final VoidCallback onColor;
   final bool colorActive;
@@ -1066,7 +1076,7 @@ class _SelectedFieldRail extends StatelessWidget {
             label: 'Edit Text',
             onTap: onEditText,
           ),
-        if (showTextTools)
+        if (showColor)
           _SelectRailItem(
             asset: '$_selectIconDir/color_icon.svg',
             label: 'Color',

@@ -1021,11 +1021,13 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           t.duplicateOf == VisitingCardEditContactViewModel.customTextSource;
       final isIcon =
           t.duplicateOf == VisitingCardEditContactViewModel.customIconSource;
-      final source = isCustom || isIcon
+      final isShape =
+          t.duplicateOf == VisitingCardEditContactViewModel.customShapeSource;
+      final source = isCustom || isIcon || isShape
           ? null
           : VisitingCardFieldTransform.fieldFromKey(t.duplicateOf ?? '');
-      if (!isCustom && !isIcon && source == null) return;
-      final pos = isIcon
+      if (!isCustom && !isIcon && !isShape && source == null) return;
+      final pos = isIcon || isShape
           ? null
           : isCustom
               ? const VisitingCardFieldPosition(
@@ -1046,7 +1048,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         );
       }
 
-      if (isIcon || (source != null && source.isImageOverlay)) {
+      if (isIcon || isShape || (source != null && source.isImageOverlay)) {
         final path = t.duplicateImagePath;
         if (path == null || path.isEmpty) return;
         final isAsset = path.startsWith('assets/');
@@ -1460,6 +1462,17 @@ class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
       );
     }
 
+    final tint = widget.transform.duplicateOf ==
+            VisitingCardEditContactViewModel.customShapeSource
+        ? widget.transform.textColor
+        : null;
+    final picture = tint == null
+        ? image
+        : ColorFiltered(
+            colorFilter: ColorFilter.mode(tint, BlendMode.srcIn),
+            child: image,
+          );
+
     if (!widget.interactive) {
       return Positioned(
         left: left,
@@ -1470,7 +1483,7 @@ class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
           alignment:
               widget.borderOnlyWhenSelected ? Alignment.topLeft : Alignment.center,
           angle: widget.transform.rotation,
-          child: _fadeField(_flipField(image, widget.transform), widget.transform),
+          child: _fadeField(_flipField(picture, widget.transform), widget.transform),
         ),
       );
     }
@@ -1496,7 +1509,7 @@ class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
       onRotate: widget.onRotate,
       onGestureStart: widget.onGestureStart,
       onGestureEnd: widget.onGestureEnd,
-      child: _fadeField(_flipField(image, widget.transform), widget.transform),
+      child: _fadeField(_flipField(picture, widget.transform), widget.transform),
     );
   }
 }

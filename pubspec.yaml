@@ -112,6 +112,7 @@ flutter:
      - assets/qr_code_template/wifi/
      - assets/visiting_card_select_text_icon/
      - assets/visiting_card_scanner_icon/
+     - assets/visiting_card_scanner_shape/
      - assets/svg/
      - assets/svg/genertor/
      - assets/svg/genertor/qrcode/
