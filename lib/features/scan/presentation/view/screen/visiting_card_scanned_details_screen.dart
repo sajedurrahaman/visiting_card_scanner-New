@@ -14,6 +14,7 @@ import 'package:visiting_card/features/home/presentation/view_model/home_view_mo
 import 'package:visiting_card/features/parent/presentation/view_model/parent_view_model.dart';
 import 'package:visiting_card/features/scan/domain/scanned_image_model.dart';
 import 'package:visiting_card/features/scan/presentation/helper/visiting_card_share_helper.dart';
+import 'package:visiting_card/features/scan/presentation/view/screen/visiting_card_scan_template_edit_screen.dart';
 import 'package:visiting_card/features/scan/presentation/view_model/visiting_card_scan_viewmodel.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_export_utils.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
@@ -164,7 +165,7 @@ class _VisitingCardScannedDetailsScreenState
     scan.notifyContactChanged();
   }
 
-  Future<void> _onEditSelectedTemplate() async {
+  Future<void> _onLandscapeEdit() async {
     final scan = context.read<VisitingCardScanViewModel>();
     scan.selectedTemplateId = _selectedTemplateId;
     await VisitingCardLandscapeEditScreen.open(
@@ -174,6 +175,28 @@ class _VisitingCardScannedDetailsScreenState
     );
     if (!mounted) return;
     _syncScanFromPreview();
+    setState(() {});
+  }
+
+  Future<void> _onEditSelectedTemplate() async {
+    final scan = context.read<VisitingCardScanViewModel>();
+    scan.selectedTemplateId = _selectedTemplateId;
+    final template = _templateFor(_selectedTemplateId);
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider.value(
+          value: scan,
+          child: VisitingCardScanTemplateEditScreen(
+            template: template,
+            isHorizontal: true,
+            popOnDone: true,
+          ),
+        ),
+      ),
+    );
+    if (!mounted || updated != true) return;
+    _syncPreviewFromScan();
     setState(() {});
   }
 
@@ -721,7 +744,7 @@ class _VisitingCardScannedDetailsScreenState
                           bottom: 6.h,
                           right: 6.w,
                           child: _CornerActionButton(
-                            onTap: _onEditSelectedTemplate,
+                            onTap: _onLandscapeEdit,
                             child: SvgPicture.asset(
                               ui.AppAssets.visitingTemplateEditIconOne,
                               width: 15.w,
