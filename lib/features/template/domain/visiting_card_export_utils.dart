@@ -5,10 +5,10 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
-/// Same idea as Photo Collage Maker (`collage_export_utils.dart`):
-/// capture at a high raster ratio, then GPU-upscale to a print-size export.
-const int kVisitingCardExportMaxEdgePx = 4096;
-const double kMaxVisitingCardRasterPixelRatio = 4.0;
+/// Render the card at this long edge. A second upscale past the capture
+/// only softens the picture and inflates the PNG.
+const int kVisitingCardExportMaxEdgePx = 2048;
+const double kMaxVisitingCardRasterPixelRatio = 8.0;
 
 /// Horizontal ≈ 3.5∶2, vertical ≈ inverse of app aspect 0.63.
 Size visitingCardTargetExportSize({required bool isHorizontal}) {
@@ -34,28 +34,25 @@ double visitingCardCapturePixelRatio(
   return min(min(scaleW, scaleH), kMaxVisitingCardRasterPixelRatio);
 }
 
-Future<ui.Image> _gpuRescaleImage(
-  ui.Image src,
-  int targetW,
-  int targetH,
-) async {
-  if (src.width == targetW && src.height == targetH) return src;
-
+/// Drops the trailing right and bottom pixels. Capture anti-aliasing leaves
+/// a hairline of the white page on those two edges.
+Future<ui.Image> _trimTrailingEdge(ui.Image src, int inset) async {
+  if (inset <= 0 || src.width <= inset || src.height <= inset) return src;
+  final width = src.width - inset;
+  final height = src.height - inset;
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(recorder);
   canvas.drawImageRect(
     src,
-    Rect.fromLTWH(0, 0, src.width.toDouble(), src.height.toDouble()),
-    Rect.fromLTWH(0, 0, targetW.toDouble(), targetH.toDouble()),
-    Paint()
-      ..filterQuality = FilterQuality.high
-      ..isAntiAlias = true,
+    Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
+    Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
+    Paint()..isAntiAlias = false,
   );
   final picture = recorder.endRecording();
   try {
-    final scaled = await picture.toImage(targetW, targetH);
+    final trimmed = await picture.toImage(width, height);
     src.dispose();
-    return scaled;
+    return trimmed;
   } finally {
     picture.dispose();
   }
@@ -90,11 +87,7 @@ Future<Uint8List> captureVisitingCardPngBytes(
 
   var image = await boundary.toImage(pixelRatio: pixelRatio);
   try {
-    final targetW = target.width.round();
-    final targetH = target.height.round();
-    if (image.width != targetW || image.height != targetH) {
-      image = await _gpuRescaleImage(image, targetW, targetH);
-    }
+    image = await _trimTrailingEdge(image, 2);
 
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     if (byteData == null) {

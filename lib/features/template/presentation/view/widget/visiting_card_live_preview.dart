@@ -86,7 +86,7 @@ class VisitingCardLivePreview extends StatefulWidget {
     this.enableFieldTransform = false,
     this.selectionBorderOnlyWhenSelected = false,
     this.eightPointSelection = false,
-    this.pageGap = 0,
+    this.pageGap = 6,
   });
 
   final VisitingCardEditContactViewModel vm;
@@ -221,26 +221,22 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         AspectRatio(
           aspectRatio: aspectRatio,
           child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12.r),
+            decoration: const BoxDecoration(
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.12),
+                  color: Color(0x1F000000),
                   blurRadius: 16,
                   spreadRadius: 0,
-                  offset: const Offset(0, 4),
+                  offset: Offset(0, 4),
                 ),
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
+                  color: Color(0x0F000000),
                   blurRadius: 6,
-                  offset: const Offset(0, 1),
+                  offset: Offset(0, 1),
                 ),
               ],
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12.r),
-              child: _cardPager(),
-            ),
+            child: _cardPager(),
           ),
         ),
         if (widget.showPager) ...[
