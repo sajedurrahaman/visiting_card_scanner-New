@@ -166,11 +166,13 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     if (!_pageController.hasClients) return;
     final offset =
         _pageController.page ?? _pageController.initialPage.toDouble();
-    if ((offset - page).abs() < 0.001) return;
+    // A finger swipe already owns the motion once it has crossed onto this
+    // page. Taking over with animateToPage cuts that fling short.
+    if (offset.round() == page) return;
 
     // Details/download preview has no in-widget pager. Jump so capture never
     // snapshots the mid-swipe frame (front-right + back-left stitched).
-    // Landscape keeps the swipe animation, except while a capture is running.
+    // Arrow changes still animate, except while a capture is running.
     final animateSideChange = !widget.vm.jumpSideForCapture &&
         (widget.showPager || widget.enableFieldTransform);
 
@@ -257,25 +259,29 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
 
   Widget _cardPager() {
     final gap = widget.pageGap;
-    final pager = PageView.builder(
+    Widget face(int index) {
+      final child = _buildCardFace(sideIndex: index);
+      if (gap <= 0) return child;
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: gap / 2),
+        child: child,
+      );
+    }
+
+    // Both sides stay built, same as the template tiles, so the first
+    // finger swipe does not construct the other face mid-gesture.
+    final pager = PageView(
       controller: _pageController,
-      itemCount: 2,
-      // Allow finger swipe 1/2 ↔ 2/2; lock only while an overlay
-      // is selected so move/rotate/resize keep winning gestures.
       physics: widget.enableFieldTransform && widget.vm.hasSelection
           ? const NeverScrollableScrollPhysics()
           : const BouncingScrollPhysics(
               parent: AlwaysScrollableScrollPhysics(),
             ),
       onPageChanged: _onPageChanged,
-      itemBuilder: (_, index) {
-        final face = _buildCardFace(sideIndex: index);
-        if (gap <= 0) return face;
-        return Padding(
-          padding: EdgeInsets.symmetric(horizontal: gap / 2),
-          child: face,
-        );
-      },
+      children: [
+        face(0),
+        face(1),
+      ],
     );
     if (gap <= 0) return pager;
     // Pages are wider by [gap] and shifted out by half, so a settled face
