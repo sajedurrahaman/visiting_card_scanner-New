@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Landscape Edit Text: type a new value, then Apply or Cancel.
 ///
@@ -68,108 +69,128 @@ class _VisitingCardLandscapeEditTextScreenState
     Navigator.pop(context, _controller.text.trim());
   }
 
+  Widget _field() {
+    return TextField(
+      controller: _controller,
+      focusNode: _focusNode,
+      minLines: 3,
+      maxLines: 3,
+      onTapOutside: (_) {
+        FocusManager.instance.primaryFocus?.unfocus();
+      },
+      textAlignVertical: TextAlignVertical.top,
+      textInputAction: TextInputAction.newline,
+      style: const TextStyle(
+        color: Color(0xFF1A1A1A),
+        fontSize: 15,
+      ),
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: const Color(0xFFFFFFFF),
+        hintText: 'Start typing here',
+        hintStyle: const TextStyle(
+          color: Color(0xFFB0B0B0),
+          fontSize: 15,
+        ),
+        contentPadding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _actions() {
+    return Column(
+      children: [
+        _ActionButton(
+          label: 'Apply',
+          background: const LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [
+              Color(0xFF3DCB6A),
+              Color(0xFF0B5D2A),
+            ],
+          ),
+          onTap: _onApply,
+        ),
+        const SizedBox(height: 10),
+        _ActionButton(
+          label: 'Cancel',
+          background: const Color(0xFFE53935),
+          onTap: _onCancel,
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     final viewInsets = MediaQuery.viewInsetsOf(context);
     final pad = (size.shortestSide * 0.045).clamp(12.0, 22.0);
+    final portrait = size.height > size.width;
 
     return Scaffold(
       backgroundColor: _bg,
       resizeToAvoidBottomInset: true,
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: EdgeInsets.fromLTRB(
-                pad,
-                pad,
-                pad,
-                pad + viewInsets.bottom,
-              ),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Align(
-                  alignment: Alignment.topLeft,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: (constraints.maxWidth * 0.74).clamp(280.0, 560.0),
-                        child: TextField(
-                          controller: _controller,
-                          focusNode: _focusNode,
-                          minLines: 3,
-                          maxLines: 3,
-                          onTapOutside: (_) {
-                            FocusManager.instance.primaryFocus?.unfocus();
-                          },
-                          textAlignVertical: TextAlignVertical.top,
-                          textInputAction: TextInputAction.newline,
-                          style: const TextStyle(
-                            color: Color(0xFF1A1A1A),
-                            fontSize: 15,
-                          ),
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: const Color(0xFFFFFFFF),
-                            hintText: 'Start typing here',
-                            hintStyle: const TextStyle(
-                              color: Color(0xFFB0B0B0),
-                              fontSize: 15,
+        child: portrait
+            ? Padding(
+                padding: EdgeInsets.all(pad),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _field(),
+                    SizedBox(height: 20.h),
+                    _actions(),
+                  ],
+                ),
+              )
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.fromLTRB(
+                      pad,
+                      pad,
+                      pad,
+                      pad + viewInsets.bottom,
+                    ),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: Align(
+                        alignment: Alignment.topLeft,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: (constraints.maxWidth * 0.74)
+                                  .clamp(280.0, 560.0),
+                              child: _field(),
                             ),
-                            contentPadding: const EdgeInsets.fromLTRB(
-                              16,
-                              14,
-                              16,
-                              14,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide.none,
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide.none,
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
+                            SizedBox(width: pad * 2.8),
+                            _actions(),
+                          ],
                         ),
                       ),
-                      SizedBox(width: pad * 2.8),
-                      Column(
-                        children: [
-                          _ActionButton(
-                            label: 'Apply',
-                            background: const LinearGradient(
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                              colors: [
-                                Color(0xFF3DCB6A),
-                                Color(0xFF0B5D2A),
-                              ],
-                            ),
-                            onTap: _onApply,
-                          ),
-                          const SizedBox(height: 10),
-                          _ActionButton(
-                            label: 'Cancel',
-                            background: const Color(0xFFE53935),
-                            onTap: _onCancel,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
-            );
-          },
-        ),
       ),
     );
   }
