@@ -111,6 +111,45 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   /// so the PNG is not a mid-swipe mix of the front and back.
   bool jumpSideForCapture = false;
 
+  final List<_CardEditSnapshot> _undoStack = [];
+  final List<_CardEditSnapshot> _redoStack = [];
+  _CardEditSnapshot? _historyPoint;
+  DateTime? _historyAt;
+  bool _historyReady = false;
+  bool _restoringHistory = false;
+  static const _historyLimit = 40;
+
+  bool get canUndo => _undoStack.isNotEmpty;
+  bool get canRedo => _redoStack.isNotEmpty;
+
+  /// Starts a fresh history from the card as it is now.
+  void beginUndoHistory() {
+    _undoStack.clear();
+    _redoStack.clear();
+    _historyAt = null;
+    _historyReady = true;
+    _historyPoint = _captureEditSnapshot();
+    notifyListeners();
+  }
+
+  void undo() {
+    if (_undoStack.isEmpty || _historyPoint == null) return;
+    _redoStack.add(_historyPoint!);
+    _applyEditSnapshot(_undoStack.removeLast());
+  }
+
+  void redo() {
+    if (_redoStack.isEmpty || _historyPoint == null) return;
+    _undoStack.add(_historyPoint!);
+    _applyEditSnapshot(_redoStack.removeLast());
+  }
+
+  @override
+  void notifyListeners() {
+    _recordEditHistory();
+    super.notifyListeners();
+  }
+
   final List<ContactFieldEntry> names = [ContactFieldEntry()];
   final List<ContactFieldEntry> designations = [ContactFieldEntry()];
   final List<ContactFieldEntry> companies = [ContactFieldEntry()];
@@ -452,6 +491,8 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     _ensureOverlay(field);
     selectedOverlay = field;
     selectedDuplicateId = null;
+    // Writing the default layout is not an edit, so Undo stays off.
+    _absorbUnchangedEdit();
     notifyListeners();
   }
 
@@ -678,6 +719,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   void endOverlayGesture() {
     if (!overlayGestureActive) return;
     overlayGestureActive = false;
+    notifyListeners();
   }
 
   void _ensureOverlay(VisitingCardOverlayField field) {
@@ -1876,5 +1918,202 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     return buffer.isEmpty
         ? 'Visiting card contact (exported)'
         : buffer.toString();
+  }
+
+  /// Keeps the current card as the history point without an Undo step.
+  void _absorbUnchangedEdit() {
+    if (!_historyReady || _restoringHistory || overlayGestureActive) return;
+    _historyPoint = _captureEditSnapshot();
+  }
+
+  void _recordEditHistory() {
+    if (!_historyReady || _restoringHistory || overlayGestureActive) return;
+    final next = _captureEditSnapshot();
+    if (_historyPoint == null) {
+      _historyPoint = next;
+      return;
+    }
+    if (next.signature == _historyPoint!.signature) return;
+    final now = DateTime.now();
+    final sameBurst = _historyAt != null &&
+        now.difference(_historyAt!) < const Duration(milliseconds: 500);
+    if (!sameBurst) {
+      _undoStack.add(_historyPoint!);
+      if (_undoStack.length > _historyLimit) _undoStack.removeAt(0);
+      _redoStack.clear();
+    }
+    _historyPoint = next;
+    _historyAt = now;
+  }
+
+  _CardEditSnapshot _captureEditSnapshot() => _CardEditSnapshot.capture(this);
+
+  void _applyEditSnapshot(_CardEditSnapshot snapshot) {
+    _restoringHistory = true;
+    _historyAt = null;
+    snapshot.writeTo(this);
+    _historyPoint = snapshot;
+    super.notifyListeners();
+    _restoringHistory = false;
+  }
+}
+
+class _CardEditSnapshot {
+  _CardEditSnapshot({
+    required this.signature,
+    required this.templateId,
+    required this.isHorizontal,
+    required this.frontAssetWithoutData,
+    required this.backAssetWithoutData,
+    required this.logoAssetPath,
+    required this.qrAssetPath,
+    required this.hasChosenLogo,
+    required this.hasChosenQr,
+    required this.frontOverlays,
+    required this.backOverlays,
+    required this.names,
+    required this.designations,
+    required this.companies,
+    required this.taglines,
+    required this.phones,
+    required this.emails,
+    required this.websites,
+    required this.addresses,
+  });
+
+  final String signature;
+  final String templateId;
+  final bool isHorizontal;
+  final String frontAssetWithoutData;
+  final String backAssetWithoutData;
+  final String? logoAssetPath;
+  final String? qrAssetPath;
+  final bool hasChosenLogo;
+  final bool hasChosenQr;
+  final Map<String, VisitingCardFieldTransform> frontOverlays;
+  final Map<String, VisitingCardFieldTransform> backOverlays;
+  final List<ContactFieldEntry> names;
+  final List<ContactFieldEntry> designations;
+  final List<ContactFieldEntry> companies;
+  final List<ContactFieldEntry> taglines;
+  final List<ContactFieldEntry> phones;
+  final List<ContactFieldEntry> emails;
+  final List<ContactFieldEntry> websites;
+  final List<ContactFieldEntry> addresses;
+
+  static _CardEditSnapshot capture(VisitingCardEditContactViewModel vm) {
+    final front = _copyOverlays(vm.frontOverlays);
+    final back = _copyOverlays(vm.backOverlays);
+    final names = _copyFields(vm.names);
+    final designations = _copyFields(vm.designations);
+    final companies = _copyFields(vm.companies);
+    final taglines = _copyFields(vm.taglines);
+    final phones = _copyFields(vm.phones);
+    final emails = _copyFields(vm.emails);
+    final websites = _copyFields(vm.websites);
+    final addresses = _copyFields(vm.addresses);
+    return _CardEditSnapshot(
+      signature: [
+        vm.templateId,
+        vm.isHorizontal,
+        vm.frontAssetWithoutData,
+        vm.backAssetWithoutData,
+        vm.logoAssetPath,
+        vm.qrAssetPath,
+        vm.hasChosenLogo,
+        vm.hasChosenQr,
+        _overlaySig(front),
+        _overlaySig(back),
+        _fieldSig(names),
+        _fieldSig(designations),
+        _fieldSig(companies),
+        _fieldSig(taglines),
+        _fieldSig(phones),
+        _fieldSig(emails),
+        _fieldSig(websites),
+        _fieldSig(addresses),
+      ].join('\u0000'),
+      templateId: vm.templateId,
+      isHorizontal: vm.isHorizontal,
+      frontAssetWithoutData: vm.frontAssetWithoutData,
+      backAssetWithoutData: vm.backAssetWithoutData,
+      logoAssetPath: vm.logoAssetPath,
+      qrAssetPath: vm.qrAssetPath,
+      hasChosenLogo: vm.hasChosenLogo,
+      hasChosenQr: vm.hasChosenQr,
+      frontOverlays: front,
+      backOverlays: back,
+      names: names,
+      designations: designations,
+      companies: companies,
+      taglines: taglines,
+      phones: phones,
+      emails: emails,
+      websites: websites,
+      addresses: addresses,
+    );
+  }
+
+  void writeTo(VisitingCardEditContactViewModel vm) {
+    vm.templateId = templateId;
+    vm.isHorizontal = isHorizontal;
+    vm.frontAssetWithoutData = frontAssetWithoutData;
+    vm.backAssetWithoutData = backAssetWithoutData;
+    vm.logoAssetPath = logoAssetPath;
+    vm.qrAssetPath = qrAssetPath;
+    vm.hasChosenLogo = hasChosenLogo;
+    vm.hasChosenQr = hasChosenQr;
+    vm.frontOverlays
+      ..clear()
+      ..addAll(_copyOverlays(frontOverlays));
+    vm.backOverlays
+      ..clear()
+      ..addAll(_copyOverlays(backOverlays));
+    _replaceFields(vm.names, names);
+    _replaceFields(vm.designations, designations);
+    _replaceFields(vm.companies, companies);
+    _replaceFields(vm.taglines, taglines);
+    _replaceFields(vm.phones, phones);
+    _replaceFields(vm.emails, emails);
+    _replaceFields(vm.websites, websites);
+    _replaceFields(vm.addresses, addresses);
+  }
+
+  static Map<String, VisitingCardFieldTransform> _copyOverlays(
+    Map<String, VisitingCardFieldTransform> source,
+  ) {
+    return {
+      for (final entry in source.entries)
+        entry.key: VisitingCardFieldTransform.fromJson(entry.value.toJson()),
+    };
+  }
+
+  static String _overlaySig(Map<String, VisitingCardFieldTransform> map) {
+    final keys = map.keys.toList()..sort();
+    return [
+      for (final key in keys) '$key:${map[key]!.toJson()}',
+    ].join('|');
+  }
+
+  static List<ContactFieldEntry> _copyFields(List<ContactFieldEntry> source) {
+    return [
+      for (final entry in source)
+        ContactFieldEntry(value: entry.value, type: entry.type),
+    ];
+  }
+
+  static void _replaceFields(
+    List<ContactFieldEntry> target,
+    List<ContactFieldEntry> source,
+  ) {
+    target
+      ..clear()
+      ..addAll(_copyFields(source));
+  }
+
+  static String _fieldSig(List<ContactFieldEntry> list) {
+    return [
+      for (final entry in list) '${entry.type}\u0001${entry.value}',
+    ].join('\u0002');
   }
 }

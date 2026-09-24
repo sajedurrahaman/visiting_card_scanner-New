@@ -100,6 +100,7 @@ class _VisitingCardLandscapeEditScreenState
       await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
       if (!mounted) return;
       context.read<VisitingCardEditContactViewModel>().clearOverlaySelection();
+      context.read<VisitingCardEditContactViewModel>().beginUndoHistory();
       await _finishBoot();
     });
   }
@@ -323,10 +324,6 @@ class _VisitingCardLandscapeEditScreenState
 
   void _closePreview() {
     setState(() => _previewing = false);
-  }
-
-  void _comingSoon(String label) {
-    ui.AppToast.show(context, message: '$label coming soon');
   }
 
   Future<void> _onAddIcon() {
@@ -663,10 +660,11 @@ class _VisitingCardLandscapeEditScreenState
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _TopTools(
-                          onUndo: () => _comingSoon('Undo'),
-                          onRedo: () => _comingSoon('Redo'),
+                          onUndo: vm.undo,
+                          onRedo: vm.redo,
                           onExit: _onExit,
-                          canUndo: false,
+                          canUndo: vm.canUndo,
+                          canRedo: vm.canRedo,
                         ),
                         SizedBox(height: pad * 0.5),
                         Expanded(
@@ -924,12 +922,14 @@ class _TopTools extends StatelessWidget {
     required this.onRedo,
     required this.onExit,
     this.canUndo = true,
+    this.canRedo = true,
   });
 
   final VoidCallback onUndo;
   final VoidCallback onRedo;
   final VoidCallback onExit;
   final bool canUndo;
+  final bool canRedo;
 
   @override
   Widget build(BuildContext context) {
@@ -942,7 +942,11 @@ class _TopTools extends StatelessWidget {
           enabled: canUndo,
         ),
         const SizedBox(width: 10),
-        _ToolIcon(icon: Icons.redo_rounded, onTap: onRedo),
+        _ToolIcon(
+          icon: Icons.redo_rounded,
+          onTap: canRedo ? onRedo : null,
+          enabled: canRedo,
+        ),
         const SizedBox(width: 10),
         _ToolIcon(icon: Icons.logout_rounded, onTap: onExit),
       ],

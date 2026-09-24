@@ -417,6 +417,8 @@ class AppToast {
   }) {
     hide();
 
+    final size = MediaQuery.sizeOf(context);
+    final landscape = size.width > size.height;
     final overlay = Overlay.of(context);
     _overlayEntry = OverlayEntry(
       builder: (context) => Positioned.fill(
@@ -424,18 +426,20 @@ class AppToast {
           child: Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
-              padding: EdgeInsets.only(bottom: 100.h),
+              padding: EdgeInsets.only(bottom: landscape ? 28 : 100.h),
               child: Material(
               color: Color(0x00000000),
               child: Container(
-                margin: EdgeInsets.symmetric(horizontal: 32.w),
+                margin: EdgeInsets.symmetric(
+                  horizontal: landscape ? 16 : 32.w,
+                ),
                 padding: EdgeInsets.symmetric(
-                  horizontal: 24.w,
-                  vertical: 10.h,
+                  horizontal: landscape ? 12 : 24.w,
+                  vertical: landscape ? 6 : 10.h,
                 ),
                 decoration: BoxDecoration(
                   color: backgroundColor,
-                  borderRadius: BorderRadius.circular(12.r),
+                  borderRadius: BorderRadius.circular(landscape ? 8 : 12.r),
                   boxShadow: [
                     BoxShadow(
                       color: const Color(0xFF000000).withValues(alpha: 0.15),
@@ -449,7 +453,7 @@ class AppToast {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: AppFonts.sfPro,
-                    fontSize: 12.sp,
+                    fontSize: landscape ? 12 : 12.sp,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFFFFFFFF),
                     letterSpacing: 0.2,
