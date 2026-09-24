@@ -1952,6 +1952,9 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     _restoringHistory = true;
     _historyAt = null;
     snapshot.writeTo(this);
+    selectedOverlay = null;
+    selectedDuplicateId = null;
+    overlayGestureActive = false;
     _historyPoint = snapshot;
     super.notifyListeners();
     _restoringHistory = false;

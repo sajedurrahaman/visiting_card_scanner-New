@@ -87,6 +87,15 @@ class _VisitingCardLandscapeEditScreenState
   bool _leaving = false;
   bool _allowPop = false;
   String _panel = '';
+  String _panelSelection = '';
+
+  void _syncPanel(VisitingCardEditContactViewModel vm) {
+    final selection =
+        vm.selectedDuplicateId ?? vm.selectedOverlay?.name ?? '';
+    if (selection == _panelSelection) return;
+    _panelSelection = selection;
+    _panel = '';
+  }
 
   @override
   void initState() {
@@ -520,6 +529,7 @@ class _VisitingCardLandscapeEditScreenState
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<VisitingCardEditContactViewModel>();
+    _syncPanel(vm);
     final size = MediaQuery.sizeOf(context);
     final shortest = math.min(size.width, size.height);
 

@@ -85,6 +85,15 @@ class _VisitingCardVerticalEditScreenState
   bool _leaving = false;
   bool _allowPop = false;
   String _panel = '';
+  String _panelSelection = '';
+
+  void _syncPanel(VisitingCardEditContactViewModel vm) {
+    final selection =
+        vm.selectedDuplicateId ?? vm.selectedOverlay?.name ?? '';
+    if (selection == _panelSelection) return;
+    _panelSelection = selection;
+    _panel = '';
+  }
 
   @override
   void initState() {
@@ -756,6 +765,7 @@ class _VisitingCardVerticalEditScreenState
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<VisitingCardEditContactViewModel>();
+    _syncPanel(vm);
 
     return PopScope(
       canPop: _allowPop,
@@ -1242,13 +1252,13 @@ class _TextSizeBar extends StatelessWidget {
             GestureDetector(
               onTap: onClose,
               child: Container(
-                width: 32,
-                height: 32,
+                width: 20,
+                height: 20,
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.close, size: 16, color: Color(0xFF1A1A1A)),
+                child: const Icon(Icons.close, size: 14, color: Color(0xFF1A1A1A)),
               ),
             ),
             const SizedBox(width: 10),
@@ -1332,15 +1342,15 @@ class _AdjustBar extends StatelessWidget {
             GestureDetector(
               onTap: onClose,
               child: Container(
-                width: 32,
-                height: 32,
+                width: 20,
+                height: 20,
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.close,
-                  size: 16,
+                  size: 14,
                   color: Color(0xFF1A1A1A),
                 ),
               ),
