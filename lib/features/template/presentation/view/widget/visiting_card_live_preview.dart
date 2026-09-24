@@ -85,6 +85,7 @@ class VisitingCardLivePreview extends StatefulWidget {
     this.onShowBack,
     this.enableFieldTransform = false,
     this.selectionBorderOnlyWhenSelected = false,
+    this.eightPointSelection = false,
     this.pageGap = 0,
   });
 
@@ -102,6 +103,10 @@ class VisitingCardLivePreview extends StatefulWidget {
 
   /// Landscape editor: show selection border only on the tapped field.
   final bool selectionBorderOnlyWhenSelected;
+
+  /// Edit Contact Info: same 8-handle select frame as landscape, and the
+  /// box hugs the text instead of the template field width. Fonts stay .sp.
+  final bool eightPointSelection;
 
   /// Space between the front and back faces while swiping. 0 keeps them flush.
   final double pageGap;
@@ -349,16 +354,19 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     var layerSeq = 0;
     // Landscape editor uses its own sizing (no ScreenUtil .sp) so the
     // selection border matches the painted glyphs exactly.
-    final landscape = widget.selectionBorderOnlyWhenSelected;
+    final landscapeFonts = widget.selectionBorderOnlyWhenSelected;
+    // Edit Contact Info uses the 8-handle frame and intrinsic text width.
+    // Landscape fonts stay on the landscape editor only.
+    final landscape = landscapeFonts || widget.eightPointSelection;
     // Card box is 0.85 of the previous landscape size. Text follows that
     // ratio even when the old 1.35 cap would have kept glyphs the same size.
-    final landscapeFontScale = landscape
+    final landscapeFontScale = landscapeFonts
         ? (size.width / 220.0).clamp(0.55, 1.15)
         : 1.0;
     const landscapeTextScaler = TextScaler.noScaling;
 
     double resolveFont(double designSize) {
-      if (landscape) return designSize * landscapeFontScale;
+      if (landscapeFonts) return designSize * landscapeFontScale;
       return designSize.sp;
     }
 
@@ -481,7 +489,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         textAlign: pos.textAlign,
         textDirection: TextDirection.ltr,
         textWidthBasis: TextWidthBasis.longestLine,
-        textScaler: landscape ? landscapeTextScaler : TextScaler.linear(1),
+        textScaler: landscapeFonts ? landscapeTextScaler : TextScaler.linear(1),
       );
       late double boxW;
       var landscapeWrap = false;
@@ -540,7 +548,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
               ? TextOverflow.visible
               : TextOverflow.ellipsis,
           textAlign: pos.textAlign,
-          textScaler: landscape ? landscapeTextScaler : null,
+          textScaler: landscapeFonts ? landscapeTextScaler : null,
         );
       } else {
         text = Text(
@@ -554,7 +562,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
               : TextOverflow.ellipsis,
           textAlign: pos.textAlign,
           style: baseStyle.copyWith(color: t.textColor ?? pos.color),
-          textScaler: landscape ? landscapeTextScaler : null,
+          textScaler: landscapeFonts ? landscapeTextScaler : null,
         );
       }
       text = _fadeField(
@@ -567,7 +575,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           softWrap: landscapeWrap,
           overflow: landscape ? TextOverflow.visible : TextOverflow.ellipsis,
           textAlign: pos.textAlign,
-          textScaler: landscape ? landscapeTextScaler : null,
+          textScaler: landscapeFonts ? landscapeTextScaler : null,
         ),
         t,
       );
@@ -603,13 +611,13 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           rotation: t.rotation,
           selected: vm.selectedOverlay == field,
           tightBorder: true,
-          borderOnlyWhenSelected: widget.selectionBorderOnlyWhenSelected,
+          borderOnlyWhenSelected: landscape,
           showHandles: !t.locked,
           onSelect: () => vm.selectOverlay(field),
           onDeselect: vm.clearOverlaySelection,
           onMove: (dx, dy) => vm.moveOverlay(field, dx, dy, size),
           onResize: (d) => vm.resizeOverlay(field, d, size),
-          onUniformScale: widget.selectionBorderOnlyWhenSelected
+          onUniformScale: landscape
               ? (d, {required fixRight, required fixBottom}) =>
                   vm.scaleOverlayUniform(
                     field,
@@ -621,7 +629,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
                     seedHeightPx: boxH,
                   )
               : null,
-          onStretchHorizontal: widget.selectionBorderOnlyWhenSelected
+          onStretchHorizontal: landscape
               ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
                     field,
                     horizontal: true,
@@ -631,7 +639,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
                     seedWidthFraction: boxW / size.width,
                   )
               : null,
-          onStretchVertical: widget.selectionBorderOnlyWhenSelected
+          onStretchVertical: landscape
               ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
                     field,
                     horizontal: false,
@@ -701,7 +709,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
             textAlign: configPos.textAlign,
             textDirection: TextDirection.ltr,
             textWidthBasis: TextWidthBasis.longestLine,
-            textScaler: landscape ? landscapeTextScaler : TextScaler.linear(1),
+            textScaler: landscapeFonts ? landscapeTextScaler : TextScaler.linear(1),
           )..layout(maxWidth: layoutMaxW);
 
       var measureStyle = measureStyleFor(t.size);
@@ -785,7 +793,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         style: t.textColor == null
             ? measureStyle
             : measureStyle.copyWith(color: t.textColor),
-        textScaler: landscape ? landscapeTextScaler : null,
+        textScaler: landscapeFonts ? landscapeTextScaler : null,
       );
       final text = _fadeField(
         _strokeText(
@@ -799,7 +807,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
               ? TextOverflow.visible
               : (isTagline ? TextOverflow.visible : TextOverflow.ellipsis),
           textAlign: configPos.textAlign,
-          textScaler: landscape ? landscapeTextScaler : null,
+          textScaler: landscapeFonts ? landscapeTextScaler : null,
         ),
         t,
       );
@@ -835,13 +843,13 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           rotation: t.rotation,
           selected: vm.selectedOverlay == field,
           tightBorder: true,
-          borderOnlyWhenSelected: widget.selectionBorderOnlyWhenSelected,
+          borderOnlyWhenSelected: landscape,
           showHandles: !t.locked,
           onSelect: () => vm.selectOverlay(field),
           onDeselect: vm.clearOverlaySelection,
           onMove: (dx, dy) => vm.moveOverlay(field, dx, dy, size),
           onResize: (d) => vm.resizeOverlay(field, d, size),
-          onUniformScale: widget.selectionBorderOnlyWhenSelected
+          onUniformScale: landscape
               ? (d, {required fixRight, required fixBottom}) =>
                   vm.scaleOverlayUniform(
                     field,
@@ -853,7 +861,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
                     seedHeightPx: boxH,
                   )
               : null,
-          onStretchHorizontal: widget.selectionBorderOnlyWhenSelected
+          onStretchHorizontal: landscape
               ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
                     field,
                     horizontal: true,
@@ -863,7 +871,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
                     seedWidthFraction: boxW / size.width,
                   )
               : null,
-          onStretchVertical: widget.selectionBorderOnlyWhenSelected
+          onStretchVertical: landscape
               ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
                     field,
                     horizontal: false,
@@ -901,12 +909,12 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           isAsset: isAsset,
           interactive: interactive,
           selected: vm.selectedOverlay == field,
-          borderOnlyWhenSelected: widget.selectionBorderOnlyWhenSelected,
+          borderOnlyWhenSelected: landscape,
           onSelect: () => vm.selectOverlay(field),
           onDeselect: vm.clearOverlaySelection,
           onMove: (dx, dy) => vm.moveOverlay(field, dx, dy, size),
           onResize: (d) => vm.resizeOverlay(field, d, size),
-          onUniformScale: widget.selectionBorderOnlyWhenSelected
+          onUniformScale: landscape
               ? (d, {required fixRight, required fixBottom}) =>
                   vm.scaleOverlayUniform(
                     field,
@@ -916,7 +924,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
                     fixBottom: fixBottom,
                   )
               : null,
-          onStretchHorizontal: widget.selectionBorderOnlyWhenSelected
+          onStretchHorizontal: landscape
               ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
                     field,
                     horizontal: true,
@@ -925,7 +933,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
                     fixOpposite: fixOpposite,
                   )
               : null,
-          onStretchVertical: widget.selectionBorderOnlyWhenSelected
+          onStretchVertical: landscape
               ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
                     field,
                     horizontal: false,
@@ -1069,14 +1077,14 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
             isAsset: isAsset,
             interactive: interactive,
             selected: selected,
-            borderOnlyWhenSelected: widget.selectionBorderOnlyWhenSelected,
+            borderOnlyWhenSelected: landscape,
             onSelect: () => vm.selectDuplicate(id),
             onDeselect: vm.clearOverlaySelection,
             onMove: (dx, dy) =>
                 vm.moveOverlay(gestureField, dx, dy, size, duplicateId: id),
             onResize: (d) =>
                 vm.resizeOverlay(gestureField, d, size, duplicateId: id),
-            onUniformScale: widget.selectionBorderOnlyWhenSelected
+            onUniformScale: landscape
                 ? (d, {required fixRight, required fixBottom}) =>
                     vm.scaleOverlayUniform(
                       gestureField,
@@ -1087,7 +1095,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
                       duplicateId: id,
                     )
                 : null,
-            onStretchHorizontal: widget.selectionBorderOnlyWhenSelected
+            onStretchHorizontal: landscape
                 ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
                       gestureField,
                       horizontal: true,
@@ -1097,7 +1105,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
                       duplicateId: id,
                     )
                 : null,
-            onStretchVertical: widget.selectionBorderOnlyWhenSelected
+            onStretchVertical: landscape
                 ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
                       gestureField,
                       horizontal: false,
@@ -1142,7 +1150,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         textAlign: pos.textAlign,
         textDirection: TextDirection.ltr,
         textWidthBasis: TextWidthBasis.longestLine,
-        textScaler: landscape ? landscapeTextScaler : TextScaler.linear(1),
+        textScaler: landscapeFonts ? landscapeTextScaler : TextScaler.linear(1),
       );
       final available = (size.width - size.width * t.left)
           .clamp(1.0, size.width)
@@ -1197,7 +1205,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           softWrap: landscapeWrap,
           overflow: TextOverflow.visible,
           textAlign: pos.textAlign,
-          textScaler: landscape ? landscapeTextScaler : null,
+          textScaler: landscapeFonts ? landscapeTextScaler : null,
         );
       } else {
         fill = Text(
@@ -1207,7 +1215,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           overflow: TextOverflow.visible,
           textAlign: pos.textAlign,
           style: baseStyle.copyWith(color: fillColor),
-          textScaler: landscape ? landscapeTextScaler : null,
+          textScaler: landscapeFonts ? landscapeTextScaler : null,
         );
       }
       final text = _fadeField(
@@ -1220,7 +1228,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           softWrap: landscapeWrap,
           overflow: TextOverflow.visible,
           textAlign: pos.textAlign,
-          textScaler: landscape ? landscapeTextScaler : null,
+          textScaler: landscapeFonts ? landscapeTextScaler : null,
         ),
         t,
       );
@@ -1251,7 +1259,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           rotation: t.rotation,
           selected: selected,
           tightBorder: true,
-          borderOnlyWhenSelected: widget.selectionBorderOnlyWhenSelected,
+          borderOnlyWhenSelected: landscape,
           showHandles: !t.locked,
           onSelect: () => vm.selectDuplicate(id),
           onDeselect: vm.clearOverlaySelection,
@@ -1259,7 +1267,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
               vm.moveOverlay(gestureField, dx, dy, size, duplicateId: id),
           onResize: (d) =>
               vm.resizeOverlay(gestureField, d, size, duplicateId: id),
-          onUniformScale: widget.selectionBorderOnlyWhenSelected
+          onUniformScale: landscape
               ? (d, {required fixRight, required fixBottom}) =>
                   vm.scaleOverlayUniform(
                     gestureField,
@@ -1272,7 +1280,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
                     duplicateId: id,
                   )
               : null,
-          onStretchHorizontal: widget.selectionBorderOnlyWhenSelected
+          onStretchHorizontal: landscape
               ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
                     gestureField,
                     horizontal: true,
@@ -1283,7 +1291,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
                     duplicateId: id,
                   )
               : null,
-          onStretchVertical: widget.selectionBorderOnlyWhenSelected
+          onStretchVertical: landscape
               ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
                     gestureField,
                     horizontal: false,

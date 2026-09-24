@@ -248,6 +248,7 @@ class _VisitingCardScanTemplateEditScreenState
                 child: VisitingCardLivePreview(
                   vm: _editVm,
                   enableFieldTransform: true,
+                  eightPointSelection: true,
                   onShowFront: _editVm.showFront,
                   onShowBack: _editVm.showBack,
                 ),

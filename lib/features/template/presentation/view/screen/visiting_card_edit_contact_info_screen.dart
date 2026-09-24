@@ -176,6 +176,7 @@ class _VisitingCardEditContactInfoScreenState
               child: VisitingCardLivePreview(
                 vm: vm,
                 enableFieldTransform: true,
+                eightPointSelection: true,
                 onShowFront: vm.showFront,
                 onShowBack: vm.showBack,
               ),
