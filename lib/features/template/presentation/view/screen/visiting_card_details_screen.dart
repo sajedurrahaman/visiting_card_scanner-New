@@ -294,6 +294,7 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
                             child: VisitingCardLivePreview(
                               vm: vm,
                               showPager: false,
+                              singleLineText: true,
                             ),
                           ),
                           Positioned(

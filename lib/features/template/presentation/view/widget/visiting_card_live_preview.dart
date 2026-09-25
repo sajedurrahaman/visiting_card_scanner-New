@@ -86,6 +86,7 @@ class VisitingCardLivePreview extends StatefulWidget {
     this.enableFieldTransform = false,
     this.selectionBorderOnlyWhenSelected = false,
     this.eightPointSelection = false,
+    this.singleLineText = false,
     this.pageGap = 6,
   });
 
@@ -107,6 +108,9 @@ class VisitingCardLivePreview extends StatefulWidget {
   /// Edit Contact Info: same 8-handle select frame as landscape, and the
   /// box hugs the text instead of the template field width. Fonts stay .sp.
   final bool eightPointSelection;
+
+  /// Details preview: one line per field, same as the editor. Taglines still wrap.
+  final bool singleLineText;
 
   /// Space between the front and back faces while swiping. 0 keeps them flush.
   final double pageGap;
@@ -408,6 +412,16 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           height: pos.heightFactor,
         );
       }
+      if (fontFamily == VisitingCardFonts.montserrat) {
+        return GoogleFonts.montserrat(
+          fontSize: resolved,
+          fontWeight: pos.fontWeight,
+          fontStyle: pos.fontStyle,
+          color: pos.color,
+          letterSpacing: pos.letterSpacing,
+          height: pos.heightFactor,
+        );
+      }
       return TextStyle(
         fontFamily: fontFamily,
         fontSize: resolved,
@@ -433,6 +447,16 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       }
       if (fontFamily == VisitingCardFonts.roboto) {
         return GoogleFonts.roboto(
+          fontSize: resolved,
+          fontWeight: pos.fontWeight,
+          fontStyle: pos.fontStyle,
+          color: pos.color,
+          letterSpacing: pos.letterSpacing,
+          height: pos.heightFactor,
+        );
+      }
+      if (fontFamily == VisitingCardFonts.montserrat) {
+        return GoogleFonts.montserrat(
           fontSize: resolved,
           fontWeight: pos.fontWeight,
           fontStyle: pos.fontStyle,
@@ -668,12 +692,13 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       if (configPos == null || value.trim().isEmpty) return;
       final t = vm.resolvedTransform(field, isFront: isFront);
       final isTagline = field == VisitingCardOverlayField.tagline;
+      final hugLine = landscape || widget.singleLineText;
       final configuredWidth = size.width * (t.width ?? configPos.width ?? 0.4);
       final availableWidth = (size.width - (size.width * t.left))
           .clamp(1.0, size.width)
           .toDouble();
       // Landscape: free line + select-border width (intrinsic / stretch).
-      final maxW = landscape
+      final maxW = hugLine
           ? availableWidth
           : (isTagline
               ? configuredWidth.clamp(1.0, availableWidth).toDouble()
@@ -718,7 +743,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       late TextPainter painter;
       late double boxW;
       var landscapeWrap = false;
-      if (landscape) {
+      if (hugLine) {
         // Single-line intrinsic so select never forces a newline.
         painter = layoutText(measureStyle, double.infinity, lines: 1);
         final intrinsic =
@@ -784,11 +809,11 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
 
       final fill = Text(
         display,
-        maxLines: landscape
+        maxLines: hugLine
             ? (landscapeWrap ? null : 1)
             : maxLines,
-        softWrap: landscape ? landscapeWrap : isTagline,
-        overflow: landscape
+        softWrap: hugLine ? landscapeWrap : isTagline,
+        overflow: hugLine
             ? TextOverflow.visible
             : (isTagline ? TextOverflow.visible : TextOverflow.ellipsis),
         textAlign: configPos.textAlign,
@@ -803,9 +828,9 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           text: display,
           style: measureStyle,
           transform: t,
-          maxLines: landscape ? (landscapeWrap ? null : 1) : maxLines,
-          softWrap: landscape ? landscapeWrap : isTagline,
-          overflow: landscape
+          maxLines: hugLine ? (landscapeWrap ? null : 1) : maxLines,
+          softWrap: hugLine ? landscapeWrap : isTagline,
+          overflow: hugLine
               ? TextOverflow.visible
               : (isTagline ? TextOverflow.visible : TextOverflow.ellipsis),
           textAlign: configPos.textAlign,

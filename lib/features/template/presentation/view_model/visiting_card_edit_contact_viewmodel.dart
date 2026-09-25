@@ -168,7 +168,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   bool get isFront => sideIndex == 0;
   bool get isBack => sideIndex == 1;
 
-  /// Horizontal 2–8,10 + vertical 1,2,4–10 have logo on the front.
+  /// Horizontal 2–8, 10–11, 14, 17–18 + vertical 1, 2, 4–10 have logo on the front.
   bool get hasFrontLogo {
     const frontLogoIds = {
       'h2',
@@ -179,6 +179,10 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       'h7',
       'h8',
       'h10',
+      'h11',
+      'h14',
+      'h17',
+      'h18',
       'v1',
       'v2',
       'v4',
@@ -192,16 +196,15 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     return frontLogoIds.contains(templateId);
   }
 
-  /// Vertical 6–10 place QR on the front (and still on the back).
+  /// Front QR: horizontal 11, 12, 18, 19.
   bool get hasFrontQr {
-    //const frontQrIds = {'v6', 'v7', 'v8', 'v9', 'v10'};
-    const frontQrIds = <String>{};
+    const frontQrIds = {'h11', 'h12', 'h18', 'h19'};
     return frontQrIds.contains(templateId);
   }
 
   /// Templates without any QR on either side.
   bool get hasQr {
-    const noQrIds = <String>{};
+    const noQrIds = {'h13', 'h14', 'h15', 'h16', 'h17', 'h20'};
     return !noQrIds.contains(templateId);
   }
 
