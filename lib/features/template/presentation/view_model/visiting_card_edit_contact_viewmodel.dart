@@ -92,9 +92,43 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   bool isSaving = false;
 
   String? qrAssetPath = ui.AppAssets.defaultQrcodeIcon;
-  String? logoAssetPath;
+
+  /// Front and back keep their own logo so a dark mark on a dark back
+  /// can be a different file from the light mark on a light front.
+  String? frontLogoAssetPath;
+  String? backLogoAssetPath;
   bool hasChosenQr = false;
-  bool hasChosenLogo = false;
+  bool hasChosenFrontLogo = false;
+  bool hasChosenBackLogo = false;
+
+  /// Logo for the side currently being edited.
+  String? get logoAssetPath =>
+      isFront ? frontLogoAssetPath : backLogoAssetPath;
+
+  set logoAssetPath(String? value) {
+    if (isFront) {
+      frontLogoAssetPath = value;
+    } else {
+      backLogoAssetPath = value;
+    }
+  }
+
+  bool get hasChosenLogo =>
+      isFront ? hasChosenFrontLogo : hasChosenBackLogo;
+
+  set hasChosenLogo(bool value) {
+    if (isFront) {
+      hasChosenFrontLogo = value;
+    } else {
+      hasChosenBackLogo = value;
+    }
+  }
+
+  String? logoForSide({required bool front}) =>
+      front ? frontLogoAssetPath : backLogoAssetPath;
+
+  bool hasLogoOnSide({required bool front}) =>
+      front ? hasChosenFrontLogo : hasChosenBackLogo;
 
   /// Runtime finger placement overrides (merged over template defaults).
   final Map<String, VisitingCardFieldTransform> frontOverlays = {};
@@ -1290,9 +1324,11 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     _replaceEntries(websites, other.websites, fallbackType: 'Company');
     _replaceEntries(addresses, other.addresses);
     qrAssetPath = other.qrAssetPath;
-    logoAssetPath = other.logoAssetPath;
+    frontLogoAssetPath = other.frontLogoAssetPath;
+    backLogoAssetPath = other.backLogoAssetPath;
     hasChosenQr = other.hasChosenQr;
-    hasChosenLogo = other.hasChosenLogo;
+    hasChosenFrontLogo = other.hasChosenFrontLogo;
+    hasChosenBackLogo = other.hasChosenBackLogo;
     frontOverlays
       ..clear()
       ..addAll(other.frontOverlays);
@@ -1315,8 +1351,12 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     List<ContactFieldEntry>? taglines,
     String? qrAssetPath,
     String? logoAssetPath,
+    String? frontLogoAssetPath,
+    String? backLogoAssetPath,
     bool? hasChosenQr,
     bool? hasChosenLogo,
+    bool? hasChosenFrontLogo,
+    bool? hasChosenBackLogo,
     VisitingCardFieldTransforms? fieldTransforms,
   }) {
     _replaceEntries(this.names, names);
@@ -1333,11 +1373,35 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     } else if (hasChosenQr != null) {
       this.hasChosenQr = hasChosenQr;
     }
-    if (logoAssetPath != null) {
-      this.logoAssetPath = logoAssetPath.isEmpty ? null : logoAssetPath;
-      this.hasChosenLogo = hasChosenLogo ?? logoAssetPath.isNotEmpty;
+    final splitLogos = frontLogoAssetPath != null ||
+        backLogoAssetPath != null ||
+        hasChosenFrontLogo != null ||
+        hasChosenBackLogo != null;
+    if (splitLogos) {
+      if (frontLogoAssetPath != null) {
+        this.frontLogoAssetPath =
+            frontLogoAssetPath.isEmpty ? null : frontLogoAssetPath;
+      }
+      if (backLogoAssetPath != null) {
+        this.backLogoAssetPath =
+            backLogoAssetPath.isEmpty ? null : backLogoAssetPath;
+      }
+      if (hasChosenFrontLogo != null) {
+        this.hasChosenFrontLogo = hasChosenFrontLogo;
+      }
+      if (hasChosenBackLogo != null) {
+        this.hasChosenBackLogo = hasChosenBackLogo;
+      }
+    } else if (logoAssetPath != null) {
+      final path = logoAssetPath.isEmpty ? null : logoAssetPath;
+      final chosen = hasChosenLogo ?? path != null;
+      this.frontLogoAssetPath = path;
+      this.backLogoAssetPath = path;
+      this.hasChosenFrontLogo = chosen;
+      this.hasChosenBackLogo = chosen;
     } else if (hasChosenLogo != null) {
-      this.hasChosenLogo = hasChosenLogo;
+      this.hasChosenFrontLogo = hasChosenLogo;
+      this.hasChosenBackLogo = hasChosenLogo;
     }
     if (fieldTransforms != null) {
       frontOverlays
@@ -1555,12 +1619,15 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     );
 
     hasChosenQr = contact.hasChosenQr;
-    hasChosenLogo = contact.hasChosenLogo;
+    hasChosenFrontLogo = contact.frontLogoChosen;
+    hasChosenBackLogo = contact.backLogoChosen;
     qrAssetPath = contact.qrImagePath.isNotEmpty
         ? contact.qrImagePath
         : (hasChosenQr ? ui.AppAssets.defaultQrcodeIcon : qrAssetPath);
-    logoAssetPath =
-        contact.logoImagePath.isNotEmpty ? contact.logoImagePath : null;
+    frontLogoAssetPath =
+        contact.frontLogoPath.isNotEmpty ? contact.frontLogoPath : null;
+    backLogoAssetPath =
+        contact.backLogoPath.isNotEmpty ? contact.backLogoPath : null;
     applyFieldTransforms(contact.fieldTransforms);
   }
 
@@ -1598,9 +1665,16 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       source: SavedContactInfo.sourceTemplate,
       templateId: templateId,
       qrImagePath: qrAssetPath ?? '',
-      logoImagePath: logoAssetPath ?? '',
+      logoImagePath: frontLogoAssetPath?.isNotEmpty == true
+          ? frontLogoAssetPath!
+          : (backLogoAssetPath ?? ''),
+      frontLogoImagePath: frontLogoAssetPath ?? '',
+      backLogoImagePath: backLogoAssetPath ?? '',
       hasChosenQr: hasChosenQr,
-      hasChosenLogo: hasChosenLogo,
+      hasChosenLogo: hasChosenFrontLogo || hasChosenBackLogo,
+      hasChosenFrontLogo: hasChosenFrontLogo,
+      hasChosenBackLogo: hasChosenBackLogo,
+      separateLogos: true,
       fieldTransforms: fieldTransformsSnapshot,
     );
   }
@@ -1690,9 +1764,16 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         source: SavedContactInfo.sourceTemplate,
         templateId: templateId,
         qrImagePath: embedded.qrPath,
-        logoImagePath: embedded.logoPath,
+        logoImagePath: embedded.frontLogoPath.isNotEmpty
+            ? embedded.frontLogoPath
+            : embedded.backLogoPath,
+        frontLogoImagePath: embedded.frontLogoPath,
+        backLogoImagePath: embedded.backLogoPath,
         hasChosenQr: hasChosenQr,
-        hasChosenLogo: hasChosenLogo,
+        hasChosenLogo: hasChosenFrontLogo || hasChosenBackLogo,
+        hasChosenFrontLogo: hasChosenFrontLogo,
+        hasChosenBackLogo: hasChosenBackLogo,
+        separateLogos: true,
         fieldTransforms: fieldTransformsSnapshot,
       );
       await SavedContactInfo.writeToFolder(contactFolder.path, savedContact);
@@ -1790,9 +1871,16 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         source: SavedContactInfo.sourceTemplate,
         templateId: templateId,
         qrImagePath: embedded.qrPath,
-        logoImagePath: embedded.logoPath,
+        logoImagePath: embedded.frontLogoPath.isNotEmpty
+            ? embedded.frontLogoPath
+            : embedded.backLogoPath,
+        frontLogoImagePath: embedded.frontLogoPath,
+        backLogoImagePath: embedded.backLogoPath,
         hasChosenQr: hasChosenQr,
-        hasChosenLogo: hasChosenLogo,
+        hasChosenLogo: hasChosenFrontLogo || hasChosenBackLogo,
+        hasChosenFrontLogo: hasChosenFrontLogo,
+        hasChosenBackLogo: hasChosenBackLogo,
+        separateLogos: true,
         fieldTransforms: fieldTransformsSnapshot,
       );
       await SavedContactInfo.writeToFolder(contactFolder.path, savedContact);
@@ -1831,7 +1919,8 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     }
   }
 
-  Future<({String qrPath, String logoPath})> _persistEmbeddedAssets(
+  Future<({String qrPath, String frontLogoPath, String backLogoPath})>
+      _persistEmbeddedAssets(
     Directory contactFolder,
   ) async {
     final embeddedDir = Directory(p.join(contactFolder.path, 'embedded'));
@@ -1846,15 +1935,37 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       qrAssetPath = qrPath;
     }
 
-    var logoPath = '';
-    if (hasChosenLogo && logoAssetPath != null && logoAssetPath!.isNotEmpty) {
-      logoPath =
-          await _persistEmbeddedFile(logoAssetPath!, embeddedDir, 'logo') ??
-              logoAssetPath!;
-      logoAssetPath = logoPath;
+    var frontLogoPath = '';
+    if (hasChosenFrontLogo &&
+        frontLogoAssetPath != null &&
+        frontLogoAssetPath!.isNotEmpty) {
+      frontLogoPath = await _persistEmbeddedFile(
+            frontLogoAssetPath!,
+            embeddedDir,
+            'frontlogo',
+          ) ??
+          frontLogoAssetPath!;
+      frontLogoAssetPath = frontLogoPath;
     }
 
-    return (qrPath: qrPath, logoPath: logoPath);
+    var backLogoPath = '';
+    if (hasChosenBackLogo &&
+        backLogoAssetPath != null &&
+        backLogoAssetPath!.isNotEmpty) {
+      backLogoPath = await _persistEmbeddedFile(
+            backLogoAssetPath!,
+            embeddedDir,
+            'backlogo',
+          ) ??
+          backLogoAssetPath!;
+      backLogoAssetPath = backLogoPath;
+    }
+
+    return (
+      qrPath: qrPath,
+      frontLogoPath: frontLogoPath,
+      backLogoPath: backLogoPath,
+    );
   }
 
   Future<String?> _persistEmbeddedFile(
@@ -1987,9 +2098,11 @@ class _CardEditSnapshot {
     required this.isHorizontal,
     required this.frontAssetWithoutData,
     required this.backAssetWithoutData,
-    required this.logoAssetPath,
+    required this.frontLogoAssetPath,
+    required this.backLogoAssetPath,
     required this.qrAssetPath,
-    required this.hasChosenLogo,
+    required this.hasChosenFrontLogo,
+    required this.hasChosenBackLogo,
     required this.hasChosenQr,
     required this.frontOverlays,
     required this.backOverlays,
@@ -2008,9 +2121,11 @@ class _CardEditSnapshot {
   final bool isHorizontal;
   final String frontAssetWithoutData;
   final String backAssetWithoutData;
-  final String? logoAssetPath;
+  final String? frontLogoAssetPath;
+  final String? backLogoAssetPath;
   final String? qrAssetPath;
-  final bool hasChosenLogo;
+  final bool hasChosenFrontLogo;
+  final bool hasChosenBackLogo;
   final bool hasChosenQr;
   final Map<String, VisitingCardFieldTransform> frontOverlays;
   final Map<String, VisitingCardFieldTransform> backOverlays;
@@ -2040,9 +2155,11 @@ class _CardEditSnapshot {
         vm.isHorizontal,
         vm.frontAssetWithoutData,
         vm.backAssetWithoutData,
-        vm.logoAssetPath,
+        vm.frontLogoAssetPath,
+        vm.backLogoAssetPath,
         vm.qrAssetPath,
-        vm.hasChosenLogo,
+        vm.hasChosenFrontLogo,
+        vm.hasChosenBackLogo,
         vm.hasChosenQr,
         _overlaySig(front),
         _overlaySig(back),
@@ -2059,9 +2176,11 @@ class _CardEditSnapshot {
       isHorizontal: vm.isHorizontal,
       frontAssetWithoutData: vm.frontAssetWithoutData,
       backAssetWithoutData: vm.backAssetWithoutData,
-      logoAssetPath: vm.logoAssetPath,
+      frontLogoAssetPath: vm.frontLogoAssetPath,
+      backLogoAssetPath: vm.backLogoAssetPath,
       qrAssetPath: vm.qrAssetPath,
-      hasChosenLogo: vm.hasChosenLogo,
+      hasChosenFrontLogo: vm.hasChosenFrontLogo,
+      hasChosenBackLogo: vm.hasChosenBackLogo,
       hasChosenQr: vm.hasChosenQr,
       frontOverlays: front,
       backOverlays: back,
@@ -2081,9 +2200,11 @@ class _CardEditSnapshot {
     vm.isHorizontal = isHorizontal;
     vm.frontAssetWithoutData = frontAssetWithoutData;
     vm.backAssetWithoutData = backAssetWithoutData;
-    vm.logoAssetPath = logoAssetPath;
+    vm.frontLogoAssetPath = frontLogoAssetPath;
+    vm.backLogoAssetPath = backLogoAssetPath;
     vm.qrAssetPath = qrAssetPath;
-    vm.hasChosenLogo = hasChosenLogo;
+    vm.hasChosenFrontLogo = hasChosenFrontLogo;
+    vm.hasChosenBackLogo = hasChosenBackLogo;
     vm.hasChosenQr = hasChosenQr;
     vm.frontOverlays
       ..clear()

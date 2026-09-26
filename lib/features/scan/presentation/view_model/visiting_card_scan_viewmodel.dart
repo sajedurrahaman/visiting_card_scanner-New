@@ -47,8 +47,12 @@ class VisitingCardScanViewModel extends ChangeNotifier {
 
   String? qrAssetPath;
   String? logoAssetPath;
+  String? frontLogoAssetPath;
+  String? backLogoAssetPath;
   bool hasChosenQr = false;
   bool hasChosenLogo = false;
+  bool hasChosenFrontLogo = false;
+  bool hasChosenBackLogo = false;
   String? selectedTemplateId;
   VisitingCardFieldTransforms fieldTransforms =
       const VisitingCardFieldTransforms();
@@ -124,10 +128,15 @@ class VisitingCardScanViewModel extends ChangeNotifier {
     selectedTemplateId =
         contact.templateId.isNotEmpty ? contact.templateId : null;
     hasChosenQr = contact.hasChosenQr;
-    hasChosenLogo = contact.hasChosenLogo;
+    hasChosenFrontLogo = contact.frontLogoChosen;
+    hasChosenBackLogo = contact.backLogoChosen;
+    hasChosenLogo = hasChosenFrontLogo || hasChosenBackLogo;
     qrAssetPath = contact.qrImagePath.isNotEmpty ? contact.qrImagePath : null;
-    logoAssetPath =
-        contact.logoImagePath.isNotEmpty ? contact.logoImagePath : null;
+    frontLogoAssetPath =
+        contact.frontLogoPath.isNotEmpty ? contact.frontLogoPath : null;
+    backLogoAssetPath =
+        contact.backLogoPath.isNotEmpty ? contact.backLogoPath : null;
+    logoAssetPath = frontLogoAssetPath ?? backLogoAssetPath;
     fieldTransforms = contact.fieldTransforms;
     notifyListeners();
   }
@@ -269,8 +278,27 @@ class VisitingCardScanViewModel extends ChangeNotifier {
   void applyLogoImage(String path) {
     if (path.trim().isEmpty) return;
     hasChosenLogo = true;
+    hasChosenFrontLogo = true;
+    hasChosenBackLogo = true;
     logoAssetPath = path;
+    frontLogoAssetPath = path;
+    backLogoAssetPath = path;
     notifyListeners();
+  }
+
+  /// Keeps the front and back logos chosen in the card editor.
+  void copySideLogos({
+    String? frontPath,
+    String? backPath,
+    required bool hasFront,
+    required bool hasBack,
+  }) {
+    frontLogoAssetPath = frontPath;
+    backLogoAssetPath = backPath;
+    hasChosenFrontLogo = hasFront;
+    hasChosenBackLogo = hasBack;
+    logoAssetPath = frontPath ?? backPath;
+    hasChosenLogo = hasFront || hasBack;
   }
 
   /// Notify listeners after bulk field / transform sync from template edit.
@@ -358,7 +386,8 @@ class VisitingCardScanViewModel extends ChangeNotifier {
         savedImagePaths,
         templateId: templateId ?? selectedTemplateId,
         qrImagePath: embedded.qrPath,
-        logoImagePath: embedded.logoPath,
+        frontLogoImagePath: embedded.frontLogoPath,
+        backLogoImagePath: embedded.backLogoPath,
         templateImagePaths: templatePaths,
       );
       final modelId = '${now.millisecondsSinceEpoch}';
@@ -439,7 +468,8 @@ class VisitingCardScanViewModel extends ChangeNotifier {
         savedImagePaths,
         templateId: templateId ?? selectedTemplateId,
         qrImagePath: embedded.qrPath,
-        logoImagePath: embedded.logoPath,
+        frontLogoImagePath: embedded.frontLogoPath,
+        backLogoImagePath: embedded.backLogoPath,
         templateImagePaths: templatePaths,
       );
       await SavedContactInfo.writeToFolder(contactFolder.path, contact);
@@ -483,6 +513,8 @@ class VisitingCardScanViewModel extends ChangeNotifier {
     String? templateId,
     String? qrImagePath,
     String? logoImagePath,
+    String? frontLogoImagePath,
+    String? backLogoImagePath,
     List<String>? templateImagePaths,
   }) {
     return SavedContactInfo(
@@ -515,9 +547,18 @@ class VisitingCardScanViewModel extends ChangeNotifier {
       source: SavedContactInfo.sourceScan,
       templateId: templateId ?? selectedTemplateId ?? '',
       qrImagePath: qrImagePath ?? qrAssetPath ?? '',
-      logoImagePath: logoImagePath ?? logoAssetPath ?? '',
+      logoImagePath: (frontLogoAssetPath ?? '').isNotEmpty
+          ? frontLogoAssetPath!
+          : ((backLogoAssetPath ?? '').isNotEmpty
+              ? backLogoAssetPath!
+              : (logoImagePath ?? logoAssetPath ?? '')),
+      frontLogoImagePath: frontLogoImagePath ?? frontLogoAssetPath ?? '',
+      backLogoImagePath: backLogoImagePath ?? backLogoAssetPath ?? '',
       hasChosenQr: hasChosenQr,
-      hasChosenLogo: hasChosenLogo,
+      hasChosenLogo: hasChosenFrontLogo || hasChosenBackLogo,
+      hasChosenFrontLogo: hasChosenFrontLogo,
+      hasChosenBackLogo: hasChosenBackLogo,
+      separateLogos: true,
       templateImagePaths: templateImagePaths ?? const [],
       fieldTransforms: fieldTransforms,
     );
@@ -528,6 +569,8 @@ class VisitingCardScanViewModel extends ChangeNotifier {
     String? templateId,
     String? qrImagePath,
     String? logoImagePath,
+    String? frontLogoImagePath,
+    String? backLogoImagePath,
     List<String> templateImagePaths = const [],
   }) {
     return buildSavedContact(
@@ -535,11 +578,14 @@ class VisitingCardScanViewModel extends ChangeNotifier {
       templateId: templateId,
       qrImagePath: qrImagePath,
       logoImagePath: logoImagePath,
+      frontLogoImagePath: frontLogoImagePath,
+      backLogoImagePath: backLogoImagePath,
       templateImagePaths: templateImagePaths,
     );
   }
 
-  Future<({String qrPath, String logoPath})> _persistEmbeddedAssets(
+  Future<({String qrPath, String frontLogoPath, String backLogoPath})>
+      _persistEmbeddedAssets(
     Directory contactFolder,
   ) async {
     final embeddedDir = Directory(p.join(contactFolder.path, 'embedded'));
@@ -558,18 +604,40 @@ class VisitingCardScanViewModel extends ChangeNotifier {
       qrAssetPath = qrPath;
     }
 
-    var logoPath = '';
-    if (hasChosenLogo && logoAssetPath != null && logoAssetPath!.isNotEmpty) {
-      logoPath = await _persistEmbeddedFile(
-            logoAssetPath!,
+    var frontLogoPath = '';
+    if (hasChosenFrontLogo &&
+        frontLogoAssetPath != null &&
+        frontLogoAssetPath!.isNotEmpty) {
+      frontLogoPath = await _persistEmbeddedFile(
+            frontLogoAssetPath!,
             embeddedDir,
-            'logo',
+            'frontlogo',
           ) ??
-          logoAssetPath!;
-      logoAssetPath = logoPath;
+          frontLogoAssetPath!;
+      frontLogoAssetPath = frontLogoPath;
     }
 
-    return (qrPath: qrPath, logoPath: logoPath);
+    var backLogoPath = '';
+    if (hasChosenBackLogo &&
+        backLogoAssetPath != null &&
+        backLogoAssetPath!.isNotEmpty) {
+      backLogoPath = await _persistEmbeddedFile(
+            backLogoAssetPath!,
+            embeddedDir,
+            'backlogo',
+          ) ??
+          backLogoAssetPath!;
+      backLogoAssetPath = backLogoPath;
+    }
+
+    logoAssetPath = frontLogoAssetPath ?? backLogoAssetPath;
+    hasChosenLogo = hasChosenFrontLogo || hasChosenBackLogo;
+
+    return (
+      qrPath: qrPath,
+      frontLogoPath: frontLogoPath,
+      backLogoPath: backLogoPath,
+    );
   }
 
   /// Writes a fresh copy under [destDir] with a unique name so updates

@@ -94,9 +94,11 @@ class _VisitingCardScannedDetailsScreenState
       websites: scan.websites,
       addresses: scan.addresses,
       qrAssetPath: scan.qrAssetPath,
-      logoAssetPath: scan.logoAssetPath,
+      frontLogoAssetPath: scan.frontLogoAssetPath ?? '',
+      backLogoAssetPath: scan.backLogoAssetPath ?? '',
       hasChosenQr: scan.hasChosenQr,
-      hasChosenLogo: scan.hasChosenLogo,
+      hasChosenFrontLogo: scan.hasChosenFrontLogo,
+      hasChosenBackLogo: scan.hasChosenBackLogo,
       fieldTransforms: scan.fieldTransforms,
     );
   }
@@ -119,9 +121,11 @@ class _VisitingCardScannedDetailsScreenState
       websites: scan.websites,
       addresses: scan.addresses,
       qrAssetPath: scan.qrAssetPath,
-      logoAssetPath: scan.logoAssetPath,
+      frontLogoAssetPath: scan.frontLogoAssetPath ?? '',
+      backLogoAssetPath: scan.backLogoAssetPath ?? '',
       hasChosenQr: scan.hasChosenQr,
-      hasChosenLogo: scan.hasChosenLogo,
+      hasChosenFrontLogo: scan.hasChosenFrontLogo,
+      hasChosenBackLogo: scan.hasChosenBackLogo,
     );
     scan.selectedTemplateId = item.id;
     scan.fieldTransforms = const VisitingCardFieldTransforms();
@@ -158,9 +162,13 @@ class _VisitingCardScannedDetailsScreenState
     replace(scan.websites, _previewVm.websites, fallbackType: 'Company');
     replace(scan.addresses, _previewVm.addresses);
     scan.qrAssetPath = _previewVm.qrAssetPath;
-    scan.logoAssetPath = _previewVm.logoAssetPath;
+    scan.copySideLogos(
+      frontPath: _previewVm.frontLogoAssetPath,
+      backPath: _previewVm.backLogoAssetPath,
+      hasFront: _previewVm.hasChosenFrontLogo,
+      hasBack: _previewVm.hasChosenBackLogo,
+    );
     scan.hasChosenQr = _previewVm.hasChosenQr;
-    scan.hasChosenLogo = _previewVm.hasChosenLogo;
     scan.fieldTransforms = _previewVm.fieldTransformsSnapshot;
     scan.selectedTemplateId = _previewVm.templateId;
     scan.notifyContactChanged();

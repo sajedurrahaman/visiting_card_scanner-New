@@ -1021,11 +1021,11 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       value: vm.displayAddress,
     );
 
-    if (vm.hasChosenLogo) {
+    if (vm.hasLogoOnSide(front: isFront)) {
       addTransformImage(
         field: VisitingCardOverlayField.logo,
         configPos: side.logo,
-        assetPath: vm.logoAssetPath,
+        assetPath: vm.logoForSide(front: isFront),
       );
     }
     if (vm.hasChosenQr) {

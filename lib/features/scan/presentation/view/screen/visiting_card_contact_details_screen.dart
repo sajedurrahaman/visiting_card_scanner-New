@@ -293,10 +293,11 @@ class _VisitingCardContactDetailsScreenState
               .map((e) => ContactFieldEntry(value: e))
               .toList(),
       qrAssetPath: contact.qrImagePath.isNotEmpty ? contact.qrImagePath : null,
-      logoAssetPath:
-          contact.logoImagePath.isNotEmpty ? contact.logoImagePath : null,
+      frontLogoAssetPath: contact.frontLogoPath,
+      backLogoAssetPath: contact.backLogoPath,
       hasChosenQr: contact.hasChosenQr,
-      hasChosenLogo: contact.hasChosenLogo,
+      hasChosenFrontLogo: contact.frontLogoChosen,
+      hasChosenBackLogo: contact.backLogoChosen,
       fieldTransforms: contact.fieldTransforms,
     );
   }
@@ -570,9 +571,11 @@ class _VisitingCardContactDetailsScreenState
       websites: scan.websites,
       addresses: scan.addresses,
       qrAssetPath: scan.qrAssetPath,
-      logoAssetPath: scan.logoAssetPath,
+      frontLogoAssetPath: scan.frontLogoAssetPath ?? '',
+      backLogoAssetPath: scan.backLogoAssetPath ?? '',
       hasChosenQr: scan.hasChosenQr,
-      hasChosenLogo: scan.hasChosenLogo,
+      hasChosenFrontLogo: scan.hasChosenFrontLogo,
+      hasChosenBackLogo: scan.hasChosenBackLogo,
       fieldTransforms: scan.fieldTransforms,
     );
   }
@@ -649,9 +652,11 @@ class _VisitingCardContactDetailsScreenState
         websites: vm.websites,
         addresses: vm.addresses,
         qrAssetPath: vm.qrAssetPath,
-        logoAssetPath: vm.logoAssetPath,
+        frontLogoAssetPath: vm.frontLogoAssetPath ?? '',
+        backLogoAssetPath: vm.backLogoAssetPath ?? '',
         hasChosenQr: vm.hasChosenQr,
-        hasChosenLogo: vm.hasChosenLogo,
+        hasChosenFrontLogo: vm.hasChosenFrontLogo,
+        hasChosenBackLogo: vm.hasChosenBackLogo,
         fieldTransforms: vm.fieldTransformsSnapshot,
       );
     }

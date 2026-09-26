@@ -78,9 +78,11 @@ class _VisitingCardScanTemplateEditScreenState
       websites: _scanVm.websites,
       addresses: _scanVm.addresses,
       qrAssetPath: _scanVm.qrAssetPath,
-      logoAssetPath: _scanVm.logoAssetPath,
+      frontLogoAssetPath: _scanVm.frontLogoAssetPath ?? '',
+      backLogoAssetPath: _scanVm.backLogoAssetPath ?? '',
       hasChosenQr: _scanVm.hasChosenQr,
-      hasChosenLogo: _scanVm.hasChosenLogo,
+      hasChosenFrontLogo: _scanVm.hasChosenFrontLogo,
+      hasChosenBackLogo: _scanVm.hasChosenBackLogo,
       fieldTransforms: sameTemplate ? _scanVm.fieldTransforms : null,
     );
   }
@@ -95,9 +97,13 @@ class _VisitingCardScanTemplateEditScreenState
     _replace(_scanVm.websites, _editVm.websites, fallbackType: 'Company');
     _replace(_scanVm.addresses, _editVm.addresses);
     _scanVm.qrAssetPath = _editVm.qrAssetPath;
-    _scanVm.logoAssetPath = _editVm.logoAssetPath;
+    _scanVm.copySideLogos(
+      frontPath: _editVm.frontLogoAssetPath,
+      backPath: _editVm.backLogoAssetPath,
+      hasFront: _editVm.hasChosenFrontLogo,
+      hasBack: _editVm.hasChosenBackLogo,
+    );
     _scanVm.hasChosenQr = _editVm.hasChosenQr;
-    _scanVm.hasChosenLogo = _editVm.hasChosenLogo;
     _scanVm.fieldTransforms = _editVm.fieldTransformsSnapshot;
     _scanVm.selectedTemplateId = _editVm.templateId;
     _scanVm.notifyContactChanged();

@@ -19,8 +19,13 @@ class SavedContactInfo {
     this.templateId = '',
     this.qrImagePath = '',
     this.logoImagePath = '',
+    this.frontLogoImagePath = '',
+    this.backLogoImagePath = '',
     this.hasChosenQr = false,
     this.hasChosenLogo = false,
+    this.hasChosenFrontLogo = false,
+    this.hasChosenBackLogo = false,
+    this.separateLogos = false,
     this.templateImagePaths = const [],
     this.fieldTransforms = const VisitingCardFieldTransforms(),
   });
@@ -43,8 +48,26 @@ class SavedContactInfo {
   final String templateId;
   final String qrImagePath;
   final String logoImagePath;
+
+  /// Side-specific logos. Older cards only stored [logoImagePath], which
+  /// still applies to both sides when [separateLogos] is false.
+  final String frontLogoImagePath;
+  final String backLogoImagePath;
   final bool hasChosenQr;
   final bool hasChosenLogo;
+  final bool hasChosenFrontLogo;
+  final bool hasChosenBackLogo;
+  final bool separateLogos;
+
+  String get frontLogoPath =>
+      separateLogos ? frontLogoImagePath : logoImagePath;
+
+  String get backLogoPath => separateLogos ? backLogoImagePath : logoImagePath;
+
+  bool get frontLogoChosen =>
+      separateLogos ? hasChosenFrontLogo : hasChosenLogo;
+
+  bool get backLogoChosen => separateLogos ? hasChosenBackLogo : hasChosenLogo;
   final List<String> templateImagePaths;
   final VisitingCardFieldTransforms fieldTransforms;
 
@@ -76,8 +99,12 @@ class SavedContactInfo {
         'templateId': templateId,
         'qrImagePath': qrImagePath,
         'logoImagePath': logoImagePath,
+        'frontLogoImagePath': frontLogoImagePath,
+        'backLogoImagePath': backLogoImagePath,
         'hasChosenQr': hasChosenQr,
         'hasChosenLogo': hasChosenLogo,
+        'hasChosenFrontLogo': hasChosenFrontLogo,
+        'hasChosenBackLogo': hasChosenBackLogo,
         'templateImagePaths': templateImagePaths,
         if (!fieldTransforms.isEmpty)
           'fieldTransforms': fieldTransforms.toJson(),
@@ -115,8 +142,14 @@ class SavedContactInfo {
       templateId: json['templateId'] as String? ?? '',
       qrImagePath: json['qrImagePath'] as String? ?? '',
       logoImagePath: json['logoImagePath'] as String? ?? '',
+      frontLogoImagePath: json['frontLogoImagePath'] as String? ?? '',
+      backLogoImagePath: json['backLogoImagePath'] as String? ?? '',
       hasChosenQr: json['hasChosenQr'] as bool? ?? false,
       hasChosenLogo: json['hasChosenLogo'] as bool? ?? false,
+      hasChosenFrontLogo: json['hasChosenFrontLogo'] as bool? ?? false,
+      hasChosenBackLogo: json['hasChosenBackLogo'] as bool? ?? false,
+      separateLogos: json.containsKey('frontLogoImagePath') ||
+          json.containsKey('backLogoImagePath'),
       templateImagePaths: strings('templateImagePaths'),
       fieldTransforms: VisitingCardFieldTransforms.fromJson(
         json['fieldTransforms'] is Map
