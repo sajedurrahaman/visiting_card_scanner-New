@@ -106,6 +106,28 @@ class AppAssets {
   static const vTemplateVerticalNineBack = 'assets/images/visiting_card_template/vertical/Back_09.png';
   static const vTemplateVerticalTenFront = 'assets/images/visiting_card_template/vertical/Front_10.png';
   static const vTemplateVerticalTenBack = 'assets/images/visiting_card_template/vertical/Back_10.png';
+  static const vTemplateVerticalElevenFront = 'assets/images/visiting_card_template/vertical/Front_11.png';
+  static const vTemplateVerticalElevenBack = 'assets/images/visiting_card_template/vertical/Back_11.png';
+  static const vTemplateVerticalTwelveFront = 'assets/images/visiting_card_template/vertical/Front_12.png';
+  static const vTemplateVerticalTwelveBack = 'assets/images/visiting_card_template/vertical/Back_12.png';
+  static const vTemplateVerticalThirteenFront = 'assets/images/visiting_card_template/vertical/Front_13.png';
+  static const vTemplateVerticalThirteenBack = 'assets/images/visiting_card_template/vertical/Back_13.png';
+  static const vTemplateVerticalFourteenFront = 'assets/images/visiting_card_template/vertical/Front_14.png';
+  static const vTemplateVerticalFourteenBack = 'assets/images/visiting_card_template/vertical/Back_14.png';
+  static const vTemplateVerticalFifteenFront = 'assets/images/visiting_card_template/vertical/Front_15.png';
+  static const vTemplateVerticalFifteenBack = 'assets/images/visiting_card_template/vertical/Back_15.png';
+  static const vTemplateVerticalSixteenFront = 'assets/images/visiting_card_template/vertical/Front_16.png';
+  static const vTemplateVerticalSixteenBack = 'assets/images/visiting_card_template/vertical/Back_16.png';
+  static const vTemplateVerticalSeventeenFront = 'assets/images/visiting_card_template/vertical/Front_17.png';
+  static const vTemplateVerticalSeventeenBack = 'assets/images/visiting_card_template/vertical/Back_17.png';
+  static const vTemplateVerticalEighteenFront = 'assets/images/visiting_card_template/vertical/Front_18.png';
+  static const vTemplateVerticalEighteenBack = 'assets/images/visiting_card_template/vertical/Back_18.png';
+  static const vTemplateVerticalNineteenFront = 'assets/images/visiting_card_template/vertical/Front_19.png';
+  static const vTemplateVerticalNineteenBack = 'assets/images/visiting_card_template/vertical/Back_19.png';
+  static const vTemplateVerticalTwentyFront = 'assets/images/visiting_card_template/vertical/Front_20.png';
+  static const vTemplateVerticalTwentyBack = 'assets/images/visiting_card_template/vertical/Back_20.png';
+  static const vTemplateVerticalTwentyOneFront = 'assets/images/visiting_card_template/vertical/Front_21.png';
+  static const vTemplateVerticalTwentyOneBack = 'assets/images/visiting_card_template/vertical/Back_21.png';
 
   static const inactiveLeftSideArrow = 'assets/icons/inactive_left_side_arrow.svg';
   static const activeLeftSideArrow = 'assets/icons/active_left_side_arrow.svg';
@@ -343,6 +365,28 @@ class AppAssets {
   static const vTemplateVerticalNineBackWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Back_09.png';
   static const vTemplateVerticalTenFrontWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Front_10.png';
   static const vTemplateVerticalTenBackWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Back_10.png';
+  static const vTemplateVerticalElevenFrontWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Front_11.png';
+  static const vTemplateVerticalElevenBackWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Back_11.png';
+  static const vTemplateVerticalTwelveFrontWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Front_12.png';
+  static const vTemplateVerticalTwelveBackWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Back_12.png';
+  static const vTemplateVerticalThirteenFrontWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Front_13.png';
+  static const vTemplateVerticalThirteenBackWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Back_13.png';
+  static const vTemplateVerticalFourteenFrontWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Front_14.png';
+  static const vTemplateVerticalFourteenBackWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Back_14.png';
+  static const vTemplateVerticalFifteenFrontWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Front_15.png';
+  static const vTemplateVerticalFifteenBackWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Back_15.png';
+  static const vTemplateVerticalSixteenFrontWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Front_16.png';
+  static const vTemplateVerticalSixteenBackWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Back_16.png';
+  static const vTemplateVerticalSeventeenFrontWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Front_17.png';
+  static const vTemplateVerticalSeventeenBackWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Back_17.png';
+  static const vTemplateVerticalEighteenFrontWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Front_18.png';
+  static const vTemplateVerticalEighteenBackWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Back_18.png';
+  static const vTemplateVerticalNineteenFrontWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Front_19.png';
+  static const vTemplateVerticalNineteenBackWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Back_19.png';
+  static const vTemplateVerticalTwentyFrontWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Front_20.png';
+  static const vTemplateVerticalTwentyBackWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Back_20.png';
+  static const vTemplateVerticalTwentyOneFrontWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Front_21.png';
+  static const vTemplateVerticalTwentyOneBackWithOutData = 'assets/images/visiting_card_template_without_data/vertical/Back_21.png';
 
 
   static const visitingCardAddPageIcon = 'assets/icons/Add page.svg';

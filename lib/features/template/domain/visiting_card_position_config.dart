@@ -150,7 +150,7 @@ class VisitingCardTemplatePositions {
 
 /// Manual position map — **edit each template block separately**.
 ///
-/// Template ids: horizontal `h1`…`h20`, vertical `v1`…`v10`.
+/// Template ids: horizontal `h1`…`h20`, vertical `v1`…`v21`.
 class VisitingCardPositionConfig {
   VisitingCardPositionConfig._();
 
@@ -194,6 +194,17 @@ class VisitingCardPositionConfig {
       'v8' => verticalTemplate8,
       'v9' => verticalTemplate9,
       'v10' => verticalTemplate10,
+      'v11' => verticalTemplate11,
+      'v12' => verticalTemplate12,
+      'v13' => verticalTemplate13,
+      'v14' => verticalTemplate14,
+      'v15' => verticalTemplate15,
+      'v16' => verticalTemplate16,
+      'v17' => verticalTemplate17,
+      'v18' => verticalTemplate18,
+      'v19' => verticalTemplate19,
+      'v20' => verticalTemplate20,
+      'v21' => verticalTemplate21,
       _ => verticalTemplate1,
     };
   }
@@ -2897,6 +2908,805 @@ back: VisitingCardSidePositions(
         left: 0.40,
         top: 0.46,
         size: 0.20,
+      ),
+    ),
+  );
+
+  // ===========================================================================
+  // VERTICAL TEMPLATE 11  (v11) — Montserrat, back logo + QR, no tagline
+  // ===========================================================================
+
+  static const verticalTemplate11 = VisitingCardTemplatePositions(
+    fontFamily: VisitingCardFonts.montserrat,
+    front: VisitingCardSidePositions(
+      name: VisitingCardFieldPosition(
+        left: 0.14,
+        top: 0.15,
+        width: 0.80,
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF000000),
+        firstNameColor: Color(0xFF671F44),
+        lastNameColor: Color(0xFF000000),
+        maxDisplayNameLength: 20,
+      ),
+      designation: VisitingCardFieldPosition(
+        left: 0.14,
+        top: 0.20,
+        width: 0.75,
+        fontSize: 10,
+        color: Color(0xFF000000),
+      ),
+      address: VisitingCardFieldPosition(
+        left: 0.24,
+        top: 0.30,
+        width: 0.68,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+        maxLines: 2,
+      ),
+      website: VisitingCardFieldPosition(
+        left: 0.24,
+        top: 0.365,
+        width: 0.68,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+      ),
+      email: VisitingCardFieldPosition(
+        left: 0.24,
+        top: 0.435,
+        width: 0.68,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+      ),
+      phone: VisitingCardFieldPosition(
+        left: 0.24,
+        top: 0.51,
+        width: 0.68,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+      ),
+    ),
+    back: VisitingCardSidePositions(
+      logo: VisitingCardFieldPosition(
+        left: 0.30,
+        top: 0.34,
+        size: 0.40,
+      ),
+      qr: VisitingCardFieldPosition(
+        left: 0.36,
+        top: 0.54,
+        size: 0.26,
+      ),
+    ),
+  );
+
+  // ===========================================================================
+  // VERTICAL TEMPLATE 12  (v12) — Roboto, front + back logo, no QR
+  // ===========================================================================
+
+  static const verticalTemplate12 = VisitingCardTemplatePositions(
+    fontFamily: VisitingCardFonts.roboto,
+    front: VisitingCardSidePositions(
+      logo: VisitingCardFieldPosition(
+        left: 0.36,
+        top: 0.04,
+        size: 0.24,
+      ),
+      name: VisitingCardFieldPosition(
+        left: 0.10,
+        top: 0.42,
+        width: 0.80,
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFFFFFFFF),
+        maxDisplayNameLength: 20,
+      ),
+      designation: VisitingCardFieldPosition(
+        left: 0.10,
+        top: 0.48,
+        width: 0.75,
+        fontSize: 10,
+        color: Color(0xFFFF0000),
+      ),
+      phone: VisitingCardFieldPosition(
+        left: 0.28,
+        top: 0.58,
+        width: 0.62,
+        fontSize: 9,
+        color: Color(0xFFFFFFFF),
+        maxLines: 2,
+      ),
+      email: VisitingCardFieldPosition(
+        left: 0.28,
+        top: 0.70,
+        width: 0.62,
+        fontSize: 9,
+        color: Color(0xFFFFFFFF),
+      ),
+      website: VisitingCardFieldPosition(
+        left: 0.28,
+        top: 0.76,
+        width: 0.62,
+        fontSize: 9,
+        color: Color(0xFFFFFFFF),
+      ),
+      address: VisitingCardFieldPosition(
+        left: 0.28,
+        top: 0.84,
+        width: 0.62,
+        fontSize: 9,
+        color: Color(0xFFFFFFFF),
+        maxLines: 2,
+      ),
+    ),
+    back: VisitingCardSidePositions(
+      logo: VisitingCardFieldPosition(
+        left: 0.32,
+        top: 0.32,
+        size: 0.34,
+      ),
+    ),
+  );
+
+  // ===========================================================================
+  // VERTICAL TEMPLATE 13  (v13) — Montserrat, front logo, back logo + QR
+  // ===========================================================================
+
+  static const verticalTemplate13 = VisitingCardTemplatePositions(
+    fontFamily: VisitingCardFonts.montserrat,
+    front: VisitingCardSidePositions(
+      logo: VisitingCardFieldPosition(
+        left: 0.36,
+        top: 0.08,
+        size: 0.24,
+      ),
+      name: VisitingCardFieldPosition(
+        left: 0.08,
+        top: 0.46,
+        width: 0.84,
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF0A0A0A),
+        firstNameColor: Color(0xFF1E8FD8),
+        lastNameColor: Color(0xFF0A0A0A),
+        maxDisplayNameLength: 20,
+      ),
+      designation: VisitingCardFieldPosition(
+        left: 0.08,
+        top: 0.52,
+        width: 0.75,
+        fontSize: 10,
+        color: Color(0xFF000000),
+      ),
+      phone: VisitingCardFieldPosition(
+        left: 0.18,
+        top: 0.62,
+        width: 0.72,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+      ),
+      website: VisitingCardFieldPosition(
+        left: 0.18,
+        top: 0.68,
+        width: 0.72,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+      ),
+      email: VisitingCardFieldPosition(
+        left: 0.18,
+        top: 0.74,
+        width: 0.72,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+      ),
+      address: VisitingCardFieldPosition(
+        left: 0.18,
+        top: 0.80,
+        width: 0.72,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+        maxLines: 2,
+      ),
+    ),
+    back: VisitingCardSidePositions(
+      qr: VisitingCardFieldPosition(
+        left: 0.36,
+        top: 0.16,
+        size: 0.26,
+      ),
+      logo: VisitingCardFieldPosition(
+        left: 0.34,
+        top: 0.58,
+        size: 0.28,
+      ),
+      tagline: VisitingCardFieldPosition(
+        left: 0.12,
+        top: 0.78,
+        width: 0.76,
+        fontSize: 8,
+        color: Color(0xFF404041),
+        textAlign: TextAlign.center,
+      ),
+    ),
+  );
+
+  // ===========================================================================
+  // VERTICAL TEMPLATE 14  (v14) — Montserrat, front logo, back logo + QR
+  // ===========================================================================
+
+  static const verticalTemplate14 = VisitingCardTemplatePositions(
+    fontFamily: VisitingCardFonts.montserrat,
+    front: VisitingCardSidePositions(
+      logo: VisitingCardFieldPosition(
+        left: 0.36,
+        top: 0.10,
+        size: 0.22,
+      ),
+      tagline: VisitingCardFieldPosition(
+        left: 0.14,
+        top: 0.28,
+        width: 0.72,
+        fontSize: 8,
+        color: Color(0xFF404041),
+        textAlign: TextAlign.center,
+      ),
+      name: VisitingCardFieldPosition(
+        left: 0.08,
+        top: 0.40,
+        width: 0.84,
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFFF15A29),
+        textAlign: TextAlign.center,
+        maxDisplayNameLength: 20,
+      ),
+      designation: VisitingCardFieldPosition(
+        left: 0.08,
+        top: 0.46,
+        width: 0.84,
+        fontSize: 10,
+        color: Color(0xFF000000),
+        textAlign: TextAlign.center,
+      ),
+      phone: VisitingCardFieldPosition(
+        left: 0.22,
+        top: 0.56,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+      ),
+      email: VisitingCardFieldPosition(
+        left: 0.22,
+        top: 0.63,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+      ),
+      website: VisitingCardFieldPosition(
+        left: 0.22,
+        top: 0.70,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+      ),
+      address: VisitingCardFieldPosition(
+        left: 0.22,
+        top: 0.77,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+        maxLines: 2,
+      ),
+    ),
+    back: VisitingCardSidePositions(
+      logo: VisitingCardFieldPosition(
+        left: 0.36,
+        top: 0.16,
+        size: 0.24,
+      ),
+      tagline: VisitingCardFieldPosition(
+        left: 0.12,
+        top: 0.38,
+        width: 0.76,
+        fontSize: 8,
+        color: Color(0xFF404041),
+        textAlign: TextAlign.center,
+      ),
+      qr: VisitingCardFieldPosition(
+        left: 0.34,
+        top: 0.62,
+        size: 0.28,
+      ),
+    ),
+  );
+
+  // ===========================================================================
+  // VERTICAL TEMPLATE 15  (v15) — Inter, back logo, no QR
+  // ===========================================================================
+
+  static const verticalTemplate15 = VisitingCardTemplatePositions(
+    fontFamily: VisitingCardFonts.inter,
+    front: VisitingCardSidePositions(
+      name: VisitingCardFieldPosition(
+        left: 0.10,
+        top: 0.42,
+        width: 0.80,
+        fontSize: 18,
+        fontWeight: FontWeight.w400,
+        color: Color(0xFF6B6B6B),
+        firstNameColor: Color(0xFF6B6B6B),
+        lastNameColor: Color(0xFF6CC400),
+        maxDisplayNameLength: 20,
+      ),
+      designation: VisitingCardFieldPosition(
+        left: 0.10,
+        top: 0.50,
+        width: 0.75,
+        fontSize: 10,
+        color: Color(0xFF6B6B6B),
+      ),
+      email: VisitingCardFieldPosition(
+        left: 0.18,
+        top: 0.58,
+        width: 0.72,
+        fontSize: 9,
+        color: Color(0xFF6B6B6B),
+      ),
+      address: VisitingCardFieldPosition(
+        left: 0.18,
+        top: 0.65,
+        width: 0.72,
+        fontSize: 9,
+        color: Color(0xFF6B6B6B),
+        maxLines: 2,
+      ),
+      phone: VisitingCardFieldPosition(
+        left: 0.18,
+        top: 0.76,
+        width: 0.72,
+        fontSize: 9,
+        color: Color(0xFF6B6B6B),
+      ),
+      website: VisitingCardFieldPosition(
+        left: 0.18,
+        top: 0.83,
+        width: 0.72,
+        fontSize: 9,
+        color: Color(0xFF6B6B6B),
+      ),
+    ),
+    back: VisitingCardSidePositions(
+      logo: VisitingCardFieldPosition(
+        left: 0.34,
+        top: 0.38,
+        size: 0.30,
+      ),
+    ),
+  );
+
+  // ===========================================================================
+  // VERTICAL TEMPLATE 16  (v16) — Inter, front + back logo, no QR
+  // ===========================================================================
+
+  static const verticalTemplate16 = VisitingCardTemplatePositions(
+    fontFamily: VisitingCardFonts.inter,
+    front: VisitingCardSidePositions(
+      logo: VisitingCardFieldPosition(
+        left: 0.32,
+        top: 0.06,
+        size: 0.32,
+      ),
+      name: VisitingCardFieldPosition(
+        left: 0.08,
+        top: 0.42,
+        width: 0.84,
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF032C40),
+        firstNameColor: Color(0xFF032C40),
+        lastNameColor: Color(0xFFF50302),
+        maxDisplayNameLength: 20,
+      ),
+      designation: VisitingCardFieldPosition(
+        left: 0.08,
+        top: 0.48,
+        width: 0.75,
+        fontSize: 10,
+        color: Color(0xFF404041),
+      ),
+      address: VisitingCardFieldPosition(
+        left: 0.22,
+        top: 0.58,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+        maxLines: 2,
+      ),
+      email: VisitingCardFieldPosition(
+        left: 0.22,
+        top: 0.68,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+      ),
+      phone: VisitingCardFieldPosition(
+        left: 0.22,
+        top: 0.75,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+      ),
+      website: VisitingCardFieldPosition(
+        left: 0.22,
+        top: 0.82,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+      ),
+    ),
+    back: VisitingCardSidePositions(
+      logo: VisitingCardFieldPosition(
+        left: 0.32,
+        top: 0.36,
+        size: 0.34,
+      ),
+    ),
+  );
+
+  // ===========================================================================
+  // VERTICAL TEMPLATE 17  (v17) — Inter, front logo, back logo + QR
+  // ===========================================================================
+
+  static const verticalTemplate17 = VisitingCardTemplatePositions(
+    fontFamily: VisitingCardFonts.inter,
+    front: VisitingCardSidePositions(
+      logo: VisitingCardFieldPosition(
+        left: 0.08,
+        top: 0.04,
+        size: 0.28,
+      ),
+      name: VisitingCardFieldPosition(
+        left: 0.10,
+        top: 0.42,
+        width: 0.82,
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF032C40),
+        firstNameColor: Color(0xFFB6CF32),
+        lastNameColor: Color(0xFF032C40),
+        maxDisplayNameLength: 20,
+      ),
+      designation: VisitingCardFieldPosition(
+        left: 0.10,
+        top: 0.48,
+        width: 0.75,
+        fontSize: 10,
+        color: Color(0xFF404041),
+      ),
+      phone: VisitingCardFieldPosition(
+        left: 0.16,
+        top: 0.56,
+        width: 0.74,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+      ),
+      email: VisitingCardFieldPosition(
+        left: 0.16,
+        top: 0.63,
+        width: 0.74,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+      ),
+      website: VisitingCardFieldPosition(
+        left: 0.16,
+        top: 0.70,
+        width: 0.74,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+      ),
+      address: VisitingCardFieldPosition(
+        left: 0.16,
+        top: 0.77,
+        width: 0.74,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+        maxLines: 2,
+      ),
+    ),
+    back: VisitingCardSidePositions(
+      logo: VisitingCardFieldPosition(
+        left: 0.36,
+        top: 0.10,
+        size: 0.24,
+      ),
+      tagline: VisitingCardFieldPosition(
+        left: 0.12,
+        top: 0.32,
+        width: 0.76,
+        fontSize: 8,
+        color: Color(0xFFB6CF32),
+        textAlign: TextAlign.center,
+      ),
+      qr: VisitingCardFieldPosition(
+        left: 0.36,
+        top: 0.40,
+        size: 0.26,
+      ),
+    ),
+  );
+
+  // ===========================================================================
+  // VERTICAL TEMPLATE 18  (v18) — Inter, back logo + QR
+  // ===========================================================================
+
+  static const verticalTemplate18 = VisitingCardTemplatePositions(
+    fontFamily: VisitingCardFonts.inter,
+    front: VisitingCardSidePositions(
+      name: VisitingCardFieldPosition(
+        left: 0.08,
+        top: 0.08,
+        width: 0.84,
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF032C40),
+        maxDisplayNameLength: 20,
+      ),
+      designation: VisitingCardFieldPosition(
+        left: 0.08,
+        top: 0.15,
+        width: 0.75,
+        fontSize: 10,
+        color: Color(0xFF404041),
+      ),
+      phone: VisitingCardFieldPosition(
+        left: 0.20,
+        top: 0.24,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+      ),
+      email: VisitingCardFieldPosition(
+        left: 0.20,
+        top: 0.31,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+      ),
+      address: VisitingCardFieldPosition(
+        left: 0.20,
+        top: 0.38,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+        maxLines: 2,
+      ),
+      website: VisitingCardFieldPosition(
+        left: 0.20,
+        top: 0.48,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF032C40),
+      ),
+    ),
+    back: VisitingCardSidePositions(
+      logo: VisitingCardFieldPosition(
+        left: 0.36,
+        top: 0.18,
+        size: 0.26,
+      ),
+      qr: VisitingCardFieldPosition(
+        left: 0.36,
+        top: 0.42,
+        size: 0.26,
+      ),
+    ),
+  );
+
+  // ===========================================================================
+  // VERTICAL TEMPLATE 19  (v19) — Inter, back logo + QR, name capitals
+  // ===========================================================================
+
+  static const verticalTemplate19 = VisitingCardTemplatePositions(
+    fontFamily: VisitingCardFonts.inter,
+    front: VisitingCardSidePositions(
+      name: VisitingCardFieldPosition(
+        left: 0.06,
+        top: 0.06,
+        width: 0.88,
+        fontSize: 15,
+        fontWeight: FontWeight.w700,
+        uppercase: true,
+        color: Color(0xFF000000),
+        maxDisplayNameLength: 20,
+      ),
+      designation: VisitingCardFieldPosition(
+        left: 0.06,
+        top: 0.13,
+        width: 0.80,
+        fontSize: 10,
+        color: Color(0xFF000000),
+      ),
+      phone: VisitingCardFieldPosition(
+        left: 0.22,
+        top: 0.22,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF000000),
+        maxLines: 2,
+      ),
+      email: VisitingCardFieldPosition(
+        left: 0.22,
+        top: 0.32,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF000000),
+      ),
+      website: VisitingCardFieldPosition(
+        left: 0.22,
+        top: 0.38,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF000000),
+      ),
+      address: VisitingCardFieldPosition(
+        left: 0.22,
+        top: 0.44,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF000000),
+        maxLines: 2,
+      ),
+    ),
+    back: VisitingCardSidePositions(
+      logo: VisitingCardFieldPosition(
+        left: 0.36,
+        top: 0.28,
+        size: 0.26,
+      ),
+      qr: VisitingCardFieldPosition(
+        left: 0.36,
+        top: 0.52,
+        size: 0.26,
+      ),
+    ),
+  );
+
+  // ===========================================================================
+  // VERTICAL TEMPLATE 20  (v20) — Inter, back logo + QR
+  // ===========================================================================
+
+  static const verticalTemplate20 = VisitingCardTemplatePositions(
+    fontFamily: VisitingCardFonts.inter,
+    front: VisitingCardSidePositions(
+      name: VisitingCardFieldPosition(
+        left: 0.08,
+        top: 0.28,
+        width: 0.84,
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF032C40),
+        maxDisplayNameLength: 20,
+      ),
+      designation: VisitingCardFieldPosition(
+        left: 0.08,
+        top: 0.35,
+        width: 0.75,
+        fontSize: 10,
+        color: Color(0xFF404041),
+      ),
+      address: VisitingCardFieldPosition(
+        left: 0.22,
+        top: 0.46,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF000000),
+        maxLines: 2,
+      ),
+      email: VisitingCardFieldPosition(
+        left: 0.22,
+        top: 0.56,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF000000),
+      ),
+      phone: VisitingCardFieldPosition(
+        left: 0.22,
+        top: 0.63,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF000000),
+      ),
+      website: VisitingCardFieldPosition(
+        left: 0.22,
+        top: 0.70,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF000000),
+      ),
+    ),
+    back: VisitingCardSidePositions(
+      logo: VisitingCardFieldPosition(
+        left: 0.36,
+        top: 0.12,
+        size: 0.24,
+      ),
+      tagline: VisitingCardFieldPosition(
+        left: 0.08,
+        top: 0.34,
+        width: 0.84,
+        fontSize: 8,
+        color: Color(0xFF000000),
+        textAlign: TextAlign.center,
+      ),
+      qr: VisitingCardFieldPosition(
+        left: 0.36,
+        top: 0.42,
+        size: 0.26,
+      ),
+    ),
+  );
+
+  // ===========================================================================
+  // VERTICAL TEMPLATE 21  (v21) — Montserrat, back logo, no QR
+  // ===========================================================================
+
+  static const verticalTemplate21 = VisitingCardTemplatePositions(
+    fontFamily: VisitingCardFonts.montserrat,
+    front: VisitingCardSidePositions(
+      name: VisitingCardFieldPosition(
+        left: 0.08,
+        top: 0.08,
+        width: 0.84,
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF032C40),
+        maxDisplayNameLength: 18,
+      ),
+      designation: VisitingCardFieldPosition(
+        left: 0.08,
+        top: 0.16,
+        width: 0.80,
+        fontSize: 10,
+        fontWeight: FontWeight.w600,
+        uppercase: true,
+        color: Color(0xFF358DCC),
+      ),
+      phone: VisitingCardFieldPosition(
+        left: 0.22,
+        top: 0.28,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF2E2E82),
+      ),
+      email: VisitingCardFieldPosition(
+        left: 0.22,
+        top: 0.36,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF2E2E82),
+      ),
+      website: VisitingCardFieldPosition(
+        left: 0.22,
+        top: 0.44,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF2E2E82),
+      ),
+      address: VisitingCardFieldPosition(
+        left: 0.22,
+        top: 0.52,
+        width: 0.70,
+        fontSize: 9,
+        color: Color(0xFF2E2E82),
+        maxLines: 2,
+      ),
+    ),
+    back: VisitingCardSidePositions(
+      logo: VisitingCardFieldPosition(
+        left: 0.32,
+        top: 0.32,
+        size: 0.34,
       ),
     ),
   );
