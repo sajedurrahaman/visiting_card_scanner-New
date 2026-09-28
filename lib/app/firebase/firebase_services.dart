@@ -34,14 +34,28 @@ Future<void> initializeFirebase() async {
   unawaited(setupFirebaseMessaging());
 }
 
+bool _isOfflineGoogleFontFailure(Object error) {
+  final text = error.toString();
+  return text.contains('fonts.gstatic.com') ||
+      text.contains('Failed to load font with url');
+}
+
 Future<void> setupCrashlytics() async {
   await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
 
   FlutterError.onError = (details) {
+    if (_isOfflineGoogleFontFailure(details.exception)) {
+      debugPrint('Google font unavailable, using fallback: ${details.exception}');
+      return;
+    }
     FirebaseCrashlytics.instance.recordFlutterFatalError(details);
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
+    if (_isOfflineGoogleFontFailure(error)) {
+      debugPrint('Google font unavailable, using fallback: $error');
+      return true;
+    }
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
     return true;
   };

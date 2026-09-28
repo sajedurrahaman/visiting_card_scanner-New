@@ -177,11 +177,7 @@ class _VisitingCardLandscapeEditTextScreenState
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(
-                              width: (constraints.maxWidth * 0.74)
-                                  .clamp(280.0, 560.0),
-                              child: _field(),
-                            ),
+                            Expanded(child: _field()),
                             SizedBox(width: pad * 2.8),
                             _actions(),
                           ],

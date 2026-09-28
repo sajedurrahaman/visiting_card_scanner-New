@@ -131,7 +131,13 @@ String visitingCardStyledText(
 }
 
 TextStyle visitingCardGoogleStyle(String family, TextStyle style) {
-  return GoogleFonts.getFont(family, textStyle: style);
+  final resolved = GoogleFonts.getFont(family, textStyle: style);
+  return resolved.copyWith(
+    fontFamilyFallback: [
+      ...?resolved.fontFamilyFallback,
+      'sans-serif',
+    ],
+  );
 }
 
 /// Applies a field's font preset and B / I / U / strike on top of [base].

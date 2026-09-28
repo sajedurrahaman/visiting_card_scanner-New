@@ -119,6 +119,7 @@ flutter:
      - assets/svg/genertor/
      - assets/svg/genertor/qrcode/
      - assets/barcode_stack/
+     - assets/google_fonts/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

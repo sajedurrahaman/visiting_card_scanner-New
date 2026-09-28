@@ -390,37 +390,46 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       );
     }
 
+    TextStyle withFallback(TextStyle style) {
+      return style.copyWith(
+        fontFamilyFallback: [
+          ...?style.fontFamilyFallback,
+          'sans-serif',
+        ],
+      );
+    }
+
     TextStyle styleFor(VisitingCardFieldPosition pos, {double? fontSize}) {
       final resolved = resolveFont(fontSize ?? pos.fontSize);
       if (fontFamily == VisitingCardFonts.inter) {
-        return GoogleFonts.inter(
+        return withFallback(GoogleFonts.inter(
           fontSize: resolved,
           fontWeight: pos.fontWeight,
           fontStyle: pos.fontStyle,
           color: pos.color,
           letterSpacing: pos.letterSpacing,
           height: pos.heightFactor,
-        );
+        ));
       }
       if (fontFamily == VisitingCardFonts.roboto) {
-        return GoogleFonts.roboto(
+        return withFallback(GoogleFonts.roboto(
           fontSize: resolved,
           fontWeight: pos.fontWeight,
           fontStyle: pos.fontStyle,
           color: pos.color,
           letterSpacing: pos.letterSpacing,
           height: pos.heightFactor,
-        );
+        ));
       }
       if (fontFamily == VisitingCardFonts.montserrat) {
-        return GoogleFonts.montserrat(
+        return withFallback(GoogleFonts.montserrat(
           fontSize: resolved,
           fontWeight: pos.fontWeight,
           fontStyle: pos.fontStyle,
           color: pos.color,
           letterSpacing: pos.letterSpacing,
           height: pos.heightFactor,
-        );
+        ));
       }
       return TextStyle(
         fontFamily: fontFamily,
@@ -436,34 +445,34 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     TextStyle nameStyleFor(VisitingCardFieldPosition pos, String rawName) {
       final resolved = resolveFont(pos.resolvedNameFontSize(rawName));
       if (fontFamily == VisitingCardFonts.inter) {
-        return GoogleFonts.inter(
+        return withFallback(GoogleFonts.inter(
           fontSize: resolved,
           fontWeight: pos.fontWeight,
           fontStyle: pos.fontStyle,
           color: pos.color,
           letterSpacing: pos.letterSpacing,
           height: pos.heightFactor,
-        );
+        ));
       }
       if (fontFamily == VisitingCardFonts.roboto) {
-        return GoogleFonts.roboto(
+        return withFallback(GoogleFonts.roboto(
           fontSize: resolved,
           fontWeight: pos.fontWeight,
           fontStyle: pos.fontStyle,
           color: pos.color,
           letterSpacing: pos.letterSpacing,
           height: pos.heightFactor,
-        );
+        ));
       }
       if (fontFamily == VisitingCardFonts.montserrat) {
-        return GoogleFonts.montserrat(
+        return withFallback(GoogleFonts.montserrat(
           fontSize: resolved,
           fontWeight: pos.fontWeight,
           fontStyle: pos.fontStyle,
           color: pos.color,
           letterSpacing: pos.letterSpacing,
           height: pos.heightFactor,
-        );
+        ));
       }
       return TextStyle(
         fontFamily: fontFamily,

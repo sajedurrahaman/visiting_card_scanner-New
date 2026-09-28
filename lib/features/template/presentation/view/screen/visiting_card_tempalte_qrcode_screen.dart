@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
@@ -86,9 +87,18 @@ class _VisitingCardTempalteQrcodeScreenState
 
     // Local file → set directly on visiting card (no Place/Customize dialog).
     if (item.isLocalUpload) {
-      final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-      if (picked == null || !mounted) return;
-      Navigator.pop(context, picked.path);
+      setState(() => _busy = true);
+      try {
+        final picked = await ImagePicker().pickImage(
+          source: ImageSource.gallery,
+        );
+        if (picked == null || !mounted) return;
+        Navigator.pop(context, picked.path);
+      } on PlatformException catch (e) {
+        if (e.code != 'already_active') rethrow;
+      } finally {
+        if (mounted) setState(() => _busy = false);
+      }
       return;
     }
 
