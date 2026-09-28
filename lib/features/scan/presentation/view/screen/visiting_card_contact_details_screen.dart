@@ -667,7 +667,9 @@ class _VisitingCardContactDetailsScreenState
     return AnimatedBuilder(
       animation: _previewVm,
       builder: (context, _) {
-        return Stack(
+        return Column(
+          children: [
+            Stack(
           children: [
             RepaintBoundary(
               key: _templateCaptureKey,
@@ -679,6 +681,8 @@ class _VisitingCardContactDetailsScreenState
                 ),
                 vm: _previewVm,
                 showPager: false,
+                singleLineText: true,
+                matchEditorText: true,
               ),
             ),
             Positioned(
@@ -710,18 +714,6 @@ class _VisitingCardContactDetailsScreenState
               ),
             ),
             Positioned(
-              left: 0,
-              right: 0,
-              bottom: 2.h,
-              child: VisitingCardSidePager(
-                currentPage: _previewVm.sideIndex + 1,
-                canGoPrevious: _previewVm.sideIndex == 1,
-                canGoNext: _previewVm.sideIndex == 0,
-                onPrevious: _previewVm.showFront,
-                onNext: _previewVm.showBack,
-              ),
-            ),
-            Positioned(
               bottom: 6.h,
               right: 6.w,
               child: _CornerActionButton(
@@ -745,6 +737,16 @@ class _VisitingCardContactDetailsScreenState
                   ),
                 ),
               ),
+          ],
+        ),
+            SizedBox(height: 8.h),
+            VisitingCardSidePager(
+              currentPage: _previewVm.sideIndex + 1,
+              canGoPrevious: _previewVm.sideIndex == 1,
+              canGoNext: _previewVm.sideIndex == 0,
+              onPrevious: _previewVm.showFront,
+              onNext: _previewVm.showBack,
+            ),
           ],
         );
       },

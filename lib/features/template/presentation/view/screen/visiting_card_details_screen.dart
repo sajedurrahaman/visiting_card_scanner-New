@@ -295,6 +295,7 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
                               vm: vm,
                               showPager: false,
                               singleLineText: true,
+                              matchEditorText: true,
                             ),
                           ),
                           Positioned(

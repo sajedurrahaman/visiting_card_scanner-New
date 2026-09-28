@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -10,6 +11,49 @@ import 'package:visiting_card/features/template/domain/visiting_card_font_style.
 import 'package:visiting_card/features/template/domain/visiting_card_position_config.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_transform_overlay.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
+
+/// Card width inside the editor, from the phone size Card Details is using.
+/// Landscape editor lays the card out on the long side; vertical stays portrait.
+double _editorCardWidth(
+  Size screen,
+  EdgeInsets padding, {
+  required bool horizontal,
+}) {
+  if (!horizontal) {
+    final bodyW = math.max(80.0, screen.width - padding.horizontal);
+    final bodyH = math.max(
+      120.0,
+      screen.height - padding.vertical - 56.0,
+    );
+    const pagerRoom = 64.0;
+    final room = math.max(40.0, bodyH - pagerRoom);
+    var cardW = bodyW * 0.84;
+    final cardH = cardW / 0.63;
+    final maxH = math.min(bodyH * 0.78, room);
+    if (cardH > maxH) cardW = maxH * 0.63;
+    return cardW;
+  }
+
+  final longest = math.max(screen.width, screen.height);
+  final shortest = math.min(screen.width, screen.height);
+  final sideInset = math.max(padding.top, padding.left);
+  final longestSafe = math.max(200.0, longest - sideInset);
+  final shortestSafe = math.max(160.0, shortest - padding.bottom);
+  final pad = (shortest * 0.04).clamp(12.0, 20.0);
+  final rail = (longest * 0.24).clamp(148.0, 188.0);
+  final columnW = math.max(
+    80.0,
+    longestSafe - pad * 2 - pad * 0.75 - rail,
+  );
+  final columnH = math.max(80.0, shortestSafe - pad);
+  const ratio = 1.75;
+  var cardW = columnW * 0.68;
+  final cardH = cardW / ratio;
+  final room = math.max(40.0, columnH - pad - 56.0);
+  final maxH = math.min(columnH * 0.70, room);
+  if (cardH > maxH) cardW = maxH * ratio;
+  return cardW;
+}
 
 Widget _flipField(Widget child, VisitingCardFieldTransform t) {
   if (!t.flipX && !t.flipY) return child;
@@ -87,6 +131,7 @@ class VisitingCardLivePreview extends StatefulWidget {
     this.selectionBorderOnlyWhenSelected = false,
     this.eightPointSelection = false,
     this.singleLineText = false,
+    this.matchEditorText = false,
     this.pageGap = 6,
   });
 
@@ -112,6 +157,10 @@ class VisitingCardLivePreview extends StatefulWidget {
   /// Details preview: one line per field, same as the editor. Taglines still wrap.
   final bool singleLineText;
 
+  /// Card Details: same font scale and text box as the card editor, so a
+  /// position saved there lands on the same spot. No selection chrome.
+  final bool matchEditorText;
+
   /// Space between the front and back faces while swiping. 0 keeps them flush.
   final double pageGap;
 
@@ -135,6 +184,31 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     super.initState();
     _pageController = PageController(initialPage: _sideIndex);
     widget.vm.addListener(_onVmChanged);
+    // The first frame measures fallback glyphs. A line that fits the real
+    // font is then clamped and drawn with "…". Remeasure once it loads.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _remeasureAfterFonts());
+  }
+
+  Future<void> _remeasureAfterFonts() async {
+    if (!mounted) return;
+    try {
+      await GoogleFonts.pendingFonts();
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  /// Same glyph size, relative to the card, as the editor that saved it.
+  double _matchEditorFontScale(double cardWidth) {
+    final media = MediaQuery.of(context);
+    final editorW = _editorCardWidth(
+      media.size,
+      media.padding,
+      horizontal: widget.vm.isHorizontal,
+    );
+    final editorScale = (editorW / 220.0).clamp(0.55, 1.15);
+    if (editorW <= 1 || cardWidth <= 1) return editorScale;
+    return editorScale * (cardWidth / editorW);
   }
 
   @override
@@ -358,17 +432,21 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     final vm = widget.vm;
     final layers = <(int, int, Widget)>[];
     var layerSeq = 0;
-    // Landscape editor uses its own sizing (no ScreenUtil .sp) so the
-    // selection border matches the painted glyphs exactly.
-    final landscapeFonts = widget.selectionBorderOnlyWhenSelected;
+    // Editor and Card Details size text from the card width (no ScreenUtil
+    // .sp) so a saved position uses the same glyph box on both screens.
+    final landscapeFonts = widget.selectionBorderOnlyWhenSelected ||
+        widget.matchEditorText;
     // Edit Contact Info uses the 8-handle frame and intrinsic text width.
-    // Landscape fonts stay on the landscape editor only.
+    // Its fonts stay .sp.
     final landscape = landscapeFonts || widget.eightPointSelection;
-    // Card box is 0.85 of the previous landscape size. Text follows that
-    // ratio even when the old 1.35 cap would have kept glyphs the same size.
-    final landscapeFontScale = landscapeFonts
-        ? (size.width / 220.0).clamp(0.55, 1.15)
-        : 1.0;
+    // Editor keeps its own card-width scale. Card Details uses that same
+    // font-to-card ratio, so a smaller portrait card does not draw the name
+    // on top of the designation.
+    final landscapeFontScale = !landscapeFonts
+        ? 1.0
+        : widget.matchEditorText
+            ? _matchEditorFontScale(size.width)
+            : (size.width / 220.0).clamp(0.55, 1.15);
     const landscapeTextScaler = TextScaler.noScaling;
 
     double resolveFont(double designSize) {
