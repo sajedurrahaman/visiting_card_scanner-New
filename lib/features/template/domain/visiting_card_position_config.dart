@@ -93,10 +93,9 @@ class VisitingCardFieldPosition {
 
   /// Shrinks name text when it has three or more words so it stays on one line.
   double resolvedNameFontSize(String rawName) {
-    final wordCount = clipDisplayName(rawName)
-        .split(RegExp(r'\s+'))
-        .where((word) => word.isNotEmpty)
-        .length;
+    final wordCount = clipDisplayName(
+      rawName,
+    ).split(RegExp(r'\s+')).where((word) => word.isNotEmpty).length;
     if (wordCount >= 3) return threeWordFontSize;
     return fontSize;
   }
@@ -313,13 +312,9 @@ class VisitingCardPositionConfig {
   /// Horizontal template back part - 2
   static const horizontalTemplate2 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.inter,
-        front: VisitingCardSidePositions(
+    front: VisitingCardSidePositions(
       // Logo (top-left)
-      logo: VisitingCardFieldPosition(
-        left: 0.29,
-        top: 0.05,
-        size: 0.16,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.29, top: 0.05, size: 0.16),
       // Tagline
       tagline: VisitingCardFieldPosition(
         left: 0.30,
@@ -387,13 +382,9 @@ class VisitingCardPositionConfig {
         color: Color(0xFF404040),
       ),
     ),
-back: VisitingCardSidePositions(
+    back: VisitingCardSidePositions(
       // Logo → Company → Tagline → QR
-      logo: VisitingCardFieldPosition(
-        left: 0.40,
-        top: 0.11,
-        size: 0.19,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.40, top: 0.11, size: 0.19),
       tagline: VisitingCardFieldPosition(
         left: 0.41,
         top: 0.38,
@@ -402,11 +393,7 @@ back: VisitingCardSidePositions(
         uppercase: true,
         fontWeight: FontWeight.w700,
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.43,
-        top:0.41,
-        size: 0.12,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.43, top: 0.41, size: 0.12),
     ),
   );
 
@@ -418,13 +405,9 @@ back: VisitingCardSidePositions(
   /// Horizontal template back part - 3
   static const horizontalTemplate3 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.inter,
-        front: VisitingCardSidePositions(
+    front: VisitingCardSidePositions(
       // Logo (left black panel)
-      logo: VisitingCardFieldPosition(
-        left: 0.05,
-        top: 0.10,
-        size: 0.12,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.05, top: 0.10, size: 0.12),
       // company: VisitingCardFieldPosition(
       //   left: 0.03,
       //   top: 0.26,
@@ -497,11 +480,7 @@ back: VisitingCardSidePositions(
     ),
     back: VisitingCardSidePositions(
       // Logo → Company → Tagline → QR (right white panel)
-      logo: VisitingCardFieldPosition(
-        left: 0.60,
-        top: 0.20,
-        size: 0.24,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.60, top: 0.20, size: 0.24),
       // company: VisitingCardFieldPosition(
       //   left: 0.54,
       //   top: 0.48,
@@ -521,11 +500,7 @@ back: VisitingCardSidePositions(
         uppercase: true,
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.63,
-        top: 0.58,
-        size: 0.16,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.63, top: 0.58, size: 0.16),
     ),
   );
 
@@ -537,7 +512,7 @@ back: VisitingCardSidePositions(
   /// Horizontal template back part - 4
   static const horizontalTemplate4 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.inter,
-        front: VisitingCardSidePositions(
+    front: VisitingCardSidePositions(
       // Name — white (on green left)
       name: VisitingCardFieldPosition(
         left: 0.04,
@@ -550,13 +525,13 @@ back: VisitingCardSidePositions(
         color: Color(0xFFFFFFFF),
         maxDisplayNameLength: 20,
       ),
-          designation: VisitingCardFieldPosition(
-            left: 0.04,
-            top: 0.17,
-            fontSize: 6.5,
-            color: Color(0xFFFFFFFF),
-            uppercase: false,
-          ),
+      designation: VisitingCardFieldPosition(
+        left: 0.04,
+        top: 0.17,
+        fontSize: 6.5,
+        color: Color(0xFFFFFFFF),
+        uppercase: false,
+      ),
       phone: VisitingCardFieldPosition(
         left: 0.13,
         top: 0.51,
@@ -579,11 +554,7 @@ back: VisitingCardSidePositions(
         maxLines: 3,
       ),
       // Logo (right white)
-      logo: VisitingCardFieldPosition(
-        left: 0.66,
-        top: 0.08,
-        size: 0.24,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.66, top: 0.08, size: 0.24),
       // Tagline
       tagline: VisitingCardFieldPosition(
         left: 0.675,
@@ -594,19 +565,11 @@ back: VisitingCardSidePositions(
         uppercase: true,
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(
-            left: 0.73,
-            top: 0.725,
-            size: 0.12,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.73, top: 0.725, size: 0.12),
     ),
     back: VisitingCardSidePositions(
       // Logo → Company → Tagline (left stack; QR optional)
-      logo: VisitingCardFieldPosition(
-        left: 0.10,
-        top: 0.14,
-        size: 0.28,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.10, top: 0.14, size: 0.28),
       tagline: VisitingCardFieldPosition(
         left: 0.13,
         top: 0.52,
@@ -635,7 +598,7 @@ back: VisitingCardSidePositions(
   /// Horizontal template back part - 5
   static const horizontalTemplate5 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.inter,
-        front: VisitingCardSidePositions(
+    front: VisitingCardSidePositions(
       // Name — left white
       name: VisitingCardFieldPosition(
         left: 0.05,
@@ -656,12 +619,12 @@ back: VisitingCardSidePositions(
         color: Color(0xFF2196F3),
       ),
       address: VisitingCardFieldPosition(
-          left: 0.14,
-          top: 0.42,
-          width: 0.36,
-          fontSize: 7,
-          color: Color(0xFF404040),
-          maxLines: 3
+        left: 0.14,
+        top: 0.42,
+        width: 0.36,
+        fontSize: 7,
+        color: Color(0xFF404040),
+        maxLines: 3,
       ),
       email: VisitingCardFieldPosition(
         left: 0.14,
@@ -678,19 +641,15 @@ back: VisitingCardSidePositions(
         color: Color(0xFF404040),
       ),
       phone: VisitingCardFieldPosition(
-            left: 0.14,
-            top: 0.80,
-            width: 0.36,
-            fontSize: 7,
-            color: Color(0xFF404040),
-            maxLines: 2,
-          ),
-      // Logo (right dark panel)
-      logo: VisitingCardFieldPosition(
-        left: 0.68,
-        top: 0.20,
-        size: 0.18,
+        left: 0.14,
+        top: 0.80,
+        width: 0.36,
+        fontSize: 7,
+        color: Color(0xFF404040),
+        maxLines: 2,
       ),
+      // Logo (right dark panel)
+      logo: VisitingCardFieldPosition(left: 0.68, top: 0.20, size: 0.18),
       // Tagline
       tagline: VisitingCardFieldPosition(
         left: 0.695,
@@ -701,19 +660,11 @@ back: VisitingCardSidePositions(
         uppercase: true,
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.695,
-        top: 0.51,
-        size: 0.14,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.695, top: 0.51, size: 0.14),
     ),
-back: VisitingCardSidePositions(
+    back: VisitingCardSidePositions(
       // Logo → Company → Tagline → QR (dark bg)
-      logo: VisitingCardFieldPosition(
-        left: 0.38,
-        top: 0.26,
-        size: 0.25,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.38, top: 0.26, size: 0.25),
       tagline: VisitingCardFieldPosition(
         left: 0.405,
         top: 0.55,
@@ -738,7 +689,7 @@ back: VisitingCardSidePositions(
   /// Logo / Tag line / QR code
   static const verticalTemplate1 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.inter,
-        front: VisitingCardSidePositions(
+    front: VisitingCardSidePositions(
       // Name — dark teal
       name: VisitingCardFieldPosition(
         left: 0.118,
@@ -793,11 +744,7 @@ back: VisitingCardSidePositions(
         maxLines: 4,
       ),
       // Logo (bottom dark branding)
-      logo: VisitingCardFieldPosition(
-        left: 0.34,
-        top: 0.68,
-        size: 0.30,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.34, top: 0.68, size: 0.30),
       // Company
       // company: VisitingCardFieldPosition(
       //   left: 0.10,
@@ -820,13 +767,9 @@ back: VisitingCardSidePositions(
         textAlign: TextAlign.center,
       ),
     ),
-back: VisitingCardSidePositions(
+    back: VisitingCardSidePositions(
       // Logo → Company → Tagline → QR (dark bg)
-      logo: VisitingCardFieldPosition(
-        left: 0.285,
-        top: 0.24,
-        size: 0.44,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.285, top: 0.24, size: 0.44),
       // company: VisitingCardFieldPosition(
       //   left: 0.08,
       //   top: 0.28,
@@ -847,11 +790,7 @@ back: VisitingCardSidePositions(
         uppercase: true,
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.40,
-        top: 0.495,
-        size: 0.20,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.40, top: 0.495, size: 0.20),
     ),
   );
 
@@ -863,13 +802,9 @@ back: VisitingCardSidePositions(
   /// Vertical template back part - 2
   static const verticalTemplate2 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.inter,
-        front: VisitingCardSidePositions(
+    front: VisitingCardSidePositions(
       // Logo (top center)
-      logo: VisitingCardFieldPosition(
-        left: 0.36,
-        top: 0.02,
-        size: 0.28,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.36, top: 0.02, size: 0.28),
       // Company
       // company: VisitingCardFieldPosition(
       //   left: 0.38,
@@ -936,13 +871,9 @@ back: VisitingCardSidePositions(
         maxLines: 2,
       ),
     ),
-back: VisitingCardSidePositions(
+    back: VisitingCardSidePositions(
       // Logo → Company → Tagline → QR
-      logo: VisitingCardFieldPosition(
-        left: 0.275,
-        top: 0.30,
-        size: 0.48,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.275, top: 0.30, size: 0.48),
       // company: VisitingCardFieldPosition(
       //   left: 0.08,
       //   top: 0.49,
@@ -964,11 +895,7 @@ back: VisitingCardSidePositions(
         uppercase: true,
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.38,
-        top: 0.56,
-        size: 0.22,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.38, top: 0.56, size: 0.22),
     ),
   );
 
@@ -1027,11 +954,7 @@ back: VisitingCardSidePositions(
     ),
     back: VisitingCardSidePositions(
       // Logo → Company → Tagline → QR
-      logo: VisitingCardFieldPosition(
-        left: 0.285,
-        top: 0.34,
-        size: 0.44,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.285, top: 0.34, size: 0.44),
       // company: VisitingCardFieldPosition(
       //   left: 0.08,
       //   top: 0.49,
@@ -1053,11 +976,7 @@ back: VisitingCardSidePositions(
         uppercase: true,
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.38,
-        top: 0.59,
-        size: 0.22,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.38, top: 0.59, size: 0.22),
     ),
   );
 
@@ -1071,11 +990,7 @@ back: VisitingCardSidePositions(
     fontFamily: VisitingCardFonts.inter,
     front: VisitingCardSidePositions(
       // Logo (top center)
-      logo: VisitingCardFieldPosition(
-        left: 0.36,
-        top: 0.02,
-        size: 0.28,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.36, top: 0.02, size: 0.28),
       // Company
       // company: VisitingCardFieldPosition(
       //   left: 0.38,
@@ -1144,11 +1059,7 @@ back: VisitingCardSidePositions(
     ),
     back: VisitingCardSidePositions(
       // Logo → Company → Tagline → QR
-      logo: VisitingCardFieldPosition(
-        left: 0.275,
-        top: 0.30,
-        size: 0.48,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.275, top: 0.30, size: 0.48),
       // company: VisitingCardFieldPosition(
       //   left: 0.08,
       //   top: 0.49,
@@ -1170,11 +1081,7 @@ back: VisitingCardSidePositions(
         uppercase: true,
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.38,
-        top: 0.56,
-        size: 0.22,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.38, top: 0.56, size: 0.22),
     ),
   );
 
@@ -1186,13 +1093,9 @@ back: VisitingCardSidePositions(
   /// Vertical template back part - 5
   static const verticalTemplate5 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.inter,
-        front: VisitingCardSidePositions(
+    front: VisitingCardSidePositions(
       // Logo (top)
-      logo: VisitingCardFieldPosition(
-        left: 0.36,
-        top: 0.72,
-        size: 0.25,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.36, top: 0.72, size: 0.25),
       // company: VisitingCardFieldPosition(
       //   left: 0.10,
       //   top: 0.84,
@@ -1261,13 +1164,9 @@ back: VisitingCardSidePositions(
         maxLines: 2,
       ),
     ),
-  back: VisitingCardSidePositions(
+    back: VisitingCardSidePositions(
       // Logo → Company → Tagline → QR
-      logo: VisitingCardFieldPosition(
-        left: 0.34,
-        top: 0.32,
-        size: 0.34,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.34, top: 0.32, size: 0.34),
       // company: VisitingCardFieldPosition(
       //   left: 0.08,
       //   top: 0.49,
@@ -1289,11 +1188,7 @@ back: VisitingCardSidePositions(
         uppercase: true,
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.40,
-        top: 0.57,
-        size: 0.20,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.40, top: 0.57, size: 0.20),
     ),
   );
 
@@ -1304,11 +1199,7 @@ back: VisitingCardSidePositions(
   static const horizontalTemplate6 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.inter,
     front: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.16,
-        top: 0.16,
-        size: 0.20,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.16, top: 0.16, size: 0.20),
       tagline: VisitingCardFieldPosition(
         left: 0.16,
         top: 0.32,
@@ -1366,11 +1257,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.38,
-        top: 0.24,
-        size: 0.24,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.38, top: 0.24, size: 0.24),
       tagline: VisitingCardFieldPosition(
         left: 0.38,
         top: 0.46,
@@ -1380,11 +1267,7 @@ back: VisitingCardSidePositions(
         uppercase: true,
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.41,
-        top: 0.54,
-        size: 0.18,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.41, top: 0.54, size: 0.18),
     ),
   );
 
@@ -1441,11 +1324,7 @@ back: VisitingCardSidePositions(
         color: Color(0xFFFFFFFF),
         maxLines: 3,
       ),
-      logo: VisitingCardFieldPosition(
-        left: 0.72,
-        top: 0.40,
-        size: 0.22,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.72, top: 0.40, size: 0.22),
       tagline: VisitingCardFieldPosition(
         left: 0.72,
         top: 0.58,
@@ -1456,11 +1335,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.38,
-        top: 0.22,
-        size: 0.24,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.38, top: 0.22, size: 0.24),
       tagline: VisitingCardFieldPosition(
         left: 0.36,
         top: 0.44,
@@ -1470,11 +1345,7 @@ back: VisitingCardSidePositions(
         uppercase: true,
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.42,
-        top: 0.51,
-        size: 0.18,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.42, top: 0.51, size: 0.18),
     ),
   );
 
@@ -1485,11 +1356,7 @@ back: VisitingCardSidePositions(
   static const horizontalTemplate8 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.inter,
     front: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.76,
-        top: 0.42,
-        size: 0.16,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.76, top: 0.42, size: 0.16),
       tagline: VisitingCardFieldPosition(
         left: 0.73,
         top: 0.56,
@@ -1547,11 +1414,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.38,
-        top: 0.26,
-        size: 0.24,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.38, top: 0.26, size: 0.24),
       tagline: VisitingCardFieldPosition(
         left: 0.36,
         top: 0.47,
@@ -1561,12 +1424,7 @@ back: VisitingCardSidePositions(
         uppercase: true,
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.43,
-        top: 0.55,
-        size: 0.18,
-      ),
-
+      qr: VisitingCardFieldPosition(left: 0.43, top: 0.55, size: 0.18),
     ),
   );
 
@@ -1626,11 +1484,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.39,
-        top: 0.28,
-        size: 0.24,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.39, top: 0.28, size: 0.24),
       tagline: VisitingCardFieldPosition(
         left: 0.38,
         top: 0.48,
@@ -1640,12 +1494,7 @@ back: VisitingCardSidePositions(
         uppercase: true,
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.42,
-        top: 0.55,
-        size: 0.18,
-      ),
-
+      qr: VisitingCardFieldPosition(left: 0.42, top: 0.55, size: 0.18),
     ),
   );
 
@@ -1656,11 +1505,7 @@ back: VisitingCardSidePositions(
   static const horizontalTemplate10 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.inter,
     front: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.70,
-        top: 0.32,
-        size: 0.20,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.70, top: 0.32, size: 0.20),
       tagline: VisitingCardFieldPosition(
         left: 0.67,
         top: 0.49,
@@ -1717,11 +1562,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.38,
-        top: 0.28,
-        size: 0.24,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.38, top: 0.28, size: 0.24),
       tagline: VisitingCardFieldPosition(
         left: 0.36,
         top: 0.48,
@@ -1731,12 +1572,7 @@ back: VisitingCardSidePositions(
         uppercase: true,
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.42,
-        top: 0.56,
-        size: 0.18,
-      ),
-
+      qr: VisitingCardFieldPosition(left: 0.42, top: 0.56, size: 0.18),
     ),
   );
 
@@ -1763,11 +1599,7 @@ back: VisitingCardSidePositions(
         fontSize: 6,
         color: Color(0xFF00BDF2),
       ),
-      logo: VisitingCardFieldPosition(
-        left: 0.72,
-        top: 0.08,
-        size: 0.16,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.72, top: 0.08, size: 0.16),
       tagline: VisitingCardFieldPosition(
         left: 0.70,
         top: 0.28,
@@ -1775,11 +1607,7 @@ back: VisitingCardSidePositions(
         fontSize: 6,
         color: Color(0xFF00BDF2),
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.06,
-        top: 0.62,
-        size: 0.16,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.06, top: 0.62, size: 0.16),
       address: VisitingCardFieldPosition(
         left: 0.55,
         top: 0.46,
@@ -1814,11 +1642,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.14,
-        top: 0.28,
-        size: 0.20,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.14, top: 0.28, size: 0.20),
       tagline: VisitingCardFieldPosition(
         left: 0.18,
         top: 0.54,
@@ -1852,11 +1676,7 @@ back: VisitingCardSidePositions(
         fontSize: 9,
         color: Color(0xFF59BA47),
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.06,
-        top: 0.62,
-        size: 0.16,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.06, top: 0.62, size: 0.16),
       phone: VisitingCardFieldPosition(
         left: 0.46,
         top: 0.52,
@@ -1891,11 +1711,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.08,
-        top: 0.46,
-        size: 0.20,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.08, top: 0.46, size: 0.20),
       tagline: VisitingCardFieldPosition(
         left: 0.08,
         top: 0.66,
@@ -1967,11 +1783,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.40,
-        top: 0.32,
-        size: 0.22,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.40, top: 0.32, size: 0.22),
       tagline: VisitingCardFieldPosition(
         left: 0.35,
         top: 0.54,
@@ -1991,11 +1803,7 @@ back: VisitingCardSidePositions(
   static const horizontalTemplate14 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.inter,
     front: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.02,
-        top: 0.09,
-        size: 0.15,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.02, top: 0.09, size: 0.15),
       name: VisitingCardFieldPosition(
         left: 0.40,
         top: 0.16,
@@ -2045,11 +1853,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.38,
-        top: 0.24,
-        size: 0.26,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.38, top: 0.24, size: 0.26),
     ),
   );
 
@@ -2107,11 +1911,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.36,
-        top: 0.36,
-        size: 0.22,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.36, top: 0.36, size: 0.22),
       tagline: VisitingCardFieldPosition(
         left: 0.38,
         top: 0.56,
@@ -2181,11 +1981,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.42,
-        top: 0.34,
-        size: 0.24,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.42, top: 0.34, size: 0.24),
       tagline: VisitingCardFieldPosition(
         left: 0.40,
         top: 0.56,
@@ -2246,11 +2042,7 @@ back: VisitingCardSidePositions(
         color: Color(0xFFFFFFFF),
         maxLines: 2,
       ),
-      logo: VisitingCardFieldPosition(
-        left: 0.70,
-        top: 0.38,
-        size: 0.22,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.70, top: 0.38, size: 0.22),
       tagline: VisitingCardFieldPosition(
         left: 0.70,
         top: 0.55,
@@ -2261,11 +2053,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.36,
-        top: 0.20,
-        size: 0.28,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.36, top: 0.20, size: 0.28),
       tagline: VisitingCardFieldPosition(
         left: 0.36,
         top: 0.44,
@@ -2285,11 +2073,7 @@ back: VisitingCardSidePositions(
   static const horizontalTemplate18 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.inter,
     front: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.08,
-        top: 0.12,
-        size: 0.22,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.08, top: 0.12, size: 0.22),
       name: VisitingCardFieldPosition(
         left: 0.54,
         top: 0.14,
@@ -2308,11 +2092,7 @@ back: VisitingCardSidePositions(
         color: Color(0xFFFFFFFF),
         textAlign: TextAlign.right,
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.08,
-        top: 0.66,
-        size: 0.16,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.08, top: 0.66, size: 0.16),
       address: VisitingCardFieldPosition(
         left: 0.44,
         top: 0.52,
@@ -2349,11 +2129,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.37,
-        top: 0.40,
-        size: 0.30,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.37, top: 0.40, size: 0.30),
       website: VisitingCardFieldPosition(
         left: 0.40,
         top: 0.76,
@@ -2390,11 +2166,7 @@ back: VisitingCardSidePositions(
         fontSize: 8,
         color: Color(0xFF0A0A0A),
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.78,
-        top: 0.06,
-        size: 0.14,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.78, top: 0.06, size: 0.14),
       phone: VisitingCardFieldPosition(
         left: 0.64,
         top: 0.52,
@@ -2420,11 +2192,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.34,
-        top: 0.28,
-        size: 0.30,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.34, top: 0.28, size: 0.30),
     ),
   );
 
@@ -2484,11 +2252,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.40,
-        top: 0.32,
-        size: 0.30,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.40, top: 0.32, size: 0.30),
     ),
   );
 
@@ -2499,11 +2263,7 @@ back: VisitingCardSidePositions(
   static const verticalTemplate6 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.inter,
     front: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.22,
-        top: 0.15,
-        size: 0.32,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.22, top: 0.15, size: 0.32),
       tagline: VisitingCardFieldPosition(
         left: 0.22,
         top: 0.245,
@@ -2562,11 +2322,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.28,
-        top: 0.40,
-        size: 0.44,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.28, top: 0.40, size: 0.44),
       tagline: VisitingCardFieldPosition(
         left: 0.35,
         top: 0.53,
@@ -2576,11 +2332,7 @@ back: VisitingCardSidePositions(
         uppercase: true,
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.38,
-        top: 0.56,
-        size: 0.24,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.38, top: 0.56, size: 0.24),
     ),
   );
 
@@ -2591,11 +2343,7 @@ back: VisitingCardSidePositions(
   static const verticalTemplate7 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.inter,
     front: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.32,
-        top: 0.13,
-        size: 0.36,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.32, top: 0.13, size: 0.36),
       tagline: VisitingCardFieldPosition(
         left: 0.32,
         top: 0.24,
@@ -2647,11 +2395,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.28,
-        top: 0.36,
-        size: 0.44,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.28, top: 0.36, size: 0.44),
       tagline: VisitingCardFieldPosition(
         left: 0.34,
         top: 0.50,
@@ -2661,11 +2405,7 @@ back: VisitingCardSidePositions(
         uppercase: true,
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.38,
-        top: 0.54,
-        size: 0.22,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.38, top: 0.54, size: 0.22),
     ),
   );
 
@@ -2717,11 +2457,7 @@ back: VisitingCardSidePositions(
         color: Color(0xFF404040),
         maxLines: 2,
       ),
-      logo: VisitingCardFieldPosition(
-        left: 0.34,
-        top: 0.78,
-        size: 0.32,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.34, top: 0.78, size: 0.32),
       tagline: VisitingCardFieldPosition(
         left: 0.36,
         top: 0.88,
@@ -2732,11 +2468,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.28,
-        top: 0.30,
-        size: 0.44,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.28, top: 0.30, size: 0.44),
       tagline: VisitingCardFieldPosition(
         left: 0.32,
         top: 0.44,
@@ -2745,11 +2477,7 @@ back: VisitingCardSidePositions(
         color: Color(0xFFFFFFFF),
         uppercase: true,
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.38,
-        top: 0.48,
-        size: 0.20,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.38, top: 0.48, size: 0.20),
     ),
   );
 
@@ -2760,11 +2488,7 @@ back: VisitingCardSidePositions(
   static const verticalTemplate9 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.inter,
     front: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.32,
-        top: 0.08,
-        size: 0.32,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.32, top: 0.08, size: 0.32),
       tagline: VisitingCardFieldPosition(
         left: 0.35,
         top: 0.18,
@@ -2823,11 +2547,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.28,
-        top: 0.30,
-        size: 0.44,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.28, top: 0.30, size: 0.44),
       tagline: VisitingCardFieldPosition(
         left: 0.34,
         top: 0.44,
@@ -2837,11 +2557,7 @@ back: VisitingCardSidePositions(
         uppercase: true,
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.40,
-        top: 0.48,
-        size: 0.22,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.40, top: 0.48, size: 0.22),
     ),
   );
 
@@ -2892,23 +2608,11 @@ back: VisitingCardSidePositions(
         color: Color(0xFF404040),
         maxLines: 2,
       ),
-      logo: VisitingCardFieldPosition(
-        left: 0.34,
-        top: 0.75,
-        size: 0.34,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.34, top: 0.75, size: 0.34),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.28,
-        top: 0.32,
-        size: 0.44,
-      ),
-      qr: VisitingCardFieldPosition(
-        left: 0.40,
-        top: 0.46,
-        size: 0.20,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.28, top: 0.32, size: 0.44),
+      qr: VisitingCardFieldPosition(left: 0.40, top: 0.46, size: 0.20),
     ),
   );
 
@@ -2968,16 +2672,8 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.30,
-        top: 0.34,
-        size: 0.40,
-      ),
-      qr: VisitingCardFieldPosition(
-        left: 0.36,
-        top: 0.54,
-        size: 0.26,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.30, top: 0.34, size: 0.40),
+      qr: VisitingCardFieldPosition(left: 0.36, top: 0.54, size: 0.26),
     ),
   );
 
@@ -2988,11 +2684,7 @@ back: VisitingCardSidePositions(
   static const verticalTemplate12 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.roboto,
     front: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.34,
-        top: 0.08,
-        size: 0.36,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.34, top: 0.08, size: 0.36),
       name: VisitingCardFieldPosition(
         left: 0.24,
         top: 0.46,
@@ -3041,11 +2733,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.32,
-        top: 0.32,
-        size: 0.40,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.32, top: 0.32, size: 0.40),
     ),
   );
 
@@ -3056,11 +2744,7 @@ back: VisitingCardSidePositions(
   static const verticalTemplate13 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.montserrat,
     front: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.31,
-        top: 0.10,
-        size: 0.38,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.31, top: 0.10, size: 0.38),
       name: VisitingCardFieldPosition(
         left: 0.15,
         top: 0.55,
@@ -3110,16 +2794,8 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      qr: VisitingCardFieldPosition(
-        left: 0.40,
-        top: 0.16,
-        size: 0.20,
-      ),
-      logo: VisitingCardFieldPosition(
-        left: 0.30,
-        top: 0.66,
-        size: 0.40,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.40, top: 0.16, size: 0.20),
+      logo: VisitingCardFieldPosition(left: 0.30, top: 0.66, size: 0.40),
       tagline: VisitingCardFieldPosition(
         left: 0.36,
         top: 0.77,
@@ -3138,11 +2814,7 @@ back: VisitingCardSidePositions(
   static const verticalTemplate14 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.montserrat,
     front: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.33,
-        top: 0.18,
-        size: 0.36,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.33, top: 0.18, size: 0.36),
       tagline: VisitingCardFieldPosition(
         left: 0.38,
         top: 0.285,
@@ -3200,11 +2872,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.30,
-        top: 0.23,
-        size: 0.38,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.30, top: 0.23, size: 0.38),
       tagline: VisitingCardFieldPosition(
         left: 0.36,
         top: 0.34,
@@ -3213,11 +2881,7 @@ back: VisitingCardSidePositions(
         color: Color(0xFF404041),
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.36,
-        top: 0.66,
-        size: 0.26,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.36, top: 0.66, size: 0.26),
     ),
   );
 
@@ -3277,11 +2941,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.32,
-        top: 0.43,
-        size: 0.40,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.32, top: 0.43, size: 0.40),
     ),
   );
 
@@ -3292,11 +2952,7 @@ back: VisitingCardSidePositions(
   static const verticalTemplate16 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.inter,
     front: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.30,
-        top: 0.12,
-        size: 0.42,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.30, top: 0.12, size: 0.42),
       name: VisitingCardFieldPosition(
         left: 0.08,
         top: 0.56,
@@ -3346,11 +3002,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.32,
-        top: 0.46,
-        size: 0.44,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.32, top: 0.46, size: 0.44),
     ),
   );
 
@@ -3361,11 +3013,7 @@ back: VisitingCardSidePositions(
   static const verticalTemplate17 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.inter,
     front: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.08,
-        top: 0.08,
-        size: 0.34,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.08, top: 0.08, size: 0.34),
       name: VisitingCardFieldPosition(
         left: 0.10,
         top: 0.53,
@@ -3415,11 +3063,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.32,
-        top: 0.17,
-        size: 0.38,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.32, top: 0.17, size: 0.38),
       tagline: VisitingCardFieldPosition(
         left: 0.36,
         top: 0.29,
@@ -3428,11 +3072,7 @@ back: VisitingCardSidePositions(
         color: Color(0xFFB6CF32),
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.36,
-        top: 0.34,
-        size: 0.22,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.36, top: 0.34, size: 0.22),
     ),
   );
 
@@ -3490,16 +3130,8 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.32,
-        top: 0.24,
-        size: 0.40,
-      ),
-      qr: VisitingCardFieldPosition(
-        left: 0.40,
-        top: 0.42,
-        size: 0.22,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.32, top: 0.24, size: 0.40),
+      qr: VisitingCardFieldPosition(left: 0.40, top: 0.42, size: 0.22),
     ),
   );
 
@@ -3559,16 +3191,8 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.30,
-        top: 0.28,
-        size: 0.38,
-      ),
-      qr: VisitingCardFieldPosition(
-        left: 0.36,
-        top: 0.50,
-        size: 0.22,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.30, top: 0.28, size: 0.38),
+      qr: VisitingCardFieldPosition(left: 0.36, top: 0.50, size: 0.22),
     ),
   );
 
@@ -3626,11 +3250,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.32,
-        top: 0.14,
-        size: 0.38,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.32, top: 0.14, size: 0.38),
       tagline: VisitingCardFieldPosition(
         left: 0.38,
         top: 0.26,
@@ -3639,11 +3259,7 @@ back: VisitingCardSidePositions(
         color: Color(0xFF000000),
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(
-        left: 0.36,
-        top: 0.30,
-        size: 0.26,
-      ),
+      qr: VisitingCardFieldPosition(left: 0.36, top: 0.30, size: 0.26),
     ),
   );
 
@@ -3704,11 +3320,7 @@ back: VisitingCardSidePositions(
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(
-        left: 0.28,
-        top: 0.42,
-        size: 0.48,
-      ),
+      logo: VisitingCardFieldPosition(left: 0.28, top: 0.42, size: 0.48),
     ),
   );
 }
