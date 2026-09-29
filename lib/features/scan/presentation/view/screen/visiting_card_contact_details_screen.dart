@@ -680,14 +680,19 @@ class _VisitingCardContactDetailsScreenState
               key: _templateCaptureKey,
               child: VisitingCardLivePreview(
                 key: ValueKey(
+                  // Front/back logos must both be in the key — never the
+                  // current-side logoAssetPath, or a 1↔2 swipe rebuilds the
+                  // PageView mid-animation (same fix as the card editors).
                   'preview-$_imageEpoch-'
                   '${_previewVm.qrAssetPath}-'
-                  '${_previewVm.logoAssetPath}',
+                  '${_previewVm.frontLogoAssetPath}-'
+                  '${_previewVm.backLogoAssetPath}',
                 ),
                 vm: _previewVm,
                 showPager: false,
                 singleLineText: true,
                 matchEditorText: true,
+                pageGap: 4,
               ),
             ),
             Positioned(

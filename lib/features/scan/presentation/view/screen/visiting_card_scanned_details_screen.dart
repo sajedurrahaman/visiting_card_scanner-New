@@ -719,6 +719,7 @@ class _VisitingCardScannedDetailsScreenState
                           child: VisitingCardLivePreview(
                             vm: _previewVm,
                             showPager: false,
+                            pageGap: 4,
                           ),
                         ),
                         Positioned(

@@ -448,8 +448,15 @@ class _VisitingCardVerticalEditScreenState
       context: context,
       barrierColor: const Color(0x99000000),
       builder: (dialogContext) {
-        final viewHeight = MediaQuery.sizeOf(dialogContext).height;
-        final ring = (viewHeight * 0.62).clamp(160.0, 240.0);
+        final view = MediaQuery.sizeOf(dialogContext);
+        // Portrait dialog is narrow — size the ring from width, not height,
+        // so the Row (ring + actions) never overflows.
+        const inset = 48.0;
+        const pad = 32.0;
+        const gap = 18.0;
+        const actionsW = 108.0;
+        final ring = (view.width - inset - pad - gap - actionsW)
+            .clamp(120.0, 200.0);
         return Dialog(
           backgroundColor: const Color(0xFF003303),
           insetPadding:
@@ -471,7 +478,7 @@ class _VisitingCardVerticalEditScreenState
                         setDialogState(() => picked = color);
                       },
                     ),
-                    const SizedBox(width: 18),
+                    const SizedBox(width: gap),
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -830,7 +837,7 @@ class _VisitingCardVerticalEditScreenState
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         final ratio = vm.isHorizontal ? 1.75 : 0.63;
-                        final scale = _previewing ? 0.82 : 0.84;
+                        final scale = _previewing ? 0.90 : 0.92;
                         const pagerRoom = 64.0;
                         final room = math.max(
                           40.0,
@@ -839,7 +846,7 @@ class _VisitingCardVerticalEditScreenState
                         var cardW = constraints.maxWidth * scale;
                         var cardH = cardW / ratio;
                         final maxH = math.min(
-                          constraints.maxHeight * (_previewing ? 0.86 : 0.78),
+                          constraints.maxHeight * (_previewing ? 0.90 : 0.85),
                           room,
                         );
                         if (cardH > maxH) {
@@ -891,12 +898,18 @@ class _VisitingCardVerticalEditScreenState
                       },
                     ),
                   ),
-                  if (!_previewing) ...[
-                    ?_openPanel(vm),
-                    _verticalToolBar(vm),
-                  ],
+                  // Toolbar only — Color/Size overlay above it so the card
+                  // keeps the same size and aspect ratio.
+                  if (!_previewing) _verticalToolBar(vm),
               ],
             ),
+            if (!_previewing)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 72 + MediaQuery.paddingOf(context).bottom,
+                child: _openPanel(vm) ?? const SizedBox.shrink(),
+              ),
             if (_previewing && !_booting)
               Positioned(
                 top: MediaQuery.paddingOf(context).top + 60,

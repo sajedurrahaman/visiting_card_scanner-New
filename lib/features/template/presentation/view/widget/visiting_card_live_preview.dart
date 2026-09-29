@@ -27,9 +27,9 @@ double _editorCardWidth(
     );
     const pagerRoom = 64.0;
     final room = math.max(40.0, bodyH - pagerRoom);
-    var cardW = bodyW * 0.84;
+    var cardW = bodyW * 0.92;
     final cardH = cardW / 0.63;
-    final maxH = math.min(bodyH * 0.78, room);
+    final maxH = math.min(bodyH * 0.85, room);
     if (cardH > maxH) cardW = maxH * 0.63;
     return cardW;
   }
@@ -248,11 +248,10 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     // page. Taking over with animateToPage cuts that fling short.
     if (offset.round() == page) return;
 
-    // Details/download preview has no in-widget pager. Jump so capture never
-    // snapshots the mid-swipe frame (front-right + back-left stitched).
-    // Arrow changes still animate, except while a capture is running.
-    final animateSideChange = !widget.vm.jumpSideForCapture &&
-        (widget.showPager || widget.enableFieldTransform);
+    // Capture jumps so the mid-swipe stitch is never snapshotted. Editors and
+    // Card Details otherwise animate like a normal PageView (finger fling is
+    // left alone via the offset.round() == page guard above).
+    final animateSideChange = !widget.vm.jumpSideForCapture;
 
     _ignorePageCallback = true;
     if (!animateSideChange) {
