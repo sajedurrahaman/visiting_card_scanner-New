@@ -894,8 +894,9 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         ? field.isImageOverlay
         : _sourceIsImage(current.duplicateOf);
     final next = isImage
-        ? (current.size + pixelDeltaY / cardSize.width).clamp(0.06, 0.55)
-        : (current.size + pixelDeltaY * 0.08).clamp(4.0, 28.0);
+        ? (current.size + pixelDeltaY / cardSize.width)
+            .clamp(imageSizeMin, imageSizeMax)
+        : (current.size + pixelDeltaY * 0.08).clamp(textSizeMin, textSizeMax);
     currentOverlays[key] = current.copyWith(size: next);
     notifyListeners();
   }
@@ -1090,7 +1091,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
 
   static const textSizeMin = 4.0;
   static const textSizeMax = 28.0;
-  static const imageSizeMin = 0.06;
+  static const imageSizeMin = 0.04;
   static const imageSizeMax = 0.55;
 
   /// Slider position 0–1 for the selected field's current size.
@@ -1193,7 +1194,8 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
 
     if (isImage) {
       final next =
-          (current.size + pixelDelta / cardSize.width).clamp(0.06, 0.55);
+          (current.size + pixelDelta / cardSize.width)
+              .clamp(imageSizeMin, imageSizeMax);
       final applied = next - current.size;
       if (fixRight) {
         left = (left - applied).clamp(-0.2, 0.95);
@@ -1252,7 +1254,8 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     if (horizontal) {
       if (isImage) {
         final next =
-            (current.size + pixelDelta / cardSize.width).clamp(0.06, 0.55);
+            (current.size + pixelDelta / cardSize.width)
+                .clamp(imageSizeMin, imageSizeMax);
         final applied = next - current.size;
         final left = fixOpposite
             ? (current.left - applied).clamp(-0.2, 0.95)
@@ -1275,7 +1278,8 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     } else {
       if (isImage) {
         final next =
-            (current.size + pixelDelta / cardSize.height).clamp(0.06, 0.55);
+            (current.size + pixelDelta / cardSize.height)
+                .clamp(imageSizeMin, imageSizeMax);
         final appliedPx = (next - current.size) * cardSize.height;
         final top = fixOpposite
             ? (current.top - appliedPx / cardSize.height).clamp(-0.2, 0.95)

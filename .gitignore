@@ -38,6 +38,11 @@ android/key.properties
 *.jks
 *.keystore
 
+# Local iOS signing / Personal Team (do not push machine-specific signing)
+ios/Runner.xcodeproj/project.pbxproj
+ios/Runner/Info.plist
+ios/Runner/Runner.entitlements
+
 # Symbolication related
 app.*.symbols
 
