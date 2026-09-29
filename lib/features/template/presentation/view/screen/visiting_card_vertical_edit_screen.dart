@@ -912,7 +912,7 @@ class _VisitingCardVerticalEditScreenState
               ),
             if (_previewing && !_booting)
               Positioned(
-                top: MediaQuery.paddingOf(context).top + 60,
+                top: MediaQuery.paddingOf(context).top + 28,
                 left: 0,
                 right: 0,
                 child: Center(
