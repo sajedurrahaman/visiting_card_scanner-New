@@ -20,6 +20,8 @@ import 'package:visiting_card/features/scan/presentation/view/screen/visiting_ca
 import 'package:visiting_card/features/scan/presentation/view_model/visiting_card_scan_viewmodel.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_export_utils.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_edit_contact_info_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_edit_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_vertical_edit_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_template_viewmodel.dart';
@@ -291,10 +293,11 @@ class _VisitingCardContactDetailsScreenState
               .map((e) => ContactFieldEntry(value: e))
               .toList(),
       qrAssetPath: contact.qrImagePath.isNotEmpty ? contact.qrImagePath : null,
-      logoAssetPath:
-          contact.logoImagePath.isNotEmpty ? contact.logoImagePath : null,
+      frontLogoAssetPath: contact.frontLogoPath,
+      backLogoAssetPath: contact.backLogoPath,
       hasChosenQr: contact.hasChosenQr,
-      hasChosenLogo: contact.hasChosenLogo,
+      hasChosenFrontLogo: contact.frontLogoChosen,
+      hasChosenBackLogo: contact.backLogoChosen,
       fieldTransforms: contact.fieldTransforms,
     );
   }
@@ -519,14 +522,11 @@ class _VisitingCardContactDetailsScreenState
           imagePaths: _images.map((e) => e.path).toList(),
         );
 
-    // Template-generated cards → template edit flow (live preview).
     if (editContact.isFromTemplate) {
       await _openTemplateEdit(editContact);
       return;
     }
 
-    // Scan cards → template edit screen (move logo/QR/company/tagline).
-    // Next saves + shows Update toast. Back discards.
     final bytesList = <Uint8List>[];
     for (final file in _images) {
       if (await file.exists()) {
@@ -576,9 +576,11 @@ class _VisitingCardContactDetailsScreenState
       websites: scan.websites,
       addresses: scan.addresses,
       qrAssetPath: scan.qrAssetPath,
-      logoAssetPath: scan.logoAssetPath,
+      frontLogoAssetPath: scan.frontLogoAssetPath ?? '',
+      backLogoAssetPath: scan.backLogoAssetPath ?? '',
       hasChosenQr: scan.hasChosenQr,
-      hasChosenLogo: scan.hasChosenLogo,
+      hasChosenFrontLogo: scan.hasChosenFrontLogo,
+      hasChosenBackLogo: scan.hasChosenBackLogo,
       fieldTransforms: scan.fieldTransforms,
     );
   }
@@ -610,11 +612,69 @@ class _VisitingCardContactDetailsScreenState
     if (mounted) await _load();
   }
 
+  Future<void> _openCardLandscapeEdit() async {
+    final contact = _contact;
+    if (contact == null && _images.isEmpty) {
+      ui.AppToast.show(context, message: 'No contact data to edit');
+      return;
+    }
+
+    final editContact = contact ??
+        SavedContactInfo(
+          name: widget.item.name,
+          imagePaths: _images.map((e) => e.path).toList(),
+        );
+    await _openLandscapeEdit(editContact);
+  }
+
+  Future<void> _openLandscapeEdit(SavedContactInfo contact) async {
+    final template = _templateForId(contact.templateId);
+    final vm = VisitingCardEditContactViewModel.fromTemplate(
+      template,
+      isHorizontal: _isHorizontalTemplate(contact.templateId),
+    );
+    vm.applyContactFromSaved(
+      contact,
+      savedFileId: widget.item.id,
+      contactFolderPath: widget.item.path,
+      folderId: widget.item.folderId,
+      dateTime: widget.item.dateTime,
+    );
+    if (!mounted) return;
+
+    final saved = vm.isHorizontal
+        ? await VisitingCardLandscapeEditScreen.open(context, vm: vm)
+        : await VisitingCardVerticalEditScreen.open(context, vm: vm);
+    if (!mounted) return;
+    if (saved == true) {
+      _previewVm.applyContactLists(
+        names: vm.names,
+        designations: vm.designations,
+        companies: vm.companies,
+        taglines: vm.taglines,
+        phones: vm.phones,
+        emails: vm.emails,
+        websites: vm.websites,
+        addresses: vm.addresses,
+        qrAssetPath: vm.qrAssetPath,
+        frontLogoAssetPath: vm.frontLogoAssetPath ?? '',
+        backLogoAssetPath: vm.backLogoAssetPath ?? '',
+        hasChosenQr: vm.hasChosenQr,
+        hasChosenFrontLogo: vm.hasChosenFrontLogo,
+        hasChosenBackLogo: vm.hasChosenBackLogo,
+        fieldTransforms: vm.fieldTransformsSnapshot,
+      );
+    }
+    await _load();
+  }
+
   Widget _buildLivePreviewCard() {
     return AnimatedBuilder(
       animation: _previewVm,
       builder: (context, _) {
-        return Stack(
+        return Column(
+          children: [
+            Stack(
           children: [
             RepaintBoundary(
               key: _templateCaptureKey,
@@ -626,6 +686,8 @@ class _VisitingCardContactDetailsScreenState
                 ),
                 vm: _previewVm,
                 showPager: false,
+                singleLineText: true,
+                matchEditorText: true,
               ),
             ),
             Positioned(
@@ -657,15 +719,15 @@ class _VisitingCardContactDetailsScreenState
               ),
             ),
             Positioned(
-              left: 0,
-              right: 0,
-              bottom: 2.h,
-              child: VisitingCardSidePager(
-                currentPage: _previewVm.sideIndex + 1,
-                canGoPrevious: _previewVm.sideIndex == 1,
-                canGoNext: _previewVm.sideIndex == 0,
-                onPrevious: _previewVm.showFront,
-                onNext: _previewVm.showBack,
+              bottom: 6.h,
+              right: 6.w,
+              child: _CornerActionButton(
+                onTap: _openCardLandscapeEdit,
+                child: SvgPicture.asset(
+                  ui.AppAssets.visitingTemplateEditIconOne,
+                  width: 15.w,
+                  height: 15.w,
+                ),
               ),
             ),
             if (_isDownloadingTemplate)
@@ -680,6 +742,16 @@ class _VisitingCardContactDetailsScreenState
                   ),
                 ),
               ),
+          ],
+        ),
+            SizedBox(height: 8.h),
+            VisitingCardSidePager(
+              currentPage: _previewVm.sideIndex + 1,
+              canGoPrevious: _previewVm.sideIndex == 1,
+              canGoNext: _previewVm.sideIndex == 0,
+              onPrevious: _previewVm.showFront,
+              onNext: _previewVm.showBack,
+            ),
           ],
         );
       },

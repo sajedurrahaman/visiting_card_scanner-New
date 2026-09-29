@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -6,9 +7,116 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
+import 'package:visiting_card/features/template/domain/visiting_card_font_style.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_position_config.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_transform_overlay.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
+
+/// Card width inside the editor, from the phone size Card Details is using.
+/// Landscape editor lays the card out on the long side; vertical stays portrait.
+double _editorCardWidth(
+  Size screen,
+  EdgeInsets padding, {
+  required bool horizontal,
+}) {
+  if (!horizontal) {
+    final bodyW = math.max(80.0, screen.width - padding.horizontal);
+    final bodyH = math.max(
+      120.0,
+      screen.height - padding.vertical - 56.0,
+    );
+    const pagerRoom = 64.0;
+    final room = math.max(40.0, bodyH - pagerRoom);
+    var cardW = bodyW * 0.84;
+    final cardH = cardW / 0.63;
+    final maxH = math.min(bodyH * 0.78, room);
+    if (cardH > maxH) cardW = maxH * 0.63;
+    return cardW;
+  }
+
+  final longest = math.max(screen.width, screen.height);
+  final shortest = math.min(screen.width, screen.height);
+  final sideInset = math.max(padding.top, padding.left);
+  final longestSafe = math.max(200.0, longest - sideInset);
+  final shortestSafe = math.max(160.0, shortest - padding.bottom);
+  final pad = (shortest * 0.04).clamp(12.0, 20.0);
+  final rail = (longest * 0.24).clamp(148.0, 188.0);
+  final columnW = math.max(
+    80.0,
+    longestSafe - pad * 2 - pad * 0.75 - rail,
+  );
+  final columnH = math.max(80.0, shortestSafe - pad);
+  const ratio = 1.75;
+  var cardW = columnW * 0.68;
+  final cardH = cardW / ratio;
+  final room = math.max(40.0, columnH - pad - 56.0);
+  final maxH = math.min(columnH * 0.70, room);
+  if (cardH > maxH) cardW = maxH * ratio;
+  return cardW;
+}
+
+Widget _flipField(Widget child, VisitingCardFieldTransform t) {
+  if (!t.flipX && !t.flipY) return child;
+  return Transform.scale(
+    alignment: Alignment.center,
+    scaleX: t.flipX ? -1 : 1,
+    scaleY: t.flipY ? -1 : 1,
+    child: child,
+  );
+}
+
+List<Shadow>? _fieldShadows(VisitingCardFieldTransform t) {
+  if (t.shadowBlur <= 0) return null;
+  return [
+    Shadow(
+      color: t.shadowColor ?? const Color(0xCC000000),
+      blurRadius: t.shadowBlur,
+      offset: Offset(t.shadowBlur * 0.25, t.shadowBlur * 0.4),
+    ),
+  ];
+}
+
+Widget _fadeField(Widget child, VisitingCardFieldTransform t) {
+  final opacity = t.opacity.clamp(0.0, 1.0);
+  if (opacity >= 0.999) return child;
+  return Opacity(opacity: opacity, child: child);
+}
+
+Widget _strokeText({
+  required Widget fill,
+  required String text,
+  required TextStyle style,
+  required VisitingCardFieldTransform transform,
+  required int? maxLines,
+  required bool softWrap,
+  required TextOverflow overflow,
+  required TextAlign textAlign,
+  required TextScaler? textScaler,
+}) {
+  if (transform.strokeWidth <= 0) return fill;
+  final paint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = transform.strokeWidth
+    ..color = transform.strokeColor ?? const Color(0xFF000000);
+  return Stack(
+    alignment: Alignment.centerLeft,
+    children: [
+      Text(
+        text,
+        maxLines: maxLines,
+        softWrap: softWrap,
+        overflow: overflow,
+        textAlign: textAlign,
+        textScaler: textScaler,
+        style: style.copyWith(
+          foreground: paint,
+          shadows: const <Shadow>[],
+        ),
+      ),
+      fill,
+    ],
+  );
+}
 
 class VisitingCardLivePreview extends StatefulWidget {
   const VisitingCardLivePreview({
@@ -20,6 +128,11 @@ class VisitingCardLivePreview extends StatefulWidget {
     this.onShowFront,
     this.onShowBack,
     this.enableFieldTransform = false,
+    this.selectionBorderOnlyWhenSelected = false,
+    this.eightPointSelection = false,
+    this.singleLineText = false,
+    this.matchEditorText = false,
+    this.pageGap = 6,
   });
 
   final VisitingCardEditContactViewModel vm;
@@ -33,6 +146,23 @@ class VisitingCardLivePreview extends StatefulWidget {
 
   /// Edit mode: finger drag / resize / rotate for logo, qr, company, tagline.
   final bool enableFieldTransform;
+
+  /// Landscape editor: show selection border only on the tapped field.
+  final bool selectionBorderOnlyWhenSelected;
+
+  /// Edit Contact Info: same 8-handle select frame as landscape, and the
+  /// box hugs the text instead of the template field width. Fonts stay .sp.
+  final bool eightPointSelection;
+
+  /// Details preview: one line per field, same as the editor. Taglines still wrap.
+  final bool singleLineText;
+
+  /// Card Details: same font scale and text box as the card editor, so a
+  /// position saved there lands on the same spot. No selection chrome.
+  final bool matchEditorText;
+
+  /// Space between the front and back faces while swiping. 0 keeps them flush.
+  final double pageGap;
 
   @override
   State<VisitingCardLivePreview> createState() =>
@@ -54,6 +184,31 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     super.initState();
     _pageController = PageController(initialPage: _sideIndex);
     widget.vm.addListener(_onVmChanged);
+    // The first frame measures fallback glyphs. A line that fits the real
+    // font is then clamped and drawn with "…". Remeasure once it loads.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _remeasureAfterFonts());
+  }
+
+  Future<void> _remeasureAfterFonts() async {
+    if (!mounted) return;
+    try {
+      await GoogleFonts.pendingFonts();
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  /// Same glyph size, relative to the card, as the editor that saved it.
+  double _matchEditorFontScale(double cardWidth) {
+    final media = MediaQuery.of(context);
+    final editorW = _editorCardWidth(
+      media.size,
+      media.padding,
+      horizontal: widget.vm.isHorizontal,
+    );
+    final editorScale = (editorW / 220.0).clamp(0.55, 1.15);
+    if (editorW <= 1 || cardWidth <= 1) return editorScale;
+    return editorScale * (cardWidth / editorW);
   }
 
   @override
@@ -77,7 +232,11 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
 
   void _onVmChanged() {
     if (!mounted) return;
-    _animateTo(widget.sideOverride ?? widget.vm.sideIndex);
+    // Handle drags notify on every pixel. Animating the page then fights
+    // the finger, so only follow side changes when a drag is not active.
+    if (!widget.vm.overlayGestureActive) {
+      _animateTo(widget.sideOverride ?? widget.vm.sideIndex);
+    }
     setState(() {});
   }
 
@@ -85,12 +244,15 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     if (!_pageController.hasClients) return;
     final offset =
         _pageController.page ?? _pageController.initialPage.toDouble();
-    if ((offset - page).abs() < 0.001) return;
+    // A finger swipe already owns the motion once it has crossed onto this
+    // page. Taking over with animateToPage cuts that fling short.
+    if (offset.round() == page) return;
 
     // Details/download preview has no in-widget pager. Jump so capture never
     // snapshots the mid-swipe frame (front-right + back-left stitched).
-    final animateSideChange =
-        widget.showPager || widget.enableFieldTransform;
+    // Arrow changes still animate, except while a capture is running.
+    final animateSideChange = !widget.vm.jumpSideForCapture &&
+        (widget.showPager || widget.enableFieldTransform);
 
     _ignorePageCallback = true;
     if (!animateSideChange) {
@@ -137,40 +299,22 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         AspectRatio(
           aspectRatio: aspectRatio,
           child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12.r),
+            decoration: const BoxDecoration(
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.12),
+                  color: Color(0x1F000000),
                   blurRadius: 16,
                   spreadRadius: 0,
-                  offset: const Offset(0, 4),
+                  offset: Offset(0, 4),
                 ),
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
+                  color: Color(0x0F000000),
                   blurRadius: 6,
-                  offset: const Offset(0, 1),
+                  offset: Offset(0, 1),
                 ),
               ],
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12.r),
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: 2,
-                // Allow finger swipe 1/2 ↔ 2/2; lock only while an overlay
-                // is selected so move/rotate/resize keep winning gestures.
-                physics:
-                    widget.enableFieldTransform &&
-                        widget.vm.selectedOverlay != null
-                    ? const NeverScrollableScrollPhysics()
-                    : const BouncingScrollPhysics(
-                        parent: AlwaysScrollableScrollPhysics(),
-                      ),
-                onPageChanged: _onPageChanged,
-                itemBuilder: (_, index) => _buildCardFace(sideIndex: index),
-              ),
-            ),
+            child: _cardPager(),
           ),
         ),
         if (widget.showPager) ...[
@@ -183,6 +327,50 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
             onNext: _showBack,
           ),
         ],
+      ],
+    );
+  }
+
+  Widget _cardPager() {
+    final gap = widget.pageGap;
+    Widget face(int index) {
+      final child = _buildCardFace(sideIndex: index);
+      if (gap <= 0) return child;
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: gap / 2),
+        child: child,
+      );
+    }
+
+    // Both sides stay built, same as the template tiles, so the first
+    // finger swipe does not construct the other face mid-gesture.
+    final pager = PageView(
+      controller: _pageController,
+      physics: widget.enableFieldTransform && widget.vm.hasSelection
+          ? const NeverScrollableScrollPhysics()
+          : const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+      onPageChanged: _onPageChanged,
+      children: [
+        face(0),
+        face(1),
+      ],
+    );
+    if (gap <= 0) return pager;
+    // Pages are wider by [gap] and shifted out by half, so a settled face
+    // still fills the card. The extra half on each side becomes a [gap]
+    // strip only where the front and back meet mid-swipe.
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Positioned(
+          left: -gap / 2,
+          right: -gap / 2,
+          top: 0,
+          bottom: 0,
+          child: pager,
+        ),
       ],
     );
   }
@@ -242,33 +430,88 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     required bool interactive,
   }) {
     final vm = widget.vm;
-    final children = <Widget>[];
+    final layers = <(int, int, Widget)>[];
+    var layerSeq = 0;
+    // Editor and Card Details size text from the card width (no ScreenUtil
+    // .sp) so a saved position uses the same glyph box on both screens.
+    final landscapeFonts = widget.selectionBorderOnlyWhenSelected ||
+        widget.matchEditorText;
+    // Edit Contact Info uses the 8-handle frame and intrinsic text width.
+    // Its fonts stay .sp.
+    final landscape = landscapeFonts || widget.eightPointSelection;
+    // Editor keeps its own card-width scale. Card Details uses that same
+    // font-to-card ratio, so a smaller portrait card does not draw the name
+    // on top of the designation.
+    final landscapeFontScale = !landscapeFonts
+        ? 1.0
+        : widget.matchEditorText
+            ? _matchEditorFontScale(size.width)
+            : (size.width / 220.0).clamp(0.55, 1.15);
+    const landscapeTextScaler = TextScaler.noScaling;
+
+    double resolveFont(double designSize) {
+      if (landscapeFonts) return designSize * landscapeFontScale;
+      return designSize.sp;
+    }
+
+    void addLayer(Widget overlay, int z) {
+      layers.add((z, layerSeq++, overlay));
+    }
+
+    void addOverlay(Widget overlay, VisitingCardOverlayField field) {
+      addLayer(
+        overlay,
+        VisitingCardFieldTransform.stackZ(
+          VisitingCardFieldTransform.keyOf(field),
+          vm.overlayFor(field, isFront: isFront),
+        ),
+      );
+    }
+
+    TextStyle withFallback(TextStyle style) {
+      return style.copyWith(
+        fontFamilyFallback: [
+          ...?style.fontFamilyFallback,
+          'sans-serif',
+        ],
+      );
+    }
 
     TextStyle styleFor(VisitingCardFieldPosition pos, {double? fontSize}) {
-      final sizeSp = (fontSize ?? pos.fontSize).sp;
+      final resolved = resolveFont(fontSize ?? pos.fontSize);
       if (fontFamily == VisitingCardFonts.inter) {
-        return GoogleFonts.inter(
-          fontSize: sizeSp,
+        return withFallback(GoogleFonts.inter(
+          fontSize: resolved,
           fontWeight: pos.fontWeight,
           fontStyle: pos.fontStyle,
           color: pos.color,
           letterSpacing: pos.letterSpacing,
           height: pos.heightFactor,
-        );
+        ));
       }
       if (fontFamily == VisitingCardFonts.roboto) {
-        return GoogleFonts.roboto(
-          fontSize: sizeSp,
+        return withFallback(GoogleFonts.roboto(
+          fontSize: resolved,
           fontWeight: pos.fontWeight,
           fontStyle: pos.fontStyle,
           color: pos.color,
           letterSpacing: pos.letterSpacing,
           height: pos.heightFactor,
-        );
+        ));
+      }
+      if (fontFamily == VisitingCardFonts.montserrat) {
+        return withFallback(GoogleFonts.montserrat(
+          fontSize: resolved,
+          fontWeight: pos.fontWeight,
+          fontStyle: pos.fontStyle,
+          color: pos.color,
+          letterSpacing: pos.letterSpacing,
+          height: pos.heightFactor,
+        ));
       }
       return TextStyle(
         fontFamily: fontFamily,
-        fontSize: sizeSp,
+        fontSize: resolved,
         fontWeight: pos.fontWeight,
         fontStyle: pos.fontStyle,
         color: pos.color,
@@ -278,30 +521,40 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     }
 
     TextStyle nameStyleFor(VisitingCardFieldPosition pos, String rawName) {
-      final sizeSp = pos.resolvedNameFontSize(rawName).sp;
+      final resolved = resolveFont(pos.resolvedNameFontSize(rawName));
       if (fontFamily == VisitingCardFonts.inter) {
-        return GoogleFonts.inter(
-          fontSize: sizeSp,
+        return withFallback(GoogleFonts.inter(
+          fontSize: resolved,
           fontWeight: pos.fontWeight,
           fontStyle: pos.fontStyle,
           color: pos.color,
           letterSpacing: pos.letterSpacing,
           height: pos.heightFactor,
-        );
+        ));
       }
       if (fontFamily == VisitingCardFonts.roboto) {
-        return GoogleFonts.roboto(
-          fontSize: sizeSp,
+        return withFallback(GoogleFonts.roboto(
+          fontSize: resolved,
           fontWeight: pos.fontWeight,
           fontStyle: pos.fontStyle,
           color: pos.color,
           letterSpacing: pos.letterSpacing,
           height: pos.heightFactor,
-        );
+        ));
+      }
+      if (fontFamily == VisitingCardFonts.montserrat) {
+        return withFallback(GoogleFonts.montserrat(
+          fontSize: resolved,
+          fontWeight: pos.fontWeight,
+          fontStyle: pos.fontStyle,
+          color: pos.color,
+          letterSpacing: pos.letterSpacing,
+          height: pos.heightFactor,
+        ));
       }
       return TextStyle(
         fontFamily: fontFamily,
-        fontSize: sizeSp,
+        fontSize: resolved,
         fontWeight: pos.fontWeight,
         fontStyle: pos.fontStyle,
         color: pos.color,
@@ -314,21 +567,78 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       if (pos == null || value.trim().isEmpty) return;
       const field = VisitingCardOverlayField.name;
       final clipped = pos.clipDisplayName(value);
-      final display = pos.uppercase ? clipped.toUpperCase() : clipped;
       final t = vm.resolvedTransform(field, isFront: isFront);
-      final maxW = size.width * (t.width ?? pos.width ?? 0.48);
-      final baseStyle = nameStyleFor(
-        pos,
+      final display = visitingCardStyledText(
         clipped,
-      ).copyWith(fontSize: t.size.sp, height: 1.0);
+        t,
+        templateUppercase: pos.uppercase,
+      );
+      // Landscape: free line + select-border width (intrinsic text, or
+      // user-stretched width). Portrait keeps template width.
+      final availableWidth = (size.width - (size.width * t.left))
+          .clamp(1.0, size.width)
+          .toDouble();
+      final maxW = landscape
+          ? availableWidth
+          : size.width * (t.width ?? pos.width ?? 0.48);
+      final shadows = _fieldShadows(t);
+      final baseStyle = applyVisitingCardFont(
+        nameStyleFor(
+          pos,
+          clipped,
+        ).copyWith(
+          fontSize: resolveFont(t.size),
+          // height: 1.0 clips descenders inside the select box on landscape.
+          height: landscape ? pos.heightFactor : 1.0,
+          letterSpacing: pos.letterSpacing + t.letterSpacing,
+          shadows: shadows,
+        ),
+        t,
+      );
 
-      final Widget text;
+      final painter = TextPainter(
+        text: TextSpan(text: display, style: baseStyle),
+        maxLines: 1,
+        textAlign: pos.textAlign,
+        textDirection: TextDirection.ltr,
+        textWidthBasis: TextWidthBasis.longestLine,
+        textScaler: landscapeFonts ? landscapeTextScaler : TextScaler.linear(1),
+      );
+      late double boxW;
+      var landscapeWrap = false;
+      if (landscape) {
+        painter.layout(maxWidth: double.infinity);
+        // Use full layout width (+1px) so soft-wrap never triggers on select.
+        final intrinsic =
+            (painter.width + 1.0).clamp(1.0, availableWidth).toDouble();
+        if (t.width != null) {
+          final stretched =
+              (size.width * t.width!).clamp(1.0, availableWidth).toDouble();
+          landscapeWrap = stretched < intrinsic - 0.5;
+          boxW = stretched;
+          painter
+            ..maxLines = landscapeWrap ? null : 1
+            ..layout(maxWidth: boxW);
+        } else {
+          boxW = intrinsic;
+        }
+      } else {
+        painter
+          ..maxLines = pos.maxLines
+          ..ellipsis = '…'
+          ..layout(maxWidth: maxW);
+        boxW = painter.width.clamp(1.0, maxW);
+      }
+      final boxH = (painter.height + (landscape ? 2.0 : 0.0))
+          .clamp(1.0, size.height);
+
+      Widget text;
       if (pos.hasSplitNameColors) {
         final parts = display.trim().split(RegExp(r'\s+'));
         final first = parts.first;
         final last = parts.length > 1 ? parts.sublist(1).join(' ') : '';
-        final firstColor = pos.firstNameColor ?? pos.color;
-        final lastColor = pos.lastNameColor ?? pos.color;
+        final firstColor = t.textColor ?? pos.firstNameColor ?? pos.color;
+        final lastColor = t.textColor ?? pos.lastNameColor ?? pos.color;
         text = Text.rich(
           TextSpan(
             children: [
@@ -343,44 +653,68 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
                 ),
             ],
           ),
-          maxLines: pos.maxLines,
-          overflow: TextOverflow.ellipsis,
+          maxLines: landscape
+              ? (landscapeWrap ? null : 1)
+              : pos.maxLines,
+          softWrap: landscapeWrap,
+          overflow: landscape
+              ? TextOverflow.visible
+              : TextOverflow.ellipsis,
           textAlign: pos.textAlign,
+          textScaler: landscapeFonts ? landscapeTextScaler : null,
         );
       } else {
         text = Text(
           display,
-          maxLines: pos.maxLines,
-          overflow: TextOverflow.ellipsis,
+          maxLines: landscape
+              ? (landscapeWrap ? null : 1)
+              : pos.maxLines,
+          softWrap: landscapeWrap,
+          overflow: landscape
+              ? TextOverflow.visible
+              : TextOverflow.ellipsis,
           textAlign: pos.textAlign,
-          style: baseStyle.copyWith(color: pos.color),
+          style: baseStyle.copyWith(color: t.textColor ?? pos.color),
+          textScaler: landscapeFonts ? landscapeTextScaler : null,
         );
       }
-
-      final painter = TextPainter(
-        text: TextSpan(text: display, style: baseStyle),
-        maxLines: pos.maxLines,
-        ellipsis: '…',
-        textAlign: pos.textAlign,
-        textDirection: TextDirection.ltr,
-      )..layout(maxWidth: maxW);
-      final boxW = painter.width.clamp(1.0, maxW);
-      final boxH = painter.height.clamp(1.0, size.height);
+      text = _fadeField(
+        _strokeText(
+          fill: text,
+          text: display,
+          style: baseStyle,
+          transform: t,
+          maxLines: landscape ? (landscapeWrap ? null : 1) : pos.maxLines,
+          softWrap: landscapeWrap,
+          overflow: landscape ? TextOverflow.visible : TextOverflow.ellipsis,
+          textAlign: pos.textAlign,
+          textScaler: landscapeFonts ? landscapeTextScaler : null,
+        ),
+        t,
+      );
 
       if (!interactive) {
-        children.add(
+        addLayer(
           Positioned(
             left: size.width * t.left,
             top: size.height * t.top,
             width: boxW,
             height: boxH,
-            child: Transform.rotate(angle: t.rotation, child: text),
+            child: Transform.rotate(
+              alignment: landscape ? Alignment.topLeft : Alignment.center,
+              angle: t.rotation,
+              child: _flipField(text, t),
+            ),
+          ),
+          VisitingCardFieldTransform.stackZ(
+            VisitingCardFieldTransform.keyOf(field),
+            t,
           ),
         );
         return;
       }
 
-      children.add(
+      addOverlay(
         VisitingCardTransformOverlay(
           cardSize: size,
           left: size.width * t.left,
@@ -390,15 +724,50 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           rotation: t.rotation,
           selected: vm.selectedOverlay == field,
           tightBorder: true,
+          borderOnlyWhenSelected: landscape,
+          showHandles: !t.locked,
           onSelect: () => vm.selectOverlay(field),
           onDeselect: vm.clearOverlaySelection,
           onMove: (dx, dy) => vm.moveOverlay(field, dx, dy, size),
           onResize: (d) => vm.resizeOverlay(field, d, size),
+          onUniformScale: landscape
+              ? (d, {required fixRight, required fixBottom}) =>
+                  vm.scaleOverlayUniform(
+                    field,
+                    d,
+                    size,
+                    fixRight: fixRight,
+                    fixBottom: fixBottom,
+                    seedWidthFraction: boxW / size.width,
+                    seedHeightPx: boxH,
+                  )
+              : null,
+          onStretchHorizontal: landscape
+              ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
+                    field,
+                    horizontal: true,
+                    pixelDelta: d,
+                    cardSize: size,
+                    fixOpposite: fixOpposite,
+                    seedWidthFraction: boxW / size.width,
+                  )
+              : null,
+          onStretchVertical: landscape
+              ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
+                    field,
+                    horizontal: false,
+                    pixelDelta: d,
+                    cardSize: size,
+                    fixOpposite: fixOpposite,
+                    seedHeightPx: boxH,
+                  )
+              : null,
           onRotate: (r) => vm.rotateOverlay(field, r),
           onGestureStart: vm.beginOverlayGesture,
           onGestureEnd: vm.endOverlayGesture,
-          child: text,
+          child: _flipField(text, t),
         ),
+        field,
       );
     }
 
@@ -410,31 +779,88 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       if (configPos == null || value.trim().isEmpty) return;
       final t = vm.resolvedTransform(field, isFront: isFront);
       final isTagline = field == VisitingCardOverlayField.tagline;
+      final hugLine = landscape || widget.singleLineText;
       final configuredWidth = size.width * (t.width ?? configPos.width ?? 0.4);
       final availableWidth = (size.width - (size.width * t.left))
           .clamp(1.0, size.width)
           .toDouble();
-      final maxW = isTagline
-          ? configuredWidth.clamp(1.0, availableWidth).toDouble()
-          : configuredWidth;
+      // Landscape: free line + select-border width (intrinsic / stretch).
+      final maxW = hugLine
+          ? availableWidth
+          : (isTagline
+              ? configuredWidth.clamp(1.0, availableWidth).toDouble()
+              : configuredWidth);
       final maxLines = isTagline ? null : configPos.maxLines;
-      final display = configPos.uppercase ? value.toUpperCase() : value;
+      final display = visitingCardStyledText(
+        value,
+        t,
+        templateUppercase: configPos.uppercase,
+      );
 
-      TextStyle measureStyleFor(double fontSize) =>
-          styleFor(configPos, fontSize: fontSize).copyWith(height: 1.0);
+      TextStyle measureStyleFor(double fontSize) => applyVisitingCardFont(
+            styleFor(
+              configPos,
+              fontSize: fontSize,
+            ).copyWith(
+              // height: 1.0 clips glyph bottoms in the landscape select border.
+              height: landscape ? configPos.heightFactor : 1.0,
+              letterSpacing: configPos.letterSpacing + t.letterSpacing,
+              shadows: _fieldShadows(t),
+            ),
+            t,
+          );
 
-      TextPainter layoutText(TextStyle style) => TextPainter(
-        text: TextSpan(text: display, style: style),
-        maxLines: maxLines,
-        // A tagline must always show its complete text; it wraps instead
-        // of replacing the end of the text with an ellipsis.
-        ellipsis: isTagline ? null : '…',
-        textAlign: configPos.textAlign,
-        textDirection: TextDirection.ltr,
-      )..layout(maxWidth: maxW);
+      TextPainter layoutText(
+        TextStyle style,
+        double layoutMaxW, {
+        int? lines,
+        bool allowEllipsis = false,
+      }) =>
+          TextPainter(
+            text: TextSpan(text: display, style: style),
+            maxLines: lines,
+            ellipsis: allowEllipsis ? '…' : null,
+            textAlign: configPos.textAlign,
+            textDirection: TextDirection.ltr,
+            textWidthBasis: TextWidthBasis.longestLine,
+            textScaler: landscapeFonts ? landscapeTextScaler : TextScaler.linear(1),
+          )..layout(maxWidth: layoutMaxW);
 
       var measureStyle = measureStyleFor(t.size);
-      var painter = layoutText(measureStyle);
+      late TextPainter painter;
+      late double boxW;
+      var landscapeWrap = false;
+      if (hugLine) {
+        // Single-line intrinsic so select never forces a newline.
+        painter = layoutText(measureStyle, double.infinity, lines: 1);
+        final intrinsic =
+            (painter.width + 1.0).clamp(1.0, availableWidth).toDouble();
+        if (t.width != null) {
+          final stretched =
+              (size.width * t.width!).clamp(1.0, availableWidth).toDouble();
+          landscapeWrap = isTagline || stretched < intrinsic - 0.5;
+          boxW = stretched;
+          painter = layoutText(
+            measureStyle,
+            boxW,
+            lines: landscapeWrap ? null : 1,
+          );
+        } else if (isTagline) {
+          landscapeWrap = true;
+          boxW = intrinsic;
+          painter = layoutText(measureStyle, boxW);
+        } else {
+          boxW = intrinsic;
+        }
+      } else {
+        painter = layoutText(
+          measureStyle,
+          maxW,
+          lines: maxLines,
+          allowEllipsis: !isTagline,
+        );
+        boxW = painter.width.clamp(1.0, maxW);
+      }
 
       // Keep all wrapped tagline lines within the card when its font has been
       // enlarged. The largest fitting size is used, so the resize control
@@ -447,11 +873,11 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           var low = 1.0;
           var high = t.size;
           var bestStyle = measureStyleFor(low);
-          var bestPainter = layoutText(bestStyle);
+          var bestPainter = layoutText(bestStyle, boxW);
           for (var i = 0; i < 18; i++) {
             final candidateSize = (low + high) / 2;
             final candidateStyle = measureStyleFor(candidateSize);
-            final candidatePainter = layoutText(candidateStyle);
+            final candidatePainter = layoutText(candidateStyle, boxW);
             if (candidatePainter.height <= availableHeight) {
               low = candidateSize;
               bestStyle = candidateStyle;
@@ -465,32 +891,63 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         }
       }
 
-      final boxW = painter.width.clamp(1.0, maxW);
-      final boxH = painter.height.clamp(1.0, size.height);
+      final boxH = (painter.height + (landscape ? 2.0 : 0.0))
+          .clamp(1.0, size.height);
 
-      final text = Text(
+      final fill = Text(
         display,
-        maxLines: maxLines,
-        softWrap: isTagline,
-        overflow: isTagline ? TextOverflow.visible : TextOverflow.ellipsis,
+        maxLines: hugLine
+            ? (landscapeWrap ? null : 1)
+            : maxLines,
+        softWrap: hugLine ? landscapeWrap : isTagline,
+        overflow: hugLine
+            ? TextOverflow.visible
+            : (isTagline ? TextOverflow.visible : TextOverflow.ellipsis),
         textAlign: configPos.textAlign,
-        style: measureStyle,
+        style: t.textColor == null
+            ? measureStyle
+            : measureStyle.copyWith(color: t.textColor),
+        textScaler: landscapeFonts ? landscapeTextScaler : null,
+      );
+      final text = _fadeField(
+        _strokeText(
+          fill: fill,
+          text: display,
+          style: measureStyle,
+          transform: t,
+          maxLines: hugLine ? (landscapeWrap ? null : 1) : maxLines,
+          softWrap: hugLine ? landscapeWrap : isTagline,
+          overflow: hugLine
+              ? TextOverflow.visible
+              : (isTagline ? TextOverflow.visible : TextOverflow.ellipsis),
+          textAlign: configPos.textAlign,
+          textScaler: landscapeFonts ? landscapeTextScaler : null,
+        ),
+        t,
       );
 
       if (!interactive) {
-        children.add(
+        addLayer(
           Positioned(
             left: size.width * t.left,
             top: size.height * t.top,
             width: boxW,
             height: boxH,
-            child: Transform.rotate(angle: t.rotation, child: text),
+            child: Transform.rotate(
+              alignment: landscape ? Alignment.topLeft : Alignment.center,
+              angle: t.rotation,
+              child: _flipField(text, t),
+            ),
+          ),
+          VisitingCardFieldTransform.stackZ(
+            VisitingCardFieldTransform.keyOf(field),
+            t,
           ),
         );
         return;
       }
 
-      children.add(
+      addOverlay(
         VisitingCardTransformOverlay(
           cardSize: size,
           left: size.width * t.left,
@@ -500,15 +957,50 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           rotation: t.rotation,
           selected: vm.selectedOverlay == field,
           tightBorder: true,
+          borderOnlyWhenSelected: landscape,
+          showHandles: !t.locked,
           onSelect: () => vm.selectOverlay(field),
           onDeselect: vm.clearOverlaySelection,
           onMove: (dx, dy) => vm.moveOverlay(field, dx, dy, size),
           onResize: (d) => vm.resizeOverlay(field, d, size),
+          onUniformScale: landscape
+              ? (d, {required fixRight, required fixBottom}) =>
+                  vm.scaleOverlayUniform(
+                    field,
+                    d,
+                    size,
+                    fixRight: fixRight,
+                    fixBottom: fixBottom,
+                    seedWidthFraction: boxW / size.width,
+                    seedHeightPx: boxH,
+                  )
+              : null,
+          onStretchHorizontal: landscape
+              ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
+                    field,
+                    horizontal: true,
+                    pixelDelta: d,
+                    cardSize: size,
+                    fixOpposite: fixOpposite,
+                    seedWidthFraction: boxW / size.width,
+                  )
+              : null,
+          onStretchVertical: landscape
+              ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
+                    field,
+                    horizontal: false,
+                    pixelDelta: d,
+                    cardSize: size,
+                    fixOpposite: fixOpposite,
+                    seedHeightPx: boxH,
+                  )
+              : null,
           onRotate: (r) => vm.rotateOverlay(field, r),
           onGestureStart: vm.beginOverlayGesture,
           onGestureEnd: vm.endOverlayGesture,
-          child: text,
+          child: _flipField(text, t),
         ),
+        field,
       );
     }
 
@@ -522,7 +1014,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       if (!isAsset && !File(assetPath).existsSync()) return;
 
       final t = vm.resolvedTransform(field, isFront: isFront);
-      children.add(
+      addOverlay(
         _AspectFitTransformImage(
           key: ValueKey('transform-$field-$assetPath-$isFront'),
           cardSize: size,
@@ -531,14 +1023,44 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           isAsset: isAsset,
           interactive: interactive,
           selected: vm.selectedOverlay == field,
+          borderOnlyWhenSelected: landscape,
           onSelect: () => vm.selectOverlay(field),
           onDeselect: vm.clearOverlaySelection,
           onMove: (dx, dy) => vm.moveOverlay(field, dx, dy, size),
           onResize: (d) => vm.resizeOverlay(field, d, size),
+          onUniformScale: landscape
+              ? (d, {required fixRight, required fixBottom}) =>
+                  vm.scaleOverlayUniform(
+                    field,
+                    d,
+                    size,
+                    fixRight: fixRight,
+                    fixBottom: fixBottom,
+                  )
+              : null,
+          onStretchHorizontal: landscape
+              ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
+                    field,
+                    horizontal: true,
+                    pixelDelta: d,
+                    cardSize: size,
+                    fixOpposite: fixOpposite,
+                  )
+              : null,
+          onStretchVertical: landscape
+              ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
+                    field,
+                    horizontal: false,
+                    pixelDelta: d,
+                    cardSize: size,
+                    fixOpposite: fixOpposite,
+                  )
+              : null,
           onRotate: (r) => vm.rotateOverlay(field, r),
           onGestureStart: vm.beginOverlayGesture,
           onGestureEnd: vm.endOverlayGesture,
         ),
+        field,
       );
     }
 
@@ -586,11 +1108,11 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       value: vm.displayAddress,
     );
 
-    if (vm.hasChosenLogo) {
+    if (vm.hasLogoOnSide(front: isFront)) {
       addTransformImage(
         field: VisitingCardOverlayField.logo,
         configPos: side.logo,
-        assetPath: vm.logoAssetPath,
+        assetPath: vm.logoForSide(front: isFront),
       );
     }
     if (vm.hasChosenQr) {
@@ -601,7 +1123,322 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       );
     }
 
-    return children;
+    VisitingCardFieldPosition? posFor(VisitingCardOverlayField field) {
+      return switch (field) {
+        VisitingCardOverlayField.name => side.name,
+        VisitingCardOverlayField.designation => side.designation,
+        VisitingCardOverlayField.company => side.company,
+        VisitingCardOverlayField.tagline => side.tagline,
+        VisitingCardOverlayField.phone => side.phone,
+        VisitingCardOverlayField.email => side.email,
+        VisitingCardOverlayField.website => side.website,
+        VisitingCardOverlayField.address => side.address,
+        VisitingCardOverlayField.logo => side.logo,
+        VisitingCardOverlayField.qr => side.qr,
+      };
+    }
+
+    void paintDuplicate(String id, VisitingCardFieldTransform t) {
+      final isCustom =
+          t.duplicateOf == VisitingCardEditContactViewModel.customTextSource;
+      final isIcon =
+          t.duplicateOf == VisitingCardEditContactViewModel.customIconSource;
+      final isShape =
+          t.duplicateOf == VisitingCardEditContactViewModel.customShapeSource;
+      final isPhoto =
+          t.duplicateOf == VisitingCardEditContactViewModel.customImageSource;
+      final source = isCustom || isIcon || isShape || isPhoto
+          ? null
+          : VisitingCardFieldTransform.fieldFromKey(t.duplicateOf ?? '');
+      if (!isCustom && !isIcon && !isShape && !isPhoto && source == null) {
+        return;
+      }
+      final pos = isIcon || isShape || isPhoto
+          ? null
+          : isCustom
+              ? const VisitingCardFieldPosition(
+                  fontSize: 14,
+                  color: Color(0xFF1A1A1A),
+                  heightFactor: 1.15,
+                )
+              : posFor(source!);
+      final gestureField = source ?? VisitingCardOverlayField.name;
+      final selected = vm.selectedDuplicateId == id;
+      void place(Widget overlay) {
+        addLayer(
+          overlay,
+          VisitingCardFieldTransform.stackZ(
+            VisitingCardEditContactViewModel.duplicateKey(id),
+            t,
+          ),
+        );
+      }
+
+      if (isIcon ||
+          isShape ||
+          isPhoto ||
+          (source != null && source.isImageOverlay)) {
+        final path = t.duplicateImagePath;
+        if (path == null || path.isEmpty) return;
+        final isAsset = path.startsWith('assets/');
+        if (!isAsset && !File(path).existsSync()) return;
+        place(
+          _AspectFitTransformImage(
+            key: ValueKey('dup-$id-$path'),
+            cardSize: size,
+            transform: t,
+            assetPath: path,
+            isAsset: isAsset,
+            interactive: interactive,
+            selected: selected,
+            borderOnlyWhenSelected: landscape,
+            onSelect: () => vm.selectDuplicate(id),
+            onDeselect: vm.clearOverlaySelection,
+            onMove: (dx, dy) =>
+                vm.moveOverlay(gestureField, dx, dy, size, duplicateId: id),
+            onResize: (d) =>
+                vm.resizeOverlay(gestureField, d, size, duplicateId: id),
+            onUniformScale: landscape
+                ? (d, {required fixRight, required fixBottom}) =>
+                    vm.scaleOverlayUniform(
+                      gestureField,
+                      d,
+                      size,
+                      fixRight: fixRight,
+                      fixBottom: fixBottom,
+                      duplicateId: id,
+                    )
+                : null,
+            onStretchHorizontal: landscape
+                ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
+                      gestureField,
+                      horizontal: true,
+                      pixelDelta: d,
+                      cardSize: size,
+                      fixOpposite: fixOpposite,
+                      duplicateId: id,
+                    )
+                : null,
+            onStretchVertical: landscape
+                ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
+                      gestureField,
+                      horizontal: false,
+                      pixelDelta: d,
+                      cardSize: size,
+                      fixOpposite: fixOpposite,
+                      duplicateId: id,
+                    )
+                : null,
+            onRotate: (r) =>
+                vm.rotateOverlay(gestureField, r, duplicateId: id),
+            onGestureStart: vm.beginOverlayGesture,
+            onGestureEnd: vm.endOverlayGesture,
+          ),
+        );
+        return;
+      }
+
+      if (pos == null) return;
+      final raw = t.duplicateText ?? '';
+      if (raw.trim().isEmpty) return;
+      final display = visitingCardStyledText(
+        raw,
+        t,
+        templateUppercase: pos.uppercase,
+      );
+      final baseStyle = applyVisitingCardFont(
+        styleFor(pos, fontSize: t.size).copyWith(
+          height: landscape ? pos.heightFactor : 1.0,
+          letterSpacing: pos.letterSpacing + t.letterSpacing,
+          shadows: _fieldShadows(t),
+        ),
+        t,
+      );
+      final fillColor = t.textColor ?? pos.color;
+      final painter = TextPainter(
+        text: TextSpan(
+          text: display,
+          style: baseStyle.copyWith(color: fillColor),
+        ),
+        maxLines: 1,
+        textAlign: pos.textAlign,
+        textDirection: TextDirection.ltr,
+        textWidthBasis: TextWidthBasis.longestLine,
+        textScaler: landscapeFonts ? landscapeTextScaler : TextScaler.linear(1),
+      );
+      final available = (size.width - size.width * t.left)
+          .clamp(1.0, size.width)
+          .toDouble();
+      late final double boxW;
+      var landscapeWrap = false;
+      if (landscape) {
+        painter.layout(maxWidth: double.infinity);
+        final intrinsic =
+            (painter.width + 1.0).clamp(1.0, available).toDouble();
+        if (t.width != null) {
+          final stretched =
+              (size.width * t.width!).clamp(1.0, available).toDouble();
+          landscapeWrap = stretched < intrinsic - 0.5;
+          boxW = stretched;
+          painter
+            ..maxLines = landscapeWrap ? null : 1
+            ..layout(maxWidth: boxW);
+        } else {
+          boxW = intrinsic;
+        }
+      } else {
+        painter.layout(maxWidth: double.infinity);
+        boxW = (painter.width + 1).clamp(1.0, available);
+      }
+      final boxH = (painter.height + (landscape ? 2.0 : 0.0))
+          .clamp(1.0, size.height);
+      final Widget fill;
+      if (source == VisitingCardOverlayField.name &&
+          pos.hasSplitNameColors &&
+          t.textColor == null) {
+        final parts = display.trim().split(RegExp(r'\s+'));
+        final first = parts.first;
+        final last = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+        final firstColor = pos.firstNameColor ?? pos.color;
+        final lastColor = pos.lastNameColor ?? pos.color;
+        fill = Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: first,
+                style: baseStyle.copyWith(color: firstColor),
+              ),
+              if (last.isNotEmpty)
+                TextSpan(
+                  text: ' $last',
+                  style: baseStyle.copyWith(color: lastColor),
+                ),
+            ],
+          ),
+          maxLines: landscape ? (landscapeWrap ? null : 1) : 1,
+          softWrap: landscapeWrap,
+          overflow: TextOverflow.visible,
+          textAlign: pos.textAlign,
+          textScaler: landscapeFonts ? landscapeTextScaler : null,
+        );
+      } else {
+        fill = Text(
+          display,
+          maxLines: landscape ? (landscapeWrap ? null : 1) : 1,
+          softWrap: landscapeWrap,
+          overflow: TextOverflow.visible,
+          textAlign: pos.textAlign,
+          style: baseStyle.copyWith(color: fillColor),
+          textScaler: landscapeFonts ? landscapeTextScaler : null,
+        );
+      }
+      final text = _fadeField(
+        _strokeText(
+          fill: fill,
+          text: display,
+          style: baseStyle.copyWith(color: fillColor),
+          transform: t,
+          maxLines: landscape ? (landscapeWrap ? null : 1) : 1,
+          softWrap: landscapeWrap,
+          overflow: TextOverflow.visible,
+          textAlign: pos.textAlign,
+          textScaler: landscapeFonts ? landscapeTextScaler : null,
+        ),
+        t,
+      );
+      if (!interactive) {
+        place(
+          Positioned(
+            left: size.width * t.left,
+            top: size.height * t.top,
+            width: boxW,
+            height: boxH,
+            child: Transform.rotate(
+              alignment: landscape ? Alignment.topLeft : Alignment.center,
+              angle: t.rotation,
+              child: _flipField(text, t),
+            ),
+          ),
+        );
+        return;
+      }
+      place(
+        VisitingCardTransformOverlay(
+          key: ValueKey('dup-text-$id'),
+          cardSize: size,
+          left: size.width * t.left,
+          top: size.height * t.top,
+          boxWidth: boxW,
+          boxHeight: boxH,
+          rotation: t.rotation,
+          selected: selected,
+          tightBorder: true,
+          borderOnlyWhenSelected: landscape,
+          showHandles: !t.locked,
+          onSelect: () => vm.selectDuplicate(id),
+          onDeselect: vm.clearOverlaySelection,
+          onMove: (dx, dy) =>
+              vm.moveOverlay(gestureField, dx, dy, size, duplicateId: id),
+          onResize: (d) =>
+              vm.resizeOverlay(gestureField, d, size, duplicateId: id),
+          onUniformScale: landscape
+              ? (d, {required fixRight, required fixBottom}) =>
+                  vm.scaleOverlayUniform(
+                    gestureField,
+                    d,
+                    size,
+                    fixRight: fixRight,
+                    fixBottom: fixBottom,
+                    seedWidthFraction: boxW / size.width,
+                    seedHeightPx: boxH,
+                    duplicateId: id,
+                  )
+              : null,
+          onStretchHorizontal: landscape
+              ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
+                    gestureField,
+                    horizontal: true,
+                    pixelDelta: d,
+                    cardSize: size,
+                    fixOpposite: fixOpposite,
+                    seedWidthFraction: boxW / size.width,
+                    duplicateId: id,
+                  )
+              : null,
+          onStretchVertical: landscape
+              ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
+                    gestureField,
+                    horizontal: false,
+                    pixelDelta: d,
+                    cardSize: size,
+                    fixOpposite: fixOpposite,
+                    seedHeightPx: boxH,
+                    duplicateId: id,
+                  )
+              : null,
+          onRotate: (r) =>
+              vm.rotateOverlay(gestureField, r, duplicateId: id),
+          onGestureStart: vm.beginOverlayGesture,
+          onGestureEnd: vm.endOverlayGesture,
+          child: _flipField(text, t),
+        ),
+      );
+    }
+
+    final sideOverlays = landscape
+        ? (isFront ? vm.frontOverlays : vm.backOverlays)
+        : vm.currentOverlays;
+    for (final entry in sideOverlays.entries) {
+      if (!entry.key.startsWith('dup:')) continue;
+      paintDuplicate(entry.key.substring(4), entry.value);
+    }
+
+    layers.sort((a, b) {
+      final byZ = a.$1.compareTo(b.$1);
+      if (byZ != 0) return byZ;
+      return a.$2.compareTo(b.$2);
+    });
+    return [for (final layer in layers) layer.$3];
   }
 }
 
@@ -621,8 +1458,12 @@ class _AspectFitTransformImage extends StatefulWidget {
     required this.onMove,
     required this.onResize,
     required this.onRotate,
+    this.onUniformScale,
+    this.onStretchHorizontal,
+    this.onStretchVertical,
     this.onGestureStart,
     this.onGestureEnd,
+    this.borderOnlyWhenSelected = false,
   });
 
   final Size cardSize;
@@ -636,8 +1477,22 @@ class _AspectFitTransformImage extends StatefulWidget {
   final void Function(double dx, double dy) onMove;
   final void Function(double delta) onResize;
   final void Function(double absoluteRadians) onRotate;
+  final void Function(
+    double pixelDelta, {
+    required bool fixRight,
+    required bool fixBottom,
+  })? onUniformScale;
+  final void Function(
+    double pixelDelta, {
+    required bool fixOpposite,
+  })? onStretchHorizontal;
+  final void Function(
+    double pixelDelta, {
+    required bool fixOpposite,
+  })? onStretchVertical;
   final VoidCallback? onGestureStart;
   final VoidCallback? onGestureEnd;
+  final bool borderOnlyWhenSelected;
 
   @override
   State<_AspectFitTransformImage> createState() =>
@@ -648,10 +1503,16 @@ class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
   /// width / height; null until decoded.
   double? _aspect;
 
+  bool get _isSvg => widget.assetPath.toLowerCase().endsWith('.svg');
+
   @override
   void initState() {
     super.initState();
-    _resolveAspect();
+    if (_isSvg) {
+      _aspect = 1;
+    } else {
+      _resolveAspect();
+    }
   }
 
   @override
@@ -701,22 +1562,44 @@ class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
     final left = widget.cardSize.width * widget.transform.left;
     final top = widget.cardSize.height * widget.transform.top;
 
-    final image = widget.isAsset
-        ? Image.asset(
-            widget.assetPath,
-            key: ValueKey(widget.assetPath),
-            fit: BoxFit.fill,
-            width: boxW,
-            height: boxH,
-            errorBuilder: (_, _, _) => const SizedBox.shrink(),
-          )
-        : Image.file(
-            File(widget.assetPath),
-            key: ValueKey(widget.assetPath),
-            fit: BoxFit.fill,
-            width: boxW,
-            height: boxH,
-            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+    final Widget image;
+    if (_isSvg && widget.isAsset) {
+      image = SvgPicture.asset(
+        widget.assetPath,
+        key: ValueKey(widget.assetPath),
+        width: boxW,
+        height: boxH,
+        fit: BoxFit.contain,
+      );
+    } else if (widget.isAsset) {
+      image = Image.asset(
+        widget.assetPath,
+        key: ValueKey(widget.assetPath),
+        fit: BoxFit.fill,
+        width: boxW,
+        height: boxH,
+        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+      );
+    } else {
+      image = Image.file(
+        File(widget.assetPath),
+        key: ValueKey(widget.assetPath),
+        fit: BoxFit.fill,
+        width: boxW,
+        height: boxH,
+        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+      );
+    }
+
+    final tint = widget.transform.duplicateOf ==
+            VisitingCardEditContactViewModel.customShapeSource
+        ? widget.transform.textColor
+        : null;
+    final picture = tint == null
+        ? image
+        : ColorFiltered(
+            colorFilter: ColorFilter.mode(tint, BlendMode.srcIn),
+            child: image,
           );
 
     if (!widget.interactive) {
@@ -725,7 +1608,12 @@ class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
         top: top,
         width: boxW,
         height: boxH,
-        child: Transform.rotate(angle: widget.transform.rotation, child: image),
+        child: Transform.rotate(
+          alignment:
+              widget.borderOnlyWhenSelected ? Alignment.topLeft : Alignment.center,
+          angle: widget.transform.rotation,
+          child: _fadeField(_flipField(picture, widget.transform), widget.transform),
+        ),
       );
     }
 
@@ -738,14 +1626,19 @@ class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
       rotation: widget.transform.rotation,
       selected: widget.selected,
       tightBorder: true,
+      borderOnlyWhenSelected: widget.borderOnlyWhenSelected,
+      showHandles: !widget.transform.locked,
       onSelect: widget.onSelect,
       onDeselect: widget.onDeselect,
       onMove: widget.onMove,
       onResize: widget.onResize,
+      onUniformScale: widget.onUniformScale,
+      onStretchHorizontal: widget.onStretchHorizontal,
+      onStretchVertical: widget.onStretchVertical,
       onRotate: widget.onRotate,
       onGestureStart: widget.onGestureStart,
       onGestureEnd: widget.onGestureEnd,
-      child: image,
+      child: _fadeField(_flipField(picture, widget.transform), widget.transform),
     );
   }
 }

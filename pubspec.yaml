@@ -110,6 +110,11 @@ flutter:
      - assets/qr_code_template/new/
      - assets/qr_code_template/social/
      - assets/qr_code_template/wifi/
+     - assets/visiting_card_select_text_icon/
+     - assets/visiting_card_scanner_icon/
+     - assets/visiting_card_scanner_shape/
+     - assets/visiting_card_scanner_logo/
+     - assets/visiting_card_option_icon/
      - assets/svg/
      - assets/svg/genertor/
      - assets/svg/genertor/qrcode/

@@ -18,6 +18,8 @@ import 'package:visiting_card/features/scan/presentation/view/screen/visiting_ca
 import 'package:visiting_card/features/scan/presentation/view_model/visiting_card_scan_viewmodel.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_export_utils.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_edit_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_vertical_edit_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_edit_field_cards.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
@@ -92,9 +94,11 @@ class _VisitingCardScannedDetailsScreenState
       websites: scan.websites,
       addresses: scan.addresses,
       qrAssetPath: scan.qrAssetPath,
-      logoAssetPath: scan.logoAssetPath,
+      frontLogoAssetPath: scan.frontLogoAssetPath ?? '',
+      backLogoAssetPath: scan.backLogoAssetPath ?? '',
       hasChosenQr: scan.hasChosenQr,
-      hasChosenLogo: scan.hasChosenLogo,
+      hasChosenFrontLogo: scan.hasChosenFrontLogo,
+      hasChosenBackLogo: scan.hasChosenBackLogo,
       fieldTransforms: scan.fieldTransforms,
     );
   }
@@ -117,9 +121,11 @@ class _VisitingCardScannedDetailsScreenState
       websites: scan.websites,
       addresses: scan.addresses,
       qrAssetPath: scan.qrAssetPath,
-      logoAssetPath: scan.logoAssetPath,
+      frontLogoAssetPath: scan.frontLogoAssetPath ?? '',
+      backLogoAssetPath: scan.backLogoAssetPath ?? '',
       hasChosenQr: scan.hasChosenQr,
-      hasChosenLogo: scan.hasChosenLogo,
+      hasChosenFrontLogo: scan.hasChosenFrontLogo,
+      hasChosenBackLogo: scan.hasChosenBackLogo,
     );
     scan.selectedTemplateId = item.id;
     scan.fieldTransforms = const VisitingCardFieldTransforms();
@@ -128,6 +134,65 @@ class _VisitingCardScannedDetailsScreenState
       _previewVm = next;
       _selectedTemplateId = item.id;
     });
+  }
+
+  void _syncScanFromPreview() {
+    final scan = context.read<VisitingCardScanViewModel>();
+    void replace(
+      List<ContactFieldEntry> target,
+      List<ContactFieldEntry> source, {
+      String fallbackType = '',
+    }) {
+      target
+        ..clear()
+        ..addAll(
+          source.map((e) => ContactFieldEntry(value: e.value, type: e.type)),
+        );
+      if (target.isEmpty) {
+        target.add(ContactFieldEntry(type: fallbackType));
+      }
+    }
+
+    replace(scan.names, _previewVm.names);
+    replace(scan.designations, _previewVm.designations);
+    replace(scan.companies, _previewVm.companies);
+    replace(scan.taglines, _previewVm.taglines);
+    replace(scan.phones, _previewVm.phones, fallbackType: 'Cell');
+    replace(scan.emails, _previewVm.emails, fallbackType: 'Company');
+    replace(scan.websites, _previewVm.websites, fallbackType: 'Company');
+    replace(scan.addresses, _previewVm.addresses);
+    scan.qrAssetPath = _previewVm.qrAssetPath;
+    scan.copySideLogos(
+      frontPath: _previewVm.frontLogoAssetPath,
+      backPath: _previewVm.backLogoAssetPath,
+      hasFront: _previewVm.hasChosenFrontLogo,
+      hasBack: _previewVm.hasChosenBackLogo,
+    );
+    scan.hasChosenQr = _previewVm.hasChosenQr;
+    scan.fieldTransforms = _previewVm.fieldTransformsSnapshot;
+    scan.selectedTemplateId = _previewVm.templateId;
+    scan.notifyContactChanged();
+  }
+
+  Future<void> _onLandscapeEdit() async {
+    final scan = context.read<VisitingCardScanViewModel>();
+    scan.selectedTemplateId = _selectedTemplateId;
+    if (_previewVm.isHorizontal) {
+      await VisitingCardLandscapeEditScreen.open(
+        context,
+        vm: _previewVm,
+        persistToRecent: false,
+      );
+    } else {
+      await VisitingCardVerticalEditScreen.open(
+        context,
+        vm: _previewVm,
+        persistToRecent: false,
+      );
+    }
+    if (!mounted) return;
+    _syncScanFromPreview();
+    setState(() {});
   }
 
   Future<void> _onEditSelectedTemplate() async {
@@ -245,9 +310,7 @@ class _VisitingCardScannedDetailsScreenState
 
   Future<Uint8List?> _captureTemplateSide(int side) async {
     _previewVm.setSide(side);
-    await Future<void>.delayed(const Duration(milliseconds: 80));
-    await WidgetsBinding.instance.endOfFrame;
-    await Future<void>.delayed(const Duration(milliseconds: 40));
+    await waitForVisitingCardCaptureFrame();
     try {
       return await captureVisitingCardPngBytes(
         _templateCaptureKey,
@@ -697,6 +760,18 @@ class _VisitingCardScannedDetailsScreenState
                             canGoNext: _previewVm.sideIndex == 0,
                             onPrevious: _previewVm.showFront,
                             onNext: _previewVm.showBack,
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 6.h,
+                          right: 6.w,
+                          child: _CornerActionButton(
+                            onTap: _onLandscapeEdit,
+                            child: SvgPicture.asset(
+                              ui.AppAssets.visitingTemplateEditIconOne,
+                              width: 15.w,
+                              height: 15.w,
+                            ),
                           ),
                         ),
                         if (_isDownloadingTemplate)

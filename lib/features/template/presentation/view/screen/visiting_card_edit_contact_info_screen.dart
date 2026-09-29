@@ -3,9 +3,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/template/presentation/helper/visiting_card_qr_payload.dart';
-import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_details_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_logo_picker_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_tempalte_qrcode_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_details_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/overlay_scroll_lock_toast.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_edit_field_cards.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
@@ -48,20 +48,14 @@ class _VisitingCardEditContactInfoScreenState
 
     if (vm.isFront) {
       vm.showBack();
-      // The action is at the bottom of a long form.  Once the back of the
-      // card is selected, bring its preview into view instead of leaving the
-      // user at the bottom of the unchanged form.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!_scrollController.hasClients) return;
-        _scrollController.animateTo(
-          0,
-          duration: const Duration(milliseconds: 280),
-          curve: Curves.easeOut,
-        );
-      });
+      await _scrollToTop();
       return;
     }
-    final updated = await Navigator.push<bool>(
+
+    // 2/2 -> details page (Save / Share)
+    await _scrollToTop();
+    if (!context.mounted) return;
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ChangeNotifierProvider.value(
@@ -70,10 +64,15 @@ class _VisitingCardEditContactInfoScreenState
         ),
       ),
     );
-    // Update flow: details pop(true) → leave edit and return to saved card.
-    if (updated == true && context.mounted) {
-      Navigator.pop(context, true);
-    }
+  }
+
+  Future<void> _scrollToTop() {
+    if (!_scrollController.hasClients) return Future.value();
+    return _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   Future<void> _clearFocus(BuildContext context) async {
@@ -177,6 +176,7 @@ class _VisitingCardEditContactInfoScreenState
               child: VisitingCardLivePreview(
                 vm: vm,
                 enableFieldTransform: true,
+                eightPointSelection: true,
                 onShowFront: vm.showFront,
                 onShowBack: vm.showBack,
               ),

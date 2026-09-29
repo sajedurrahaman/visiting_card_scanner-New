@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -14,6 +15,7 @@ import 'package:visiting_card/features/home/domain/model/saved_file_model.dart';
 import 'package:visiting_card/features/home/presentation/view_model/home_view_model.dart';
 import 'package:visiting_card/features/scan/domain/saved_contact_info.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
+import 'package:visiting_card/features/template/domain/visiting_card_font_style.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_position_config.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_template_viewmodel.dart';
 
@@ -57,10 +59,10 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     );
   }
 
-  final String templateId;
-  final bool isHorizontal;
-  final String frontAssetWithoutData;
-  final String backAssetWithoutData;
+  String templateId;
+  bool isHorizontal;
+  String frontAssetWithoutData;
+  String backAssetWithoutData;
 
   final ScreenshotController screenshotController = ScreenshotController();
 
@@ -90,17 +92,97 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   bool isSaving = false;
 
   String? qrAssetPath = ui.AppAssets.defaultQrcodeIcon;
-  String? logoAssetPath;
+
+  /// Front and back keep their own logo so a dark mark on a dark back
+  /// can be a different file from the light mark on a light front.
+  String? frontLogoAssetPath;
+  String? backLogoAssetPath;
   bool hasChosenQr = false;
-  bool hasChosenLogo = false;
+  bool hasChosenFrontLogo = false;
+  bool hasChosenBackLogo = false;
+
+  /// Logo for the side currently being edited.
+  String? get logoAssetPath =>
+      isFront ? frontLogoAssetPath : backLogoAssetPath;
+
+  set logoAssetPath(String? value) {
+    if (isFront) {
+      frontLogoAssetPath = value;
+    } else {
+      backLogoAssetPath = value;
+    }
+  }
+
+  bool get hasChosenLogo =>
+      isFront ? hasChosenFrontLogo : hasChosenBackLogo;
+
+  set hasChosenLogo(bool value) {
+    if (isFront) {
+      hasChosenFrontLogo = value;
+    } else {
+      hasChosenBackLogo = value;
+    }
+  }
+
+  String? logoForSide({required bool front}) =>
+      front ? frontLogoAssetPath : backLogoAssetPath;
+
+  bool hasLogoOnSide({required bool front}) =>
+      front ? hasChosenFrontLogo : hasChosenBackLogo;
 
   /// Runtime finger placement overrides (merged over template defaults).
   final Map<String, VisitingCardFieldTransform> frontOverlays = {};
   final Map<String, VisitingCardFieldTransform> backOverlays = {};
   VisitingCardOverlayField? selectedOverlay;
 
+  /// Id of a Duplicate copy when that copy is selected.
+  String? selectedDuplicateId;
+
   /// True while user is dragging / resizing a field overlay (skip scroll toast).
   bool overlayGestureActive = false;
+
+  /// Download/save capture jumps to the side instead of animating the pager,
+  /// so the PNG is not a mid-swipe mix of the front and back.
+  bool jumpSideForCapture = false;
+
+  final List<_CardEditSnapshot> _undoStack = [];
+  final List<_CardEditSnapshot> _redoStack = [];
+  _CardEditSnapshot? _historyPoint;
+  DateTime? _historyAt;
+  bool _historyReady = false;
+  bool _restoringHistory = false;
+  static const _historyLimit = 40;
+
+  bool get canUndo => _undoStack.isNotEmpty;
+  bool get canRedo => _redoStack.isNotEmpty;
+
+  /// Starts a fresh history from the card as it is now.
+  void beginUndoHistory() {
+    _undoStack.clear();
+    _redoStack.clear();
+    _historyAt = null;
+    _historyReady = true;
+    _historyPoint = _captureEditSnapshot();
+    notifyListeners();
+  }
+
+  void undo() {
+    if (_undoStack.isEmpty || _historyPoint == null) return;
+    _redoStack.add(_historyPoint!);
+    _applyEditSnapshot(_undoStack.removeLast());
+  }
+
+  void redo() {
+    if (_redoStack.isEmpty || _historyPoint == null) return;
+    _undoStack.add(_historyPoint!);
+    _applyEditSnapshot(_redoStack.removeLast());
+  }
+
+  @override
+  void notifyListeners() {
+    _recordEditHistory();
+    super.notifyListeners();
+  }
 
   final List<ContactFieldEntry> names = [ContactFieldEntry()];
   final List<ContactFieldEntry> designations = [ContactFieldEntry()];
@@ -120,7 +202,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   bool get isFront => sideIndex == 0;
   bool get isBack => sideIndex == 1;
 
-  /// Horizontal 2–8,10 + vertical 1,2,4–10 have logo on the front.
+  /// Horizontal 2–8, 10–11, 14, 17–18 + vertical 1, 2, 4–10, 12–14, 16–17 have logo on the front.
   bool get hasFrontLogo {
     const frontLogoIds = {
       'h2',
@@ -131,6 +213,10 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       'h7',
       'h8',
       'h10',
+      'h11',
+      'h14',
+      'h17',
+      'h18',
       'v1',
       'v2',
       'v4',
@@ -140,20 +226,35 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       'v8',
       'v9',
       'v10',
+      'v12',
+      'v13',
+      'v14',
+      'v16',
+      'v17',
     };
     return frontLogoIds.contains(templateId);
   }
 
-  /// Vertical 6–10 place QR on the front (and still on the back).
+  /// Front QR: horizontal 11, 12, 18, 19.
   bool get hasFrontQr {
-    //const frontQrIds = {'v6', 'v7', 'v8', 'v9', 'v10'};
-    const frontQrIds = <String>{};
+    const frontQrIds = {'h11', 'h12', 'h18', 'h19'};
     return frontQrIds.contains(templateId);
   }
 
   /// Templates without any QR on either side.
   bool get hasQr {
-    const noQrIds = <String>{};
+    const noQrIds = {
+      'h13',
+      'h14',
+      'h15',
+      'h16',
+      'h17',
+      'h20',
+      'v12',
+      'v15',
+      'v16',
+      'v21',
+    };
     return !noQrIds.contains(templateId);
   }
 
@@ -272,9 +373,14 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   }
 
   void setSide(int index) {
-    if (index < 0 || index > 1 || index == sideIndex) return;
+    if (index < 0 || index > 1) return;
+    final changed = index != sideIndex;
+    if (!changed && !jumpSideForCapture) return;
     sideIndex = index;
-    selectedOverlay = null;
+    if (changed) {
+      selectedOverlay = null;
+      selectedDuplicateId = null;
+    }
     notifyListeners();
   }
 
@@ -298,6 +404,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       ..clear()
       ..addAll(transforms.back);
     selectedOverlay = null;
+    selectedDuplicateId = null;
     notifyListeners();
   }
 
@@ -349,7 +456,9 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       left: left,
       top: top.clamp(0.0, 1.0),
       size: size,
-      width: pos.width,
+      // Text width stays free until the user stretches the selection;
+      // template `pos.width` is applied only at layout time for portrait.
+      width: field.isImageOverlay ? pos.width : null,
     );
   }
 
@@ -362,15 +471,294 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         const VisitingCardFieldTransform(left: 0.4, top: 0.1, size: 0.14);
   }
 
+  bool get hasSelection =>
+      selectedOverlay != null || selectedDuplicateId != null;
+
+  static String duplicateKey(String id) => 'dup:$id';
+
+  /// Free text added from the landscape Text tool. Not a template field.
+  static const customTextSource = 'custom';
+
+  /// Icon added from the landscape Icon picker. Not a template field.
+  static const customIconSource = 'icon';
+
+  /// Shape added from the landscape Shape picker. Not a template field.
+  static const customShapeSource = 'shape';
+
+  /// Photo added from the landscape Images tool. Not a template field.
+  static const customImageSource = 'image';
+
+  bool _sourceIsImage(String? source) =>
+      source == 'logo' ||
+      source == 'qr' ||
+      source == customIconSource ||
+      source == customShapeSource ||
+      source == customImageSource;
+
+  bool get selectedIsShape {
+    if (selectedDuplicateId == null) return false;
+    return currentOverlays[duplicateKey(selectedDuplicateId!)]?.duplicateOf ==
+        customShapeSource;
+  }
+
+  /// Template logo field, or an extra logo added from the Logos tool.
+  bool get selectedIsLogo {
+    if (selectedDuplicateId != null) {
+      return currentOverlays[duplicateKey(selectedDuplicateId!)]?.duplicateOf ==
+          'logo';
+    }
+    return selectedOverlay == VisitingCardOverlayField.logo;
+  }
+
+  bool get selectedIsImage {
+    if (selectedDuplicateId != null) {
+      return _sourceIsImage(
+        currentOverlays[duplicateKey(selectedDuplicateId!)]?.duplicateOf,
+      );
+    }
+    return selectedOverlay?.isImageOverlay ?? false;
+  }
+
+  VisitingCardFieldTransform? get activeTransform {
+    if (selectedDuplicateId != null) {
+      return currentOverlays[duplicateKey(selectedDuplicateId!)];
+    }
+    final field = selectedOverlay;
+    if (field == null) return null;
+    return resolvedTransform(field);
+  }
+
+  void _putActive(VisitingCardFieldTransform next) {
+    if (selectedDuplicateId != null) {
+      currentOverlays[duplicateKey(selectedDuplicateId!)] = next;
+    } else if (selectedOverlay != null) {
+      _ensureOverlay(selectedOverlay!);
+      currentOverlays[VisitingCardFieldTransform.keyOf(selectedOverlay!)] =
+          next;
+    }
+    notifyListeners();
+  }
+
   void selectOverlay(VisitingCardOverlayField field) {
     FocusManager.instance.primaryFocus?.unfocus();
     _ensureOverlay(field);
     selectedOverlay = field;
+    selectedDuplicateId = null;
+    // Writing the default layout is not an edit, so Undo stays off.
+    _absorbUnchangedEdit();
+    notifyListeners();
+  }
+
+  void selectDuplicate(String id) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (currentOverlays[duplicateKey(id)] == null) return;
+    selectedOverlay = null;
+    selectedDuplicateId = id;
     notifyListeners();
   }
 
   void clearOverlaySelection() {
-    if (selectedOverlay == null) return;
+    if (selectedOverlay == null && selectedDuplicateId == null) return;
+    selectedOverlay = null;
+    selectedDuplicateId = null;
+    overlayGestureActive = false;
+    notifyListeners();
+  }
+
+  /// Swaps the card design. Contact text stays; field positions reset
+  /// so the new template's layout is used.
+  void applyTemplate(
+    VisitingCardTemplateItem item, {
+    required bool horizontal,
+  }) {
+    if (templateId == item.id && isHorizontal == horizontal) return;
+    templateId = item.id;
+    isHorizontal = horizontal;
+    frontAssetWithoutData = item.frontAssetWithoutData;
+    backAssetWithoutData = item.backAssetWithoutData;
+    frontOverlays.clear();
+    backOverlays.clear();
+    selectedOverlay = null;
+    selectedDuplicateId = null;
+    overlayGestureActive = false;
+    sideIndex = 0;
+    notifyListeners();
+  }
+
+  /// Places a scanner icon on the current side and selects it.
+  void addCustomIcon(String assetPath) {
+    final path = assetPath.trim();
+    if (path.isEmpty) return;
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+    final existing = currentOverlays.values
+        .where((t) => t.duplicateOf == customIconSource)
+        .length;
+    final nudge = (existing % 6) * 0.04;
+    currentOverlays[duplicateKey(id)] = VisitingCardFieldTransform(
+      left: (0.42 + nudge).clamp(0.06, 0.78),
+      top: (0.34 + nudge).clamp(0.06, 0.78),
+      size: 0.10,
+      duplicateOf: customIconSource,
+      duplicateImagePath: path,
+    );
+    selectedOverlay = null;
+    selectedDuplicateId = id;
+    notifyListeners();
+  }
+
+  /// Places a scanner shape on the current side and selects it.
+  void addCustomShape(String assetPath) {
+    final path = assetPath.trim();
+    if (path.isEmpty) return;
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+    final existing = currentOverlays.values
+        .where((t) => t.duplicateOf == customShapeSource)
+        .length;
+    final nudge = (existing % 6) * 0.04;
+    currentOverlays[duplicateKey(id)] = VisitingCardFieldTransform(
+      left: (0.38 + nudge).clamp(0.06, 0.78),
+      top: (0.30 + nudge).clamp(0.06, 0.78),
+      size: 0.10,
+      duplicateOf: customShapeSource,
+      duplicateImagePath: path,
+    );
+    selectedOverlay = null;
+    selectedDuplicateId = id;
+    notifyListeners();
+  }
+
+  /// Adds another logo on the current side. The logo already on the card stays.
+  void addCustomLogo(String assetPath) {
+    final path = assetPath.trim();
+    if (path.isEmpty) return;
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+    final existing = currentOverlays.values
+        .where((t) => t.duplicateOf == 'logo')
+        .length;
+    final nudge = (existing % 6) * 0.05;
+    currentOverlays[duplicateKey(id)] = VisitingCardFieldTransform(
+      left: (0.58 + nudge).clamp(0.06, 0.78),
+      top: (0.12 + nudge).clamp(0.06, 0.72),
+      size: 0.14,
+      duplicateOf: 'logo',
+      duplicateImagePath: path,
+    );
+    selectedOverlay = null;
+    selectedDuplicateId = id;
+    notifyListeners();
+  }
+
+  /// Places a gallery photo on the current side and selects it.
+  void addCustomImage(String filePath) {
+    final path = filePath.trim();
+    if (path.isEmpty) return;
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+    final existing = currentOverlays.values
+        .where((t) => t.duplicateOf == customImageSource)
+        .length;
+    final nudge = (existing % 6) * 0.04;
+    currentOverlays[duplicateKey(id)] = VisitingCardFieldTransform(
+      left: (0.28 + nudge).clamp(0.06, 0.62),
+      top: (0.22 + nudge).clamp(0.06, 0.62),
+      size: 0.32,
+      duplicateOf: customImageSource,
+      duplicateImagePath: path,
+    );
+    selectedOverlay = null;
+    selectedDuplicateId = id;
+    notifyListeners();
+  }
+
+  /// Replaces the selected logo, or adds a new one when no logo is selected.
+  void placeLogo(String path) {
+    final value = path.trim();
+    if (value.isEmpty) return;
+    if (!selectedIsLogo) {
+      addCustomLogo(value);
+      return;
+    }
+    if (selectedDuplicateId != null) {
+      final key = duplicateKey(selectedDuplicateId!);
+      final current = currentOverlays[key];
+      if (current != null) {
+        currentOverlays[key] = current.copyWith(duplicateImagePath: value);
+        notifyListeners();
+      }
+      return;
+    }
+    applyLogoImage(value);
+  }
+
+  /// Adds a new text field on the current side and selects it.
+  void addCustomText(String text) {
+    final value = text.trim();
+    if (value.isEmpty) return;
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+    final existing = currentOverlays.values
+        .where((t) => t.duplicateOf == customTextSource)
+        .length;
+    final nudge = (existing % 6) * 0.035;
+    currentOverlays[duplicateKey(id)] = VisitingCardFieldTransform(
+      left: (0.30 + nudge).clamp(0.06, 0.72),
+      top: (0.36 + nudge).clamp(0.06, 0.78),
+      size: 14,
+      duplicateOf: customTextSource,
+      duplicateText: value,
+    );
+    selectedOverlay = null;
+    selectedDuplicateId = id;
+    notifyListeners();
+  }
+
+  /// Copies the selected field slightly down and to the right, then selects it.
+  void duplicateSelectedOverlay() {
+    final current = activeTransform;
+    if (current == null) return;
+    final sourceName = current.duplicateOf ?? selectedOverlay?.name;
+    if (sourceName == null) return;
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+    final text = current.duplicateText ??
+        (selectedOverlay == null ? '' : overlayText(selectedOverlay!));
+    final image = current.duplicateImagePath ??
+        (sourceName == 'logo'
+            ? logoAssetPath
+            : sourceName == 'qr'
+                ? qrAssetPath
+                : null);
+    currentOverlays[duplicateKey(id)] = current.copyWith(
+      left: (current.left + 0.04).clamp(-0.2, 0.9),
+      top: (current.top + 0.06).clamp(-0.2, 0.9),
+      duplicateOf: sourceName,
+      duplicateText: text,
+      duplicateImagePath: image,
+    );
+    selectedOverlay = null;
+    selectedDuplicateId = id;
+    notifyListeners();
+  }
+
+  /// Removes the selected field from the card and clears the selection.
+  void deleteSelectedOverlay() {
+    if (selectedDuplicateId != null) {
+      currentOverlays.remove(duplicateKey(selectedDuplicateId!));
+      selectedDuplicateId = null;
+      overlayGestureActive = false;
+      notifyListeners();
+      return;
+    }
+    final field = selectedOverlay;
+    if (field == null) return;
+    switch (field) {
+      case VisitingCardOverlayField.logo:
+        hasChosenLogo = false;
+        logoAssetPath = null;
+      case VisitingCardOverlayField.qr:
+        hasChosenQr = false;
+        qrAssetPath = null;
+      default:
+        setOverlayText(field, '');
+    }
+    currentOverlays.remove(VisitingCardFieldTransform.keyOf(field));
     selectedOverlay = null;
     overlayGestureActive = false;
     notifyListeners();
@@ -384,6 +772,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   void endOverlayGesture() {
     if (!overlayGestureActive) return;
     overlayGestureActive = false;
+    notifyListeners();
   }
 
   void _ensureOverlay(VisitingCardOverlayField field) {
@@ -398,12 +787,16 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     VisitingCardOverlayField field,
     double pixelDx,
     double pixelDy,
-    Size cardSize,
-  ) {
+    Size cardSize, {
+    String? duplicateId,
+  }) {
     if (cardSize.width <= 0 || cardSize.height <= 0) return;
-    _ensureOverlay(field);
-    final key = VisitingCardFieldTransform.keyOf(field);
-    final current = currentOverlays[key]!;
+    final key = duplicateId == null
+        ? VisitingCardFieldTransform.keyOf(field)
+        : duplicateKey(duplicateId);
+    if (duplicateId == null) _ensureOverlay(field);
+    final current = currentOverlays[key];
+    if (current == null) return;
     currentOverlays[key] = current.copyWith(
       left: (current.left + pixelDx / cardSize.width).clamp(-0.2, 0.95),
       top: (current.top + pixelDy / cardSize.height).clamp(-0.2, 0.95),
@@ -411,16 +804,95 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Landscape arrow pad: nudge the selected field by a fraction of the card.
+  void nudgeSelectedOverlay(double dxFraction, double dyFraction) {
+    final current = activeTransform;
+    if (current == null) return;
+    _putActive(
+      current.copyWith(
+        left: (current.left + dxFraction).clamp(-0.2, 0.95),
+        top: (current.top + dyFraction).clamp(-0.2, 0.95),
+      ),
+    );
+  }
+
+  /// Text currently on the selected field, including a duplicate copy.
+  String get selectedOverlaySample {
+    if (selectedDuplicateId != null) {
+      final copy =
+          currentOverlays[duplicateKey(selectedDuplicateId!)]?.duplicateText;
+      if (copy != null && copy.trim().isNotEmpty) return copy.trim();
+    }
+    final field = selectedOverlay ?? _fontSourceField;
+    if (field == null || field.isImageOverlay) return '';
+    return overlayText(field).trim();
+  }
+
+  String overlayText(VisitingCardOverlayField field) {
+    return switch (field) {
+      VisitingCardOverlayField.name => displayName,
+      VisitingCardOverlayField.designation => displayDesignation,
+      VisitingCardOverlayField.company => displayCompany,
+      VisitingCardOverlayField.tagline => displayTagline,
+      VisitingCardOverlayField.phone =>
+        phones.isEmpty ? '' : phones.first.value,
+      VisitingCardOverlayField.email =>
+        emails.isEmpty ? '' : emails.first.value,
+      VisitingCardOverlayField.website =>
+        websites.isEmpty ? '' : websites.first.value,
+      VisitingCardOverlayField.address => displayAddress,
+      VisitingCardOverlayField.logo || VisitingCardOverlayField.qr => '',
+    };
+  }
+
+  void setOverlayText(VisitingCardOverlayField field, String value) {
+    if (selectedDuplicateId != null && selectedOverlay == null) {
+      final current = currentOverlays[duplicateKey(selectedDuplicateId!)];
+      if (current == null) return;
+      currentOverlays[duplicateKey(selectedDuplicateId!)] =
+          current.copyWith(duplicateText: value);
+      notifyListeners();
+      return;
+    }
+    switch (field) {
+      case VisitingCardOverlayField.name:
+        updateSimpleField(names, 0, value);
+      case VisitingCardOverlayField.designation:
+        updateSimpleField(designations, 0, value);
+      case VisitingCardOverlayField.company:
+        updateSimpleField(companies, 0, value);
+      case VisitingCardOverlayField.tagline:
+        updateSimpleField(taglines, 0, value);
+      case VisitingCardOverlayField.phone:
+        updateTypedField(phones, 0, value: value);
+      case VisitingCardOverlayField.email:
+        updateTypedField(emails, 0, value: value);
+      case VisitingCardOverlayField.website:
+        updateTypedField(websites, 0, value: value);
+      case VisitingCardOverlayField.address:
+        updateSimpleField(addresses, 0, value);
+      case VisitingCardOverlayField.logo:
+      case VisitingCardOverlayField.qr:
+        break;
+    }
+  }
+
   void resizeOverlay(
     VisitingCardOverlayField field,
     double pixelDeltaY,
-    Size cardSize,
-  ) {
+    Size cardSize, {
+    String? duplicateId,
+  }) {
     if (cardSize.width <= 0) return;
-    _ensureOverlay(field);
-    final key = VisitingCardFieldTransform.keyOf(field);
-    final current = currentOverlays[key]!;
-    final isImage = field.isImageOverlay;
+    final key = duplicateId == null
+        ? VisitingCardFieldTransform.keyOf(field)
+        : duplicateKey(duplicateId);
+    if (duplicateId == null) _ensureOverlay(field);
+    final current = currentOverlays[key];
+    if (current == null) return;
+    final isImage = duplicateId == null
+        ? field.isImageOverlay
+        : _sourceIsImage(current.duplicateOf);
     final next = isImage
         ? (current.size + pixelDeltaY / cardSize.width).clamp(0.06, 0.55)
         : (current.size + pixelDeltaY * 0.08).clamp(4.0, 28.0);
@@ -428,11 +900,416 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void rotateOverlay(VisitingCardOverlayField field, double absoluteRadians) {
-    _ensureOverlay(field);
-    final key = VisitingCardFieldTransform.keyOf(field);
-    currentOverlays[key] =
-        currentOverlays[key]!.copyWith(rotation: absoluteRadians);
+  bool get selectedIsLocked => activeTransform?.locked ?? false;
+
+  /// Puts the selected field behind every other field, including text.
+  void sendSelectedOverlayBack() => _moveSelectedStack(toFront: false);
+
+  /// Puts the selected field in front of every other field.
+  void sendSelectedOverlayFront() => _moveSelectedStack(toFront: true);
+
+  /// Fields currently painted on this side, back to front.
+  List<String> _visibleStackKeys() {
+    final keys = <String>[];
+    for (final field in VisitingCardOverlayField.values) {
+      if (field.isImageOverlay) {
+        final shown = field == VisitingCardOverlayField.logo
+            ? hasChosenLogo
+            : hasChosenQr;
+        if (shown) keys.add(VisitingCardFieldTransform.keyOf(field));
+      } else if (overlayText(field).trim().isNotEmpty) {
+        keys.add(VisitingCardFieldTransform.keyOf(field));
+      }
+    }
+    for (final entry in currentOverlays.entries) {
+      if (!entry.key.startsWith('dup:')) continue;
+      final text = entry.value.duplicateText?.trim() ?? '';
+      final image = entry.value.duplicateImagePath ?? '';
+      if (text.isNotEmpty || image.isNotEmpty) keys.add(entry.key);
+    }
+    final dupOrder = [
+      for (final key in currentOverlays.keys)
+        if (key.startsWith('dup:')) key,
+    ];
+    int tie(String key) {
+      if (key.startsWith('dup:')) return 1000 + dupOrder.indexOf(key);
+      final field = VisitingCardFieldTransform.fieldFromKey(key);
+      if (field == null) return 0;
+      return VisitingCardFieldTransform.naturalZ(field);
+    }
+
+    keys.sort((a, b) {
+      final byZ = VisitingCardFieldTransform
+          .stackZ(a, currentOverlays[a])
+          .compareTo(VisitingCardFieldTransform.stackZ(b, currentOverlays[b]));
+      if (byZ != 0) return byZ;
+      return tie(a).compareTo(tie(b));
+    });
+    return keys;
+  }
+
+  void _moveSelectedStack({required bool toFront}) {
+    final field = selectedOverlay;
+    final dupId = selectedDuplicateId;
+    if (field == null && dupId == null) return;
+    final key = dupId != null
+        ? duplicateKey(dupId)
+        : VisitingCardFieldTransform.keyOf(field!);
+    final ordered = _visibleStackKeys();
+    if (!ordered.contains(key)) ordered.add(key);
+    final already = toFront ? ordered.last == key : ordered.first == key;
+    if (already) return;
+    ordered.remove(key);
+    if (toFront) {
+      ordered.add(key);
+    } else {
+      ordered.insert(0, key);
+    }
+    for (var i = 0; i < ordered.length; i++) {
+      final itemKey = ordered[i];
+      if (!itemKey.startsWith('dup:')) {
+        final itemField = VisitingCardFieldTransform.fieldFromKey(itemKey);
+        if (itemField != null) _ensureOverlay(itemField);
+      }
+      final current = currentOverlays[itemKey];
+      if (current == null || current.zIndex == i) continue;
+      currentOverlays[itemKey] = current.copyWith(zIndex: i);
+    }
+    notifyListeners();
+  }
+
+  /// Landscape Lock: hide the eight resize dots on the selected field.
+  void toggleSelectedOverlayLock() {
+    final current = activeTransform;
+    if (current == null) return;
+    _putActive(current.copyWith(locked: !current.locked));
+  }
+
+  VisitingCardOverlayField? get _fontSourceField {
+    if (selectedDuplicateId != null) {
+      final source =
+          currentOverlays[duplicateKey(selectedDuplicateId!)]?.duplicateOf;
+      return VisitingCardFieldTransform.fieldFromKey(source ?? '');
+    }
+    return selectedOverlay;
+  }
+
+  VisitingCardFieldPosition? selectedTextPosition() {
+    final field = _fontSourceField;
+    if (field == null || field.isImageOverlay) return null;
+    final layout = VisitingCardPositionConfig.forTemplate(
+      templateId: templateId,
+      isHorizontal: isHorizontal,
+    );
+    final side = isFront ? layout.front : layout.back;
+    return switch (field) {
+      VisitingCardOverlayField.name => side.name,
+      VisitingCardOverlayField.designation => side.designation,
+      VisitingCardOverlayField.company => side.company,
+      VisitingCardOverlayField.tagline => side.tagline,
+      VisitingCardOverlayField.phone => side.phone,
+      VisitingCardOverlayField.email => side.email,
+      VisitingCardOverlayField.website => side.website,
+      VisitingCardOverlayField.address => side.address,
+      VisitingCardOverlayField.logo || VisitingCardOverlayField.qr => null,
+    };
+  }
+
+  bool get selectedFontIsBold {
+    final current = activeTransform;
+    if (current == null) return false;
+    if (current.fontBoldMode == 1) return true;
+    if (current.fontBoldMode == 2) return false;
+    final preset = VisitingCardFontPreset.of(current.fontPreset);
+    if (preset != null) return preset.bold;
+    final weight = selectedTextPosition()?.fontWeight ?? FontWeight.w400;
+    return weight.value >= FontWeight.w600.value;
+  }
+
+  bool get selectedFontIsItalic {
+    final current = activeTransform;
+    if (current == null) return false;
+    if (current.fontItalicMode == 1) return true;
+    if (current.fontItalicMode == 2) return false;
+    return selectedTextPosition()?.fontStyle == FontStyle.italic;
+  }
+
+  void setSelectedFontPreset(int index) {
+    final current = activeTransform;
+    if (current == null || selectedIsImage) return;
+    if (index < 0 || index >= VisitingCardFontPreset.presets.length) return;
+    final preset = VisitingCardFontPreset.presets[index];
+    _putActive(
+      current.copyWith(
+        fontPreset: index,
+        fontBoldMode: preset.bold ? 1 : 2,
+      ),
+    );
+  }
+
+  void toggleSelectedFontBold() {
+    final current = activeTransform;
+    if (current == null || selectedIsImage) return;
+    _putActive(current.copyWith(fontBoldMode: selectedFontIsBold ? 2 : 1));
+  }
+
+  void toggleSelectedFontItalic() {
+    final current = activeTransform;
+    if (current == null || selectedIsImage) return;
+    _putActive(current.copyWith(fontItalicMode: selectedFontIsItalic ? 2 : 1));
+  }
+
+  void toggleSelectedFontUnderline() {
+    final current = activeTransform;
+    if (current == null || selectedIsImage) return;
+    _putActive(current.copyWith(fontUnderline: !current.fontUnderline));
+  }
+
+  void toggleSelectedFontStrike() {
+    final current = activeTransform;
+    if (current == null || selectedIsImage) return;
+    _putActive(current.copyWith(fontStrike: !current.fontStrike));
+  }
+
+  void flipSelectedOverlay({required bool horizontal}) {
+    final current = activeTransform;
+    if (current == null) return;
+    _putActive(
+      horizontal
+          ? current.copyWith(flipX: !current.flipX)
+          : current.copyWith(flipY: !current.flipY),
+    );
+  }
+
+  void setSelectedOverlayColor(Color color) {
+    if (selectedIsImage && !selectedIsShape) return;
+    final current = activeTransform;
+    if (current == null) return;
+    _putActive(current.copyWith(textColorValue: color.toARGB32()));
+  }
+
+  static const textSizeMin = 4.0;
+  static const textSizeMax = 28.0;
+  static const imageSizeMin = 0.06;
+  static const imageSizeMax = 0.55;
+
+  /// Slider position 0–1 for the selected field's current size.
+  double selectedOverlaySizeFraction() {
+    final current = activeTransform;
+    if (current == null) return 0;
+    final min = selectedIsImage ? imageSizeMin : textSizeMin;
+    final max = selectedIsImage ? imageSizeMax : textSizeMax;
+    return ((current.size - min) / (max - min)).clamp(0.0, 1.0);
+  }
+
+  /// Landscape Size slider. [fraction] is 0–1 across the field's size range.
+  void setSelectedOverlaySizeFraction(double fraction) {
+    final current = activeTransform;
+    if (current == null) return;
+    final t = fraction.clamp(0.0, 1.0);
+    final min = selectedIsImage ? imageSizeMin : textSizeMin;
+    final max = selectedIsImage ? imageSizeMax : textSizeMax;
+    _putActive(current.copyWith(size: min + t * (max - min)));
+  }
+
+  double selectedAdjustFraction(String tool) {
+    final current = activeTransform;
+    if (current == null) return tool == 'Opacity' ? 1 : 0;
+    return switch (tool) {
+      'Rotate' => _unitTurns(current.rotation),
+      'Opacity' => current.opacity.clamp(0.0, 1.0),
+      'Spacing' => (current.letterSpacing / 12).clamp(0.0, 1.0),
+      'Stroke' => (current.strokeWidth / 8).clamp(0.0, 1.0),
+      'Shadow' => (current.shadowBlur / 18).clamp(0.0, 1.0),
+      _ => 0,
+    };
+  }
+
+  void setSelectedAdjustFraction(String tool, double fraction) {
+    final current = activeTransform;
+    if (current == null) return;
+    if (tool != 'Rotate' && tool != 'Opacity' && selectedIsImage) return;
+    final f = fraction.clamp(0.0, 1.0);
+    _putActive(
+      switch (tool) {
+        'Rotate' => current.copyWith(rotation: f * math.pi * 2),
+        'Opacity' => current.copyWith(opacity: f),
+        'Spacing' => current.copyWith(letterSpacing: f * 12),
+        'Stroke' => current.copyWith(strokeWidth: f * 8),
+        'Shadow' => current.copyWith(shadowBlur: f * 18),
+        _ => current,
+      },
+    );
+  }
+
+  void setSelectedStrokeColor(Color color) =>
+      _setSelectedPaintColor(stroke: true, color: color);
+
+  void setSelectedShadowColor(Color color) =>
+      _setSelectedPaintColor(stroke: false, color: color);
+
+  void _setSelectedPaintColor({required bool stroke, required Color color}) {
+    if (selectedIsImage) return;
+    final current = activeTransform;
+    if (current == null) return;
+    final argb = color.toARGB32();
+    _putActive(
+      stroke
+          ? current.copyWith(strokeColorValue: argb)
+          : current.copyWith(shadowColorValue: argb),
+    );
+  }
+
+  double _unitTurns(double radians) {
+    var turns = radians / (math.pi * 2);
+    turns = turns - turns.floorToDouble();
+    if (turns < 0) turns += 1;
+    return turns.clamp(0.0, 1.0);
+  }
+
+  /// Landscape: corner drag — keep opposite corner fixed while scaling.
+  void scaleOverlayUniform(
+    VisitingCardOverlayField field,
+    double pixelDelta,
+    Size cardSize, {
+    bool fixRight = false,
+    bool fixBottom = false,
+    double? seedWidthFraction,
+    double? seedHeightPx,
+    String? duplicateId,
+  }) {
+    if (cardSize.width <= 0 || cardSize.height <= 0) return;
+    final key = duplicateId == null
+        ? VisitingCardFieldTransform.keyOf(field)
+        : duplicateKey(duplicateId);
+    if (duplicateId == null) _ensureOverlay(field);
+    final current = currentOverlays[key];
+    if (current == null) return;
+    final isImage = duplicateId == null
+        ? field.isImageOverlay
+        : _sourceIsImage(current.duplicateOf);
+    var left = current.left;
+    var top = current.top;
+
+    if (isImage) {
+      final next =
+          (current.size + pixelDelta / cardSize.width).clamp(0.06, 0.55);
+      final applied = next - current.size;
+      if (fixRight) {
+        left = (left - applied).clamp(-0.2, 0.95);
+      }
+      if (fixBottom) {
+        top = (top - applied * cardSize.width / cardSize.height)
+            .clamp(-0.2, 0.95);
+      }
+      currentOverlays[key] =
+          current.copyWith(size: next, left: left, top: top);
+    } else {
+      final nextSize = (current.size + pixelDelta * 0.08).clamp(4.0, 28.0);
+      final baseW = current.width ?? seedWidthFraction ?? 0.2;
+      final nextW = (baseW + pixelDelta / cardSize.width).clamp(0.05, 1.0);
+      final appliedW = nextW - baseW;
+      if (fixRight) {
+        left = (left - appliedW).clamp(-0.2, 0.95);
+      }
+      if (fixBottom && current.size > 0) {
+        final oldH = seedHeightPx ?? (current.size * 1.2);
+        final newH = oldH * (nextSize / current.size);
+        top = (top - (newH - oldH) / cardSize.height).clamp(-0.2, 0.95);
+      }
+      currentOverlays[key] = current.copyWith(
+        size: nextSize,
+        width: nextW,
+        left: left,
+        top: top,
+      );
+    }
+    notifyListeners();
+  }
+
+  /// Landscape: edge-center drag — stretch one axis; optionally keep the
+  /// opposite edge fixed (left handle → fix right, top handle → fix bottom).
+  void stretchOverlayAxis(
+    VisitingCardOverlayField field, {
+    required bool horizontal,
+    required double pixelDelta,
+    required Size cardSize,
+    bool fixOpposite = false,
+    double? seedWidthFraction,
+    double? seedHeightPx,
+    String? duplicateId,
+  }) {
+    if (cardSize.width <= 0 || cardSize.height <= 0) return;
+    final key = duplicateId == null
+        ? VisitingCardFieldTransform.keyOf(field)
+        : duplicateKey(duplicateId);
+    if (duplicateId == null) _ensureOverlay(field);
+    final current = currentOverlays[key];
+    if (current == null) return;
+    final isImage = duplicateId == null
+        ? field.isImageOverlay
+        : _sourceIsImage(current.duplicateOf);
+    if (horizontal) {
+      if (isImage) {
+        final next =
+            (current.size + pixelDelta / cardSize.width).clamp(0.06, 0.55);
+        final applied = next - current.size;
+        final left = fixOpposite
+            ? (current.left - applied).clamp(-0.2, 0.95)
+            : current.left;
+        currentOverlays[key] =
+            current.copyWith(size: next, left: left);
+      } else {
+        // Seed from the current tight text box so the first drag doesn't
+        // jump to a large template fraction (extra empty right space).
+        final baseW = current.width ?? seedWidthFraction ?? 0.2;
+        final nextW =
+            (baseW + pixelDelta / cardSize.width).clamp(0.05, 1.0);
+        final applied = nextW - baseW;
+        final left = fixOpposite
+            ? (current.left - applied).clamp(-0.2, 0.95)
+            : current.left;
+        currentOverlays[key] =
+            current.copyWith(width: nextW, left: left);
+      }
+    } else {
+      if (isImage) {
+        final next =
+            (current.size + pixelDelta / cardSize.height).clamp(0.06, 0.55);
+        final appliedPx = (next - current.size) * cardSize.height;
+        final top = fixOpposite
+            ? (current.top - appliedPx / cardSize.height).clamp(-0.2, 0.95)
+            : current.top;
+        currentOverlays[key] =
+            current.copyWith(size: next, top: top);
+      } else {
+        final nextSize =
+            (current.size + pixelDelta * 0.08).clamp(4.0, 28.0);
+        var top = current.top;
+        if (fixOpposite && current.size > 0) {
+          final oldH = seedHeightPx ?? (current.size * 1.2);
+          final newH = oldH * (nextSize / current.size);
+          top = (top - (newH - oldH) / cardSize.height).clamp(-0.2, 0.95);
+        }
+        currentOverlays[key] =
+            current.copyWith(size: nextSize, top: top);
+      }
+    }
+    notifyListeners();
+  }
+
+  void rotateOverlay(
+    VisitingCardOverlayField field,
+    double absoluteRadians, {
+    String? duplicateId,
+  }) {
+    final key = duplicateId == null
+        ? VisitingCardFieldTransform.keyOf(field)
+        : duplicateKey(duplicateId);
+    if (duplicateId == null) _ensureOverlay(field);
+    final current = currentOverlays[key];
+    if (current == null) return;
+    currentOverlays[key] = current.copyWith(rotation: absoluteRadians);
     notifyListeners();
   }
 
@@ -447,9 +1324,11 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     _replaceEntries(websites, other.websites, fallbackType: 'Company');
     _replaceEntries(addresses, other.addresses);
     qrAssetPath = other.qrAssetPath;
-    logoAssetPath = other.logoAssetPath;
+    frontLogoAssetPath = other.frontLogoAssetPath;
+    backLogoAssetPath = other.backLogoAssetPath;
     hasChosenQr = other.hasChosenQr;
-    hasChosenLogo = other.hasChosenLogo;
+    hasChosenFrontLogo = other.hasChosenFrontLogo;
+    hasChosenBackLogo = other.hasChosenBackLogo;
     frontOverlays
       ..clear()
       ..addAll(other.frontOverlays);
@@ -457,6 +1336,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       ..clear()
       ..addAll(other.backOverlays);
     selectedOverlay = null;
+    selectedDuplicateId = null;
     notifyListeners();
   }
 
@@ -471,8 +1351,12 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     List<ContactFieldEntry>? taglines,
     String? qrAssetPath,
     String? logoAssetPath,
+    String? frontLogoAssetPath,
+    String? backLogoAssetPath,
     bool? hasChosenQr,
     bool? hasChosenLogo,
+    bool? hasChosenFrontLogo,
+    bool? hasChosenBackLogo,
     VisitingCardFieldTransforms? fieldTransforms,
   }) {
     _replaceEntries(this.names, names);
@@ -489,11 +1373,35 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     } else if (hasChosenQr != null) {
       this.hasChosenQr = hasChosenQr;
     }
-    if (logoAssetPath != null) {
-      this.logoAssetPath = logoAssetPath.isEmpty ? null : logoAssetPath;
-      this.hasChosenLogo = hasChosenLogo ?? logoAssetPath.isNotEmpty;
+    final splitLogos = frontLogoAssetPath != null ||
+        backLogoAssetPath != null ||
+        hasChosenFrontLogo != null ||
+        hasChosenBackLogo != null;
+    if (splitLogos) {
+      if (frontLogoAssetPath != null) {
+        this.frontLogoAssetPath =
+            frontLogoAssetPath.isEmpty ? null : frontLogoAssetPath;
+      }
+      if (backLogoAssetPath != null) {
+        this.backLogoAssetPath =
+            backLogoAssetPath.isEmpty ? null : backLogoAssetPath;
+      }
+      if (hasChosenFrontLogo != null) {
+        this.hasChosenFrontLogo = hasChosenFrontLogo;
+      }
+      if (hasChosenBackLogo != null) {
+        this.hasChosenBackLogo = hasChosenBackLogo;
+      }
+    } else if (logoAssetPath != null) {
+      final path = logoAssetPath.isEmpty ? null : logoAssetPath;
+      final chosen = hasChosenLogo ?? path != null;
+      this.frontLogoAssetPath = path;
+      this.backLogoAssetPath = path;
+      this.hasChosenFrontLogo = chosen;
+      this.hasChosenBackLogo = chosen;
     } else if (hasChosenLogo != null) {
-      this.hasChosenLogo = hasChosenLogo;
+      this.hasChosenFrontLogo = hasChosenLogo;
+      this.hasChosenBackLogo = hasChosenLogo;
     }
     if (fieldTransforms != null) {
       frontOverlays
@@ -503,6 +1411,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         ..clear()
         ..addAll(fieldTransforms.back);
       selectedOverlay = null;
+      selectedDuplicateId = null;
     }
     notifyListeners();
   }
@@ -552,6 +1461,21 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   void applyLogoImage(String path) {
     hasChosenLogo = true;
     logoAssetPath = path;
+    notifyListeners();
+  }
+
+  /// Puts logo and QR back to a previous snapshot. Used when Profile is closed
+  /// without Save.
+  void restoreLogoAndQr({
+    required String? logoPath,
+    required bool hasLogo,
+    required String? qrPath,
+    required bool hasQr,
+  }) {
+    logoAssetPath = logoPath;
+    hasChosenLogo = hasLogo;
+    qrAssetPath = qrPath;
+    hasChosenQr = hasQr;
     notifyListeners();
   }
 
@@ -695,12 +1619,15 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     );
 
     hasChosenQr = contact.hasChosenQr;
-    hasChosenLogo = contact.hasChosenLogo;
+    hasChosenFrontLogo = contact.frontLogoChosen;
+    hasChosenBackLogo = contact.backLogoChosen;
     qrAssetPath = contact.qrImagePath.isNotEmpty
         ? contact.qrImagePath
         : (hasChosenQr ? ui.AppAssets.defaultQrcodeIcon : qrAssetPath);
-    logoAssetPath =
-        contact.logoImagePath.isNotEmpty ? contact.logoImagePath : null;
+    frontLogoAssetPath =
+        contact.frontLogoPath.isNotEmpty ? contact.frontLogoPath : null;
+    backLogoAssetPath =
+        contact.backLogoPath.isNotEmpty ? contact.backLogoPath : null;
     applyFieldTransforms(contact.fieldTransforms);
   }
 
@@ -738,9 +1665,16 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       source: SavedContactInfo.sourceTemplate,
       templateId: templateId,
       qrImagePath: qrAssetPath ?? '',
-      logoImagePath: logoAssetPath ?? '',
+      logoImagePath: frontLogoAssetPath?.isNotEmpty == true
+          ? frontLogoAssetPath!
+          : (backLogoAssetPath ?? ''),
+      frontLogoImagePath: frontLogoAssetPath ?? '',
+      backLogoImagePath: backLogoAssetPath ?? '',
       hasChosenQr: hasChosenQr,
-      hasChosenLogo: hasChosenLogo,
+      hasChosenLogo: hasChosenFrontLogo || hasChosenBackLogo,
+      hasChosenFrontLogo: hasChosenFrontLogo,
+      hasChosenBackLogo: hasChosenBackLogo,
+      separateLogos: true,
       fieldTransforms: fieldTransformsSnapshot,
     );
   }
@@ -830,9 +1764,16 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         source: SavedContactInfo.sourceTemplate,
         templateId: templateId,
         qrImagePath: embedded.qrPath,
-        logoImagePath: embedded.logoPath,
+        logoImagePath: embedded.frontLogoPath.isNotEmpty
+            ? embedded.frontLogoPath
+            : embedded.backLogoPath,
+        frontLogoImagePath: embedded.frontLogoPath,
+        backLogoImagePath: embedded.backLogoPath,
         hasChosenQr: hasChosenQr,
-        hasChosenLogo: hasChosenLogo,
+        hasChosenLogo: hasChosenFrontLogo || hasChosenBackLogo,
+        hasChosenFrontLogo: hasChosenFrontLogo,
+        hasChosenBackLogo: hasChosenBackLogo,
+        separateLogos: true,
         fieldTransforms: fieldTransformsSnapshot,
       );
       await SavedContactInfo.writeToFolder(contactFolder.path, savedContact);
@@ -930,9 +1871,16 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         source: SavedContactInfo.sourceTemplate,
         templateId: templateId,
         qrImagePath: embedded.qrPath,
-        logoImagePath: embedded.logoPath,
+        logoImagePath: embedded.frontLogoPath.isNotEmpty
+            ? embedded.frontLogoPath
+            : embedded.backLogoPath,
+        frontLogoImagePath: embedded.frontLogoPath,
+        backLogoImagePath: embedded.backLogoPath,
         hasChosenQr: hasChosenQr,
-        hasChosenLogo: hasChosenLogo,
+        hasChosenLogo: hasChosenFrontLogo || hasChosenBackLogo,
+        hasChosenFrontLogo: hasChosenFrontLogo,
+        hasChosenBackLogo: hasChosenBackLogo,
+        separateLogos: true,
         fieldTransforms: fieldTransformsSnapshot,
       );
       await SavedContactInfo.writeToFolder(contactFolder.path, savedContact);
@@ -971,7 +1919,8 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     }
   }
 
-  Future<({String qrPath, String logoPath})> _persistEmbeddedAssets(
+  Future<({String qrPath, String frontLogoPath, String backLogoPath})>
+      _persistEmbeddedAssets(
     Directory contactFolder,
   ) async {
     final embeddedDir = Directory(p.join(contactFolder.path, 'embedded'));
@@ -986,15 +1935,37 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       qrAssetPath = qrPath;
     }
 
-    var logoPath = '';
-    if (hasChosenLogo && logoAssetPath != null && logoAssetPath!.isNotEmpty) {
-      logoPath =
-          await _persistEmbeddedFile(logoAssetPath!, embeddedDir, 'logo') ??
-              logoAssetPath!;
-      logoAssetPath = logoPath;
+    var frontLogoPath = '';
+    if (hasChosenFrontLogo &&
+        frontLogoAssetPath != null &&
+        frontLogoAssetPath!.isNotEmpty) {
+      frontLogoPath = await _persistEmbeddedFile(
+            frontLogoAssetPath!,
+            embeddedDir,
+            'frontlogo',
+          ) ??
+          frontLogoAssetPath!;
+      frontLogoAssetPath = frontLogoPath;
     }
 
-    return (qrPath: qrPath, logoPath: logoPath);
+    var backLogoPath = '';
+    if (hasChosenBackLogo &&
+        backLogoAssetPath != null &&
+        backLogoAssetPath!.isNotEmpty) {
+      backLogoPath = await _persistEmbeddedFile(
+            backLogoAssetPath!,
+            embeddedDir,
+            'backlogo',
+          ) ??
+          backLogoAssetPath!;
+      backLogoAssetPath = backLogoPath;
+    }
+
+    return (
+      qrPath: qrPath,
+      frontLogoPath: frontLogoPath,
+      backLogoPath: backLogoPath,
+    );
   }
 
   Future<String?> _persistEmbeddedFile(
@@ -1077,5 +2048,215 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     return buffer.isEmpty
         ? 'Visiting card contact (exported)'
         : buffer.toString();
+  }
+
+  /// Keeps the current card as the history point without an Undo step.
+  void _absorbUnchangedEdit() {
+    if (!_historyReady || _restoringHistory || overlayGestureActive) return;
+    _historyPoint = _captureEditSnapshot();
+  }
+
+  void _recordEditHistory() {
+    if (!_historyReady || _restoringHistory || overlayGestureActive) return;
+    final next = _captureEditSnapshot();
+    if (_historyPoint == null) {
+      _historyPoint = next;
+      return;
+    }
+    if (next.signature == _historyPoint!.signature) return;
+    final now = DateTime.now();
+    final sameBurst = _historyAt != null &&
+        now.difference(_historyAt!) < const Duration(milliseconds: 500);
+    if (!sameBurst) {
+      _undoStack.add(_historyPoint!);
+      if (_undoStack.length > _historyLimit) _undoStack.removeAt(0);
+      _redoStack.clear();
+    }
+    _historyPoint = next;
+    _historyAt = now;
+  }
+
+  _CardEditSnapshot _captureEditSnapshot() => _CardEditSnapshot.capture(this);
+
+  void _applyEditSnapshot(_CardEditSnapshot snapshot) {
+    _restoringHistory = true;
+    _historyAt = null;
+    snapshot.writeTo(this);
+    selectedOverlay = null;
+    selectedDuplicateId = null;
+    overlayGestureActive = false;
+    _historyPoint = snapshot;
+    super.notifyListeners();
+    _restoringHistory = false;
+  }
+}
+
+class _CardEditSnapshot {
+  _CardEditSnapshot({
+    required this.signature,
+    required this.templateId,
+    required this.isHorizontal,
+    required this.frontAssetWithoutData,
+    required this.backAssetWithoutData,
+    required this.frontLogoAssetPath,
+    required this.backLogoAssetPath,
+    required this.qrAssetPath,
+    required this.hasChosenFrontLogo,
+    required this.hasChosenBackLogo,
+    required this.hasChosenQr,
+    required this.frontOverlays,
+    required this.backOverlays,
+    required this.names,
+    required this.designations,
+    required this.companies,
+    required this.taglines,
+    required this.phones,
+    required this.emails,
+    required this.websites,
+    required this.addresses,
+  });
+
+  final String signature;
+  final String templateId;
+  final bool isHorizontal;
+  final String frontAssetWithoutData;
+  final String backAssetWithoutData;
+  final String? frontLogoAssetPath;
+  final String? backLogoAssetPath;
+  final String? qrAssetPath;
+  final bool hasChosenFrontLogo;
+  final bool hasChosenBackLogo;
+  final bool hasChosenQr;
+  final Map<String, VisitingCardFieldTransform> frontOverlays;
+  final Map<String, VisitingCardFieldTransform> backOverlays;
+  final List<ContactFieldEntry> names;
+  final List<ContactFieldEntry> designations;
+  final List<ContactFieldEntry> companies;
+  final List<ContactFieldEntry> taglines;
+  final List<ContactFieldEntry> phones;
+  final List<ContactFieldEntry> emails;
+  final List<ContactFieldEntry> websites;
+  final List<ContactFieldEntry> addresses;
+
+  static _CardEditSnapshot capture(VisitingCardEditContactViewModel vm) {
+    final front = _copyOverlays(vm.frontOverlays);
+    final back = _copyOverlays(vm.backOverlays);
+    final names = _copyFields(vm.names);
+    final designations = _copyFields(vm.designations);
+    final companies = _copyFields(vm.companies);
+    final taglines = _copyFields(vm.taglines);
+    final phones = _copyFields(vm.phones);
+    final emails = _copyFields(vm.emails);
+    final websites = _copyFields(vm.websites);
+    final addresses = _copyFields(vm.addresses);
+    return _CardEditSnapshot(
+      signature: [
+        vm.templateId,
+        vm.isHorizontal,
+        vm.frontAssetWithoutData,
+        vm.backAssetWithoutData,
+        vm.frontLogoAssetPath,
+        vm.backLogoAssetPath,
+        vm.qrAssetPath,
+        vm.hasChosenFrontLogo,
+        vm.hasChosenBackLogo,
+        vm.hasChosenQr,
+        _overlaySig(front),
+        _overlaySig(back),
+        _fieldSig(names),
+        _fieldSig(designations),
+        _fieldSig(companies),
+        _fieldSig(taglines),
+        _fieldSig(phones),
+        _fieldSig(emails),
+        _fieldSig(websites),
+        _fieldSig(addresses),
+      ].join('\u0000'),
+      templateId: vm.templateId,
+      isHorizontal: vm.isHorizontal,
+      frontAssetWithoutData: vm.frontAssetWithoutData,
+      backAssetWithoutData: vm.backAssetWithoutData,
+      frontLogoAssetPath: vm.frontLogoAssetPath,
+      backLogoAssetPath: vm.backLogoAssetPath,
+      qrAssetPath: vm.qrAssetPath,
+      hasChosenFrontLogo: vm.hasChosenFrontLogo,
+      hasChosenBackLogo: vm.hasChosenBackLogo,
+      hasChosenQr: vm.hasChosenQr,
+      frontOverlays: front,
+      backOverlays: back,
+      names: names,
+      designations: designations,
+      companies: companies,
+      taglines: taglines,
+      phones: phones,
+      emails: emails,
+      websites: websites,
+      addresses: addresses,
+    );
+  }
+
+  void writeTo(VisitingCardEditContactViewModel vm) {
+    vm.templateId = templateId;
+    vm.isHorizontal = isHorizontal;
+    vm.frontAssetWithoutData = frontAssetWithoutData;
+    vm.backAssetWithoutData = backAssetWithoutData;
+    vm.frontLogoAssetPath = frontLogoAssetPath;
+    vm.backLogoAssetPath = backLogoAssetPath;
+    vm.qrAssetPath = qrAssetPath;
+    vm.hasChosenFrontLogo = hasChosenFrontLogo;
+    vm.hasChosenBackLogo = hasChosenBackLogo;
+    vm.hasChosenQr = hasChosenQr;
+    vm.frontOverlays
+      ..clear()
+      ..addAll(_copyOverlays(frontOverlays));
+    vm.backOverlays
+      ..clear()
+      ..addAll(_copyOverlays(backOverlays));
+    _replaceFields(vm.names, names);
+    _replaceFields(vm.designations, designations);
+    _replaceFields(vm.companies, companies);
+    _replaceFields(vm.taglines, taglines);
+    _replaceFields(vm.phones, phones);
+    _replaceFields(vm.emails, emails);
+    _replaceFields(vm.websites, websites);
+    _replaceFields(vm.addresses, addresses);
+  }
+
+  static Map<String, VisitingCardFieldTransform> _copyOverlays(
+    Map<String, VisitingCardFieldTransform> source,
+  ) {
+    return {
+      for (final entry in source.entries)
+        entry.key: VisitingCardFieldTransform.fromJson(entry.value.toJson()),
+    };
+  }
+
+  static String _overlaySig(Map<String, VisitingCardFieldTransform> map) {
+    final keys = map.keys.toList()..sort();
+    return [
+      for (final key in keys) '$key:${map[key]!.toJson()}',
+    ].join('|');
+  }
+
+  static List<ContactFieldEntry> _copyFields(List<ContactFieldEntry> source) {
+    return [
+      for (final entry in source)
+        ContactFieldEntry(value: entry.value, type: entry.type),
+    ];
+  }
+
+  static void _replaceFields(
+    List<ContactFieldEntry> target,
+    List<ContactFieldEntry> source,
+  ) {
+    target
+      ..clear()
+      ..addAll(_copyFields(source));
+  }
+
+  static String _fieldSig(List<ContactFieldEntry> list) {
+    return [
+      for (final entry in list) '${entry.type}\u0001${entry.value}',
+    ].join('\u0002');
   }
 }
