@@ -36,18 +36,57 @@ class VisitingCardFolderPaths {
     final trimmed = storedPath.trim();
     if (Directory(trimmed).existsSync()) return trimmed;
 
-    final docs = await getApplicationDocumentsDirectory();
-    const marker = 'Convert Document';
-    final markerIndex = trimmed.indexOf(marker);
-    if (markerIndex >= 0) {
-      final remapped = p.join(docs.path, trimmed.substring(markerIndex));
-      if (Directory(remapped).existsSync()) return remapped;
-    }
+    final remapped = await resolveStoredAbsolutePath(trimmed);
+    if (remapped != null && Directory(remapped).existsSync()) return remapped;
 
+    final docs = await getApplicationDocumentsDirectory();
     final byName = Directory(
       p.join(docs.path, visitingCardRelativeRoot, p.basename(trimmed)),
     );
     if (byName.existsSync()) return byName.path;
+
+    return trimmed;
+  }
+
+  /// Heals QR / barcode / visiting-card absolute paths after iOS Documents
+  /// container UUID changes (`flutter clean` + reinstall keeps Isar rows).
+  ///
+  /// Example stored:
+  /// `.../Application/<old-uuid>/Documents/qr_code/qr_123.png`
+  /// → current `Documents/qr_code/qr_123.png`
+  static Future<String?> resolveStoredAbsolutePath(String? storedPath) async {
+    if (storedPath == null || storedPath.trim().isEmpty) return null;
+    final trimmed = storedPath.trim();
+    if (File(trimmed).existsSync() || Directory(trimmed).existsSync()) {
+      return trimmed;
+    }
+
+    final docs = await getApplicationDocumentsDirectory();
+    final match = RegExp(r'[/\\]Documents[/\\](.*)').firstMatch(trimmed);
+    if (match != null) {
+      final relative = match.group(1);
+      if (relative != null && relative.isNotEmpty) {
+        final remapped = p.join(docs.path, relative);
+        if (File(remapped).existsSync() || Directory(remapped).existsSync()) {
+          return remapped;
+        }
+      }
+    }
+
+    for (final marker in [
+      visitingCardRelativeRoot,
+      'Convert Document',
+      'qr_code',
+      'barcode',
+      'visiting_card',
+    ]) {
+      final markerIndex = trimmed.indexOf(marker);
+      if (markerIndex < 0) continue;
+      final remapped = p.join(docs.path, trimmed.substring(markerIndex));
+      if (File(remapped).existsSync() || Directory(remapped).existsSync()) {
+        return remapped;
+      }
+    }
 
     return trimmed;
   }

@@ -87,6 +87,11 @@ class FolderViewModel extends ChangeNotifier {
     _restoreFoldersFromStorage();
 
     final files = AppStorageService().getAllFiles();
+    final healedFiles = <SavedFileModel>[];
+    for (final file in files) {
+      healedFiles.add(await _healStoredFilePaths(file));
+    }
+
     final folderIds = <String>{
       visitingCardFolderId,
       qrCodeFolderId,
@@ -96,9 +101,50 @@ class FolderViewModel extends ChangeNotifier {
     };
 
     for (final id in folderIds) {
-      _cards[id] = _cardsForFolder(files, id);
+      _cards[id] = _cardsForFolder(healedFiles, id);
     }
     notifyListeners();
+  }
+
+  /// Remap QR / barcode / visiting absolute paths after iOS Documents UUID churn.
+  Future<SavedFileModel> _healStoredFilePaths(SavedFileModel file) async {
+    if (file.fileType == 'visiting_card') {
+      final resolvedFolder =
+          await VisitingCardFolderPaths.resolveContactFolder(
+        file.path.isNotEmpty ? file.path : null,
+      );
+      if (resolvedFolder == null ||
+          resolvedFolder.isEmpty ||
+          resolvedFolder == file.path) {
+        return file;
+      }
+      final updated = file.copyWith(path: resolvedFolder);
+      try {
+        await AppStorageService().updateFile(updated);
+      } catch (_) {}
+      return updated;
+    }
+
+    final healedPath =
+        await VisitingCardFolderPaths.resolveStoredAbsolutePath(
+      file.path.isNotEmpty ? file.path : null,
+    );
+    final healedThumb =
+        await VisitingCardFolderPaths.resolveStoredAbsolutePath(
+      file.pathImage.isNotEmpty ? file.pathImage : null,
+    );
+    final nextPath =
+        (healedPath != null && healedPath.isNotEmpty) ? healedPath : file.path;
+    final nextThumb = (healedThumb != null && healedThumb.isNotEmpty)
+        ? healedThumb
+        : file.pathImage;
+    if (nextPath == file.path && nextThumb == file.pathImage) return file;
+
+    final updated = file.copyWith(path: nextPath, pathImage: nextThumb);
+    try {
+      await AppStorageService().updateFile(updated);
+    } catch (_) {}
+    return updated;
   }
 
   void _restoreFoldersFromStorage() {

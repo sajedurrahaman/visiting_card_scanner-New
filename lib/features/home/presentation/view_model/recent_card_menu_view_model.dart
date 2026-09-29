@@ -8,6 +8,7 @@ import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/folder/presentation/view_model/folder_viewmodel.dart';
 import 'package:visiting_card/features/home/domain/model/recent_card_item.dart';
 import 'package:visiting_card/features/home/presentation/view_model/home_view_model.dart';
+import 'package:visiting_card/features/scan/domain/visiting_card_folder_paths.dart';
 
 enum RecentCardMenuAction { rename, download, share, delete }
 
@@ -45,9 +46,23 @@ class RecentCardMenuViewModel extends ChangeNotifier {
     ui.AppToast.success(context, 'Renamed to $newName');
   }
 
+  Future<String?> _resolveExistingPath(RecentCardItem item) async {
+    for (final raw in [item.path, item.thumbnailPath]) {
+      final healed =
+          await VisitingCardFolderPaths.resolveStoredAbsolutePath(raw);
+      if (healed != null &&
+          healed.isNotEmpty &&
+          File(healed).existsSync()) {
+        return healed;
+      }
+    }
+    return null;
+  }
+
   Future<void> download(BuildContext context, RecentCardItem item) async {
-    final path = item.path ?? item.thumbnailPath;
-    if (path == null || path.isEmpty || !File(path).existsSync()) {
+    final path = await _resolveExistingPath(item);
+    if (path == null) {
+      if (!context.mounted) return;
       ui.AppToast.success(context, 'File not found');
       return;
     }
@@ -67,8 +82,9 @@ class RecentCardMenuViewModel extends ChangeNotifier {
   }
 
   Future<void> share(BuildContext context, RecentCardItem item) async {
-    final path = item.path ?? item.thumbnailPath;
-    if (path == null || path.isEmpty || !File(path).existsSync()) {
+    final path = await _resolveExistingPath(item);
+    if (path == null) {
+      if (!context.mounted) return;
       ui.AppToast.success(context, 'File not found');
       return;
     }

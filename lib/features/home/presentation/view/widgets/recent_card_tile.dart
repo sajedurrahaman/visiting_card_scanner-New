@@ -247,7 +247,7 @@ class _RecentThumbnail extends StatelessWidget {
   static double get _width => 70.w;
   static double get _height => 46.h;
 
-  File? _resolveImageFile() {
+  File? _resolveImageFileSync() {
     // Scan .txt files are not images — never load them via Image.file.
     if (item.isTextFile) return null;
 
@@ -271,51 +271,84 @@ class _RecentThumbnail extends StatelessWidget {
     return null;
   }
 
+  Future<File?> _resolveImageFileAsync() async {
+    final sync = _resolveImageFileSync();
+    if (sync != null || item.isTextFile || item.fileType == 'visiting_card') {
+      return sync;
+    }
+    for (final raw in [item.thumbnailPath, item.path]) {
+      final healed =
+          await VisitingCardFolderPaths.resolveStoredAbsolutePath(raw);
+      if (healed == null || healed.isEmpty) continue;
+      final lower = healed.toLowerCase();
+      if (lower.endsWith('.txt') || lower.endsWith('.json')) continue;
+      if (Directory(healed).existsSync()) continue;
+      final file = File(healed);
+      if (file.existsSync()) return file;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final file = _resolveImageFile();
+    final syncFile = _resolveImageFileSync();
     final radius = BorderRadius.circular(8.r);
 
-    if (file != null) {
-      return ClipRRect(
-        borderRadius: radius,
-        child: Image.file(
-          file,
-          width: _width,
-          height: _height,
-          fit: BoxFit.fill,
-          filterQuality: FilterQuality.medium,
-          gaplessPlayback: true,
-          errorBuilder: (context, error, stackTrace) {
-            return _placeholder(
-              icon: Icons.broken_image_outlined,
-              background: Colors.grey.shade200,
-            );
-          },
-        ),
-      );
-    }
+    Widget imageOrPlaceholder(File? file) {
+      if (file != null) {
+        return ClipRRect(
+          borderRadius: radius,
+          child: Image.file(
+            file,
+            width: _width,
+            height: _height,
+            fit: BoxFit.fill,
+            filterQuality: FilterQuality.medium,
+            gaplessPlayback: true,
+            errorBuilder: (context, error, stackTrace) {
+              return _placeholder(
+                icon: Icons.broken_image_outlined,
+                background: Colors.grey.shade200,
+              );
+            },
+          ),
+        );
+      }
 
-    if (item.isTextFile) {
-      return _assetThumb(
-        asset: item.fileType == 'barcode'
-            ? ui.AppAssets.barcodeThumbIcon
+      if (item.isTextFile) {
+        return _assetThumb(
+          asset: item.fileType == 'barcode'
+              ? ui.AppAssets.barcodeThumbIcon
+              : item.fileType == 'qr'
+              ? ui.AppAssets.qrCodeThumbIcon
+              : ui.AppAssets.txtFileThumbIcon,
+          background: item.fileType == 'barcode'
+              ? const Color(0xFFE7E0FE)
+              : const Color(0xFFDAEDFF),
+        );
+      }
+
+      return _placeholder(
+        icon: item.fileType == 'barcode'
+            ? Icons.qr_code_2_outlined
             : item.fileType == 'qr'
-            ? ui.AppAssets.qrCodeThumbIcon
-            : ui.AppAssets.txtFileThumbIcon,
-        background: item.fileType == 'barcode'
-            ? const Color(0xFFE7E0FE)
-            : const Color(0xFFDAEDFF),
+            ? Icons.qr_code_outlined
+            : Icons.credit_card,
+        background: const Color(0xFFF3F3F3),
       );
     }
 
-    return _placeholder(
-      icon: item.fileType == 'barcode'
-          ? Icons.qr_code_2_outlined
-          : item.fileType == 'qr'
-          ? Icons.qr_code_outlined
-          : Icons.credit_card,
-      background: const Color(0xFFF3F3F3),
+    if (syncFile != null ||
+        item.isTextFile ||
+        item.fileType == 'visiting_card') {
+      return imageOrPlaceholder(syncFile);
+    }
+
+    return FutureBuilder<File?>(
+      future: _resolveImageFileAsync(),
+      builder: (context, snapshot) {
+        return imageOrPlaceholder(snapshot.data ?? syncFile);
+      },
     );
   }
 

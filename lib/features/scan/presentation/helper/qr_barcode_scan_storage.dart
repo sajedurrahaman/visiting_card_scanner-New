@@ -10,6 +10,7 @@ import 'package:visiting_card/features/folder/presentation/view_model/folder_vie
 import 'package:visiting_card/features/home/domain/model/recent_card_item.dart';
 import 'package:visiting_card/features/home/domain/model/saved_file_model.dart';
 import 'package:visiting_card/features/home/presentation/view_model/home_view_model.dart';
+import 'package:visiting_card/features/scan/domain/visiting_card_folder_paths.dart';
 import 'package:visiting_card/features/scan/presentation/view/screen/qr_barcode_scan_result_screen.dart';
 
 /// Persists QR / Barcode camera scans like PDF Scanner (.txt under Convert Document).
@@ -73,7 +74,9 @@ class QrBarcodeScanStorage {
     BuildContext context,
     RecentCardItem item,
   ) async {
-    final path = item.path;
+    final healed =
+        await VisitingCardFolderPaths.resolveStoredAbsolutePath(item.path);
+    final path = healed ?? item.path;
     if (path == null || path.isEmpty) return;
 
     final file = File(path);

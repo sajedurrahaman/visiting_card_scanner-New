@@ -48,6 +48,35 @@ class HomeViewModel extends ChangeNotifier {
         if (resolved != null) {
           thumb = resolved.path;
         }
+      } else {
+        // QR / barcode PNGs: same iOS Documents UUID churn as visiting cards.
+        final healedPath =
+            await VisitingCardFolderPaths.resolveStoredAbsolutePath(path);
+        final healedThumb =
+            await VisitingCardFolderPaths.resolveStoredAbsolutePath(thumb);
+        var changed = false;
+        if (healedPath != null &&
+            healedPath.isNotEmpty &&
+            healedPath != path) {
+          path = healedPath;
+          changed = true;
+        }
+        if (healedThumb != null &&
+            healedThumb.isNotEmpty &&
+            healedThumb != thumb) {
+          thumb = healedThumb;
+          changed = true;
+        }
+        if (changed) {
+          try {
+            await AppStorageService().updateFile(
+              file.copyWith(
+                path: path ?? file.path,
+                pathImage: thumb ?? file.pathImage,
+              ),
+            );
+          } catch (_) {}
+        }
       }
 
       cards.add(
