@@ -303,10 +303,11 @@ class _VisitingCardContactDetailsScreenState
   }
 
   Future<Uint8List?> _captureTemplateSide(int side) async {
+    // Jump (do not animate) so back capture is never a mid-swipe stitch of
+    // front-right + back-left — same pattern as landscape/vertical editors.
+    _previewVm.jumpSideForCapture = true;
     _previewVm.setSide(side);
-    await Future<void>.delayed(const Duration(milliseconds: 80));
-    await WidgetsBinding.instance.endOfFrame;
-    await Future<void>.delayed(const Duration(milliseconds: 40));
+    await waitForVisitingCardCaptureFrame();
     try {
       return await captureVisitingCardPngBytes(
         _templateCaptureKey,
@@ -382,6 +383,7 @@ class _VisitingCardContactDetailsScreenState
       _previewVm.setSide(previous);
       ui.AppToast.show(context, message: 'Failed to download visiting card');
     } finally {
+      _previewVm.jumpSideForCapture = false;
       if (mounted) {
         setState(() => _isDownloadingTemplate = false);
       }
@@ -447,6 +449,7 @@ class _VisitingCardContactDetailsScreenState
       _previewVm.setSide(previous);
       ui.AppToast.show(context, message: 'Failed to share visiting card');
     } finally {
+      _previewVm.jumpSideForCapture = false;
       if (mounted) setState(() => _isDownloadingTemplate = false);
     }
   }

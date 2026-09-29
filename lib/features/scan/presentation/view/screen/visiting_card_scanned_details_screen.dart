@@ -309,6 +309,7 @@ class _VisitingCardScannedDetailsScreenState
   }
 
   Future<Uint8List?> _captureTemplateSide(int side) async {
+    _previewVm.jumpSideForCapture = true;
     _previewVm.setSide(side);
     await waitForVisitingCardCaptureFrame();
     try {
@@ -398,6 +399,7 @@ class _VisitingCardScannedDetailsScreenState
       _previewVm.setSide(previous);
       ui.AppToast.show(context, message: 'Failed to download visiting card');
     } finally {
+      _previewVm.jumpSideForCapture = false;
       if (mounted) {
         setState(() => _isDownloadingTemplate = false);
       }
@@ -427,6 +429,7 @@ class _VisitingCardScannedDetailsScreenState
         return _captureTemplateSide(side);
       },
     );
+    _previewVm.jumpSideForCapture = false;
     if (!mounted) return;
     _previewVm.setSide(previousSide);
 
@@ -534,6 +537,7 @@ class _VisitingCardScannedDetailsScreenState
       _previewVm.setSide(previous);
       ui.AppToast.show(context, message: 'Failed to share visiting card');
     } finally {
+      _previewVm.jumpSideForCapture = false;
       if (mounted) setState(() => _isDownloadingTemplate = false);
     }
   }

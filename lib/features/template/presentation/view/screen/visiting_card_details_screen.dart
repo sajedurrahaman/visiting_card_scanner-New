@@ -37,6 +37,7 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
     VisitingCardEditContactViewModel vm,
     int side,
   ) async {
+    vm.jumpSideForCapture = true;
     vm.setSide(side);
     await waitForVisitingCardCaptureFrame();
     try {
@@ -90,6 +91,7 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
       vm.setSide(previous);
       ui.AppToast.show(context, message: 'Failed to download visiting card');
     } finally {
+      vm.jumpSideForCapture = false;
       if (mounted) setState(() => _isDownloading = false);
     }
   }
@@ -110,6 +112,7 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
       folderViewModel: folder,
       captureSide: (side) => _captureSide(vm, side),
     );
+    vm.jumpSideForCapture = false;
 
     if (!mounted) return;
     vm.setSide(previous);
@@ -174,6 +177,7 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
       vm.setSide(previous);
       ui.AppToast.show(context, message: 'Failed to share visiting card');
     } finally {
+      vm.jumpSideForCapture = false;
       if (mounted) setState(() => _isSharingCard = false);
     }
   }
