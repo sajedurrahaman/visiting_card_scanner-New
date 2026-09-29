@@ -557,7 +557,7 @@ class _VisitingCardLandscapeEditScreenState
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         final ratio = vm.isHorizontal ? 1.75 : 0.63;
-                        final scale = _previewing ? 0.82 : 0.68;
+                        final scale = _previewing ? 0.88 : 0.80;
                         final topGap = _previewing ? 0.0 : pad;
                         // Pager plus the gap under the card. Kept out of the
                         // card budget so the column cannot overflow.
@@ -600,14 +600,14 @@ class _VisitingCardLandscapeEditScreenState
                                         showPager: false,
                                         enableFieldTransform: !_previewing,
                                         selectionBorderOnlyWhenSelected: true,
-                                        pageGap: 4,
+                                        pageGap: 2,
                                       ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 7),
                             Opacity(
                               opacity: _booting ? 0 : 1,
                               child: _LandscapeSidePager(
@@ -870,8 +870,8 @@ class _LandscapeSidePager extends StatelessWidget {
           onTap: onPrevious,
         ),
         Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          margin: const EdgeInsets.symmetric(horizontal: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(6),
@@ -923,11 +923,11 @@ class _PagerArrow extends StatelessWidget {
         customBorder: const CircleBorder(),
         onTap: enabled ? onTap : null,
         child: SizedBox(
-          width: 28,
-          height: 28,
+          width: 22,
+          height: 22,
           child: Icon(
             icon,
-            size: 20,
+            size: 18,
             color: enabled ? const Color(0xFF1A1A1A) : Colors.black26,
           ),
         ),

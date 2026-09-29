@@ -47,7 +47,7 @@ double _editorCardWidth(
   );
   final columnH = math.max(80.0, shortestSafe - pad);
   const ratio = 1.75;
-  var cardW = columnW * 0.68;
+  var cardW = columnW * 0.80;
   final cardH = cardW / ratio;
   final room = math.max(40.0, columnH - pad - 56.0);
   final maxH = math.min(columnH * 0.70, room);
