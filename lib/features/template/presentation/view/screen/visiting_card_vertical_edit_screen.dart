@@ -356,6 +356,7 @@ class _VisitingCardVerticalEditScreenState
     final field = vm.selectedOverlay ?? VisitingCardOverlayField.name;
     final next = await VisitingCardLandscapeEditTextScreen.open(
       context,
+      singleLine: vm.selectedOverlay == VisitingCardOverlayField.address,
       initialValue: vm.selectedDuplicateId == null
           ? vm.overlayText(field)
           : vm.currentOverlays[VisitingCardEditContactViewModel.duplicateKey(

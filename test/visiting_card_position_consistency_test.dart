@@ -75,6 +75,11 @@ void main() {
           maxLines: text.maxLines,
         )..layout(maxWidth: overlay.boxWidth);
         lines = painter.computeLineMetrics().length;
+        if (text.text.toPlainText().toLowerCase() == vm.displayAddress.toLowerCase()) {
+          expect(text.maxLines, 2);
+          expect(text.softWrap, isTrue);
+          expect(lines, lessThanOrEqualTo(2));
+        }
         painter.dispose();
       }
       return (
@@ -132,7 +137,8 @@ void main() {
         vm.phones.first.value = '+880 1700 123456';
         vm.emails.first.value = 'emma@example.com';
         vm.websites.first.value = 'www.example.com';
-        vm.addresses.first.value = '123 Main Street, Dhaka';
+        vm.addresses.first.value =
+            '12/2, khapara road, khilket, dhaka, bangladesh';
         vm.frontLogoAssetPath =
             'assets/visiting_card_scanner_logo/edit_logo_1.svg';
         vm.backLogoAssetPath = vm.frontLogoAssetPath;

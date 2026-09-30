@@ -719,6 +719,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     }) {
       if (configPos == null || value.trim().isEmpty) return;
       final t = vm.resolvedTransform(field, isFront: isFront);
+      final isAddress = field == VisitingCardOverlayField.address;
       final isTagline = field == VisitingCardOverlayField.tagline;
       final hugLine = landscape || widget.singleLineText;
       final configuredWidth = size.width * (t.width ?? configPos.width ?? 0.4);
@@ -731,7 +732,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           : (isTagline
                 ? configuredWidth.clamp(1.0, availableWidth).toDouble()
                 : configuredWidth);
-      final maxLines = isTagline ? null : configPos.maxLines;
+      final maxLines = isAddress ? 2 : (isTagline ? null : configPos.maxLines);
       final display = visitingCardStyledText(
         value,
         t,
@@ -767,7 +768,13 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       late TextPainter painter;
       late double boxW;
       var landscapeWrap = false;
-      if (hugLine) {
+      if (isAddress) {
+        // Keep the input as one value; wrap only the card presentation in the
+        // template's address area (or the width set by the resize handles).
+        boxW = configuredWidth.clamp(1.0, availableWidth).toDouble();
+        landscapeWrap = true;
+        painter = layoutText(measureStyle, boxW, lines: 2, allowEllipsis: true);
+      } else if (hugLine) {
         // Single-line intrinsic so select never forces a newline.
         painter = layoutText(measureStyle, double.infinity, lines: 1);
         final intrinsic = (painter.width + textInset)
@@ -854,9 +861,9 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
 
       final fill = Text(
         display,
-        maxLines: hugLine ? (landscapeWrap ? null : 1) : maxLines,
-        softWrap: hugLine ? landscapeWrap : isTagline,
-        overflow: hugLine
+        maxLines: isAddress ? 2 : (hugLine ? (landscapeWrap ? null : 1) : maxLines),
+        softWrap: isAddress || (hugLine ? landscapeWrap : isTagline),
+        overflow: isAddress ? TextOverflow.ellipsis : hugLine
             ? TextOverflow.visible
             : (isTagline ? TextOverflow.visible : TextOverflow.ellipsis),
         textAlign: configPos.textAlign,
@@ -871,9 +878,9 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           text: display,
           style: measureStyle,
           transform: t,
-          maxLines: hugLine ? (landscapeWrap ? null : 1) : maxLines,
-          softWrap: hugLine ? landscapeWrap : isTagline,
-          overflow: hugLine
+          maxLines: isAddress ? 2 : (hugLine ? (landscapeWrap ? null : 1) : maxLines),
+          softWrap: isAddress || (hugLine ? landscapeWrap : isTagline),
+          overflow: isAddress ? TextOverflow.ellipsis : hugLine
               ? TextOverflow.visible
               : (isTagline ? TextOverflow.visible : TextOverflow.ellipsis),
           textAlign: configPos.textAlign,
