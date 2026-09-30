@@ -510,6 +510,15 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     return selectedOverlay == VisitingCardOverlayField.logo;
   }
 
+  /// Template QR field, or an extra QR added from the QR Code tool.
+  bool get selectedIsQr {
+    if (selectedDuplicateId != null) {
+      return currentOverlays[duplicateKey(selectedDuplicateId!)]?.duplicateOf ==
+          'qr';
+    }
+    return selectedOverlay == VisitingCardOverlayField.qr;
+  }
+
   bool get selectedIsImage {
     if (selectedDuplicateId != null) {
       return _sourceIsImage(
@@ -687,6 +696,47 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       return;
     }
     applyLogoImage(value);
+  }
+
+  /// Adds another QR on the current side. The QR already on the card stays.
+  void addCustomQr(String assetPath) {
+    final path = assetPath.trim();
+    if (path.isEmpty) return;
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+    final existing = currentOverlays.values
+        .where((t) => t.duplicateOf == 'qr')
+        .length;
+    final nudge = (existing % 6) * 0.05;
+    currentOverlays[duplicateKey(id)] = VisitingCardFieldTransform(
+      left: (0.62 + nudge).clamp(0.06, 0.82),
+      top: (0.55 + nudge).clamp(0.06, 0.78),
+      size: 0.14,
+      duplicateOf: 'qr',
+      duplicateImagePath: path,
+    );
+    selectedOverlay = null;
+    selectedDuplicateId = id;
+    notifyListeners();
+  }
+
+  /// Replaces the selected QR, or adds a new one when no QR is selected.
+  void placeQr(String path) {
+    final value = path.trim();
+    if (value.isEmpty) return;
+    if (!selectedIsQr) {
+      addCustomQr(value);
+      return;
+    }
+    if (selectedDuplicateId != null) {
+      final key = duplicateKey(selectedDuplicateId!);
+      final current = currentOverlays[key];
+      if (current != null) {
+        currentOverlays[key] = current.copyWith(duplicateImagePath: value);
+        notifyListeners();
+      }
+      return;
+    }
+    applyQrImage(value);
   }
 
   /// Adds a new text field on the current side and selects it.
@@ -1490,6 +1540,22 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         : 'jpg';
     final dest = File(
       '${logoDir.path}/logo_${DateTime.now().millisecondsSinceEpoch}.$ext',
+    );
+    await source.copy(dest.path);
+    return dest.path;
+  }
+
+  Future<String> persistQrFile(File source) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final qrDir = Directory('${dir.path}/visiting_card/qr_embed');
+    if (!await qrDir.exists()) {
+      await qrDir.create(recursive: true);
+    }
+    final ext = source.path.contains('.')
+        ? source.path.split('.').last
+        : 'png';
+    final dest = File(
+      '${qrDir.path}/qr_${DateTime.now().millisecondsSinceEpoch}.$ext',
     );
     await source.copy(dest.path);
     return dest.path;

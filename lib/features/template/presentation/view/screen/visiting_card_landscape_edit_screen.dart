@@ -15,6 +15,7 @@ import 'package:visiting_card/features/parent/presentation/view_model/parent_vie
 import 'package:visiting_card/features/scan/presentation/helper/visiting_card_share_helper.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_export_utils.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
+import 'package:visiting_card/features/template/presentation/helper/visiting_card_qr_payload.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_edit_text_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_icon_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_logo_screen.dart';
@@ -23,6 +24,7 @@ import 'package:visiting_card/features/template/presentation/view/screen/visitin
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_font_style_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_template_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_rename_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_tempalte_qrcode_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
 
@@ -307,6 +309,55 @@ class _VisitingCardLandscapeEditScreenState
 
   Future<void> _onPickLogo() {
     return VisitingCardLandscapeLogoScreen.open(context);
+  }
+
+  /// Opens QR Template (portrait ScreenUtil screen), then places / replaces QR
+  /// like Logos: selected QR → replace; unselected → add new QR on the card.
+  Future<void> _onPickQr() async {
+    if (_busy || _booting) return;
+    final vm = context.read<VisitingCardEditContactViewModel>();
+    final alreadyPortrait =
+        MediaQuery.sizeOf(context).height > MediaQuery.sizeOf(context).width;
+
+    setState(() => _booting = true);
+    await WidgetsBinding.instance.endOfFrame;
+    if (!alreadyPortrait) {
+      await SystemChrome.setPreferredOrientations(const [
+        DeviceOrientation.portraitUp,
+      ]);
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      await _waitUntil(landscape: false);
+      if (!mounted) return;
+    }
+
+    final path = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => VisitingCardTempalteQrcodeScreen(
+          qrData: VisitingCardQrPayload.fromEditContact(vm),
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+    if (!alreadyPortrait) {
+      await SystemChrome.setPreferredOrientations(const [
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      await _waitUntil(landscape: true);
+      if (!mounted) return;
+    }
+    setState(() => _booting = false);
+
+    if (path == null || path.isEmpty) return;
+    var resolved = path;
+    if (!path.startsWith('assets/')) {
+      resolved = await vm.persistQrFile(File(path));
+      if (!mounted) return;
+    }
+    vm.placeQr(resolved);
   }
 
   Future<void> _onPickImage() async {
@@ -735,6 +786,12 @@ class _VisitingCardLandscapeEditScreenState
                                       ),
                                       _RailItem(
                                         asset:
+                                            'assets/visiting_card_option_icon/qrcode_option_icon.svg',
+                                        label: 'QR Code',
+                                        onTap: _onPickQr,
+                                      ),
+                                      _RailItem(
+                                        asset:
                                             'assets/visiting_card_option_icon/image_option_icon.svg',
                                         label: 'Images',
                                         onTap: _onPickImage,
@@ -768,6 +825,8 @@ class _VisitingCardLandscapeEditScreenState
                                     onReplaceLogo: vm.selectedIsLogo
                                         ? _onPickLogo
                                         : null,
+                                    onReplaceQr:
+                                        vm.selectedIsQr ? _onPickQr : null,
                                     onEditText: _onEditText,
                                     onColor: _onColor,
                                     colorActive: _panel == 'Color',
@@ -1071,6 +1130,7 @@ class _SelectedFieldRail extends StatelessWidget {
     required this.showTextTools,
     required this.showColor,
     required this.onReplaceLogo,
+    required this.onReplaceQr,
     required this.onEditText,
     required this.onColor,
     required this.colorActive,
@@ -1093,6 +1153,7 @@ class _SelectedFieldRail extends StatelessWidget {
   final bool showTextTools;
   final bool showColor;
   final VoidCallback? onReplaceLogo;
+  final VoidCallback? onReplaceQr;
   final VoidCallback onEditText;
   final VoidCallback onColor;
   final bool colorActive;
@@ -1121,6 +1182,12 @@ class _SelectedFieldRail extends StatelessWidget {
             asset: 'assets/visiting_card_option_icon/logo_option_icon.svg',
             label: 'Replace logo',
             onTap: onReplaceLogo!,
+          ),
+        if (onReplaceQr != null)
+          _SelectRailItem(
+            asset: 'assets/visiting_card_option_icon/qrcode_option_icon.svg',
+            label: 'Replace QRCode',
+            onTap: onReplaceQr!,
           ),
         if (showTextTools)
           _SelectRailItem(
