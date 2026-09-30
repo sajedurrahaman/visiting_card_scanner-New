@@ -1193,7 +1193,7 @@ class _SelectedFieldRail extends StatelessWidget {
         ),
         _SelectRailItem(
           asset: '$_selectIconDir/send_front_icon.svg',
-          label: 'Send Front',
+          label: 'Bring Front',
           onTap: onSendFront,
         ),
         _SelectRailItem(
