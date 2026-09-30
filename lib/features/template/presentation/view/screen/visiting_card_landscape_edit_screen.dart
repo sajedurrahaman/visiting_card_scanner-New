@@ -1726,7 +1726,11 @@ class _AdjustBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final percent = (fraction.clamp(0.0, 1.0) * 100).round();
+    final clamped = fraction.clamp(0.0, 1.0);
+    final isRotate = label == 'Rotate';
+    final valueLabel = isRotate
+        ? '${(clamped * 360).round()}°'
+        : '${(clamped * 100).round()}%';
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Container(
@@ -1816,15 +1820,15 @@ class _AdjustBar extends StatelessWidget {
                   ),
                 ),
                 child: Slider(
-                  value: fraction.clamp(0.0, 1.0),
+                  value: clamped,
                   onChanged: onChanged,
                 ),
               ),
             ),
             SizedBox(
-              width: 42,
+              width: isRotate ? 48 : 42,
               child: Text(
-                '$percent%',
+                valueLabel,
                 textAlign: TextAlign.right,
                 style: const TextStyle(
                   color: Colors.white,

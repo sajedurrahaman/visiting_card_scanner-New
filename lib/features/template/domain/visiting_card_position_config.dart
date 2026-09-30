@@ -2211,7 +2211,7 @@ class VisitingCardPositionConfig {
         fontWeight: FontWeight.w700,
         uppercase: true,
         color: Color(0xFFFFFFFF),
-        maxDisplayNameLength: 18,
+        maxDisplayNameLength: 24,
       ),
       designation: VisitingCardFieldPosition(
         left: 0.08,
