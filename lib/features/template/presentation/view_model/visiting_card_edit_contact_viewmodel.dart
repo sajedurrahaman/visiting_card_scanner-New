@@ -217,6 +217,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       'h14',
       'h17',
       'h18',
+      'h19',
       'v1',
       'v2',
       'v4',

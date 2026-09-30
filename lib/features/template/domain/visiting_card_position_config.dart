@@ -2148,6 +2148,11 @@ class VisitingCardPositionConfig {
   static const horizontalTemplate19 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.montserrat,
     front: VisitingCardSidePositions(
+      logo: VisitingCardFieldPosition(
+          left: 0.118,
+          top: 0.52,
+          size: 0.15,
+      ),
       name: VisitingCardFieldPosition(
         left: 0.05,
         top: 0.08,
@@ -2204,7 +2209,7 @@ class VisitingCardPositionConfig {
     fontFamily: VisitingCardFonts.montserrat,
     front: VisitingCardSidePositions(
       name: VisitingCardFieldPosition(
-        left: 0.08,
+        left: 0.135,
         top: 0.08,
         width: 0.62,
         fontSize: 18,
@@ -2214,7 +2219,7 @@ class VisitingCardPositionConfig {
         maxDisplayNameLength: 24,
       ),
       designation: VisitingCardFieldPosition(
-        left: 0.08,
+        left: 0.135,
         top: 0.32,
         width: 0.55,
         fontSize: 11,
