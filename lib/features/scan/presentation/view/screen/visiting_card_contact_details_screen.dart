@@ -303,10 +303,9 @@ class _VisitingCardContactDetailsScreenState
   }
 
   Future<Uint8List?> _captureTemplateSide(int side) async {
+    _previewVm.jumpSideForCapture = true;
     _previewVm.setSide(side);
-    await Future<void>.delayed(const Duration(milliseconds: 80));
-    await WidgetsBinding.instance.endOfFrame;
-    await Future<void>.delayed(const Duration(milliseconds: 40));
+    await waitForVisitingCardCaptureFrame();
     try {
       return await captureVisitingCardPngBytes(
         _templateCaptureKey,
@@ -353,6 +352,7 @@ class _VisitingCardContactDetailsScreenState
       final frontBytes = await _captureTemplateSide(0);
       final backBytes = await _captureTemplateSide(1);
       if (!mounted) return;
+      _previewVm.jumpSideForCapture = false;
       _previewVm.setSide(previous);
 
       if (frontBytes == null || backBytes == null) {
@@ -379,9 +379,11 @@ class _VisitingCardContactDetailsScreenState
       ui.AppToast.success(context, 'Downloaded to gallery');
     } catch (_) {
       if (!mounted) return;
+      _previewVm.jumpSideForCapture = false;
       _previewVm.setSide(previous);
       ui.AppToast.show(context, message: 'Failed to download visiting card');
     } finally {
+      _previewVm.jumpSideForCapture = false;
       if (mounted) {
         setState(() => _isDownloadingTemplate = false);
       }
@@ -417,6 +419,7 @@ class _VisitingCardContactDetailsScreenState
       final frontBytes = await _captureTemplateSide(0);
       final backBytes = await _captureTemplateSide(1);
       if (!mounted) return;
+      _previewVm.jumpSideForCapture = false;
       _previewVm.setSide(previous);
 
       if (frontBytes == null || backBytes == null) {
@@ -439,9 +442,11 @@ class _VisitingCardContactDetailsScreenState
       );
     } catch (_) {
       if (!mounted) return;
+      _previewVm.jumpSideForCapture = false;
       _previewVm.setSide(previous);
       ui.AppToast.show(context, message: 'Failed to share visiting card');
     } finally {
+      _previewVm.jumpSideForCapture = false;
       if (mounted) setState(() => _isDownloadingTemplate = false);
     }
   }
@@ -674,15 +679,15 @@ class _VisitingCardContactDetailsScreenState
             RepaintBoundary(
               key: _templateCaptureKey,
               child: VisitingCardLivePreview(
-                key: ValueKey(
-                  'preview-$_imageEpoch-'
-                  '${_previewVm.qrAssetPath}-'
-                  '${_previewVm.logoAssetPath}',
-                ),
+                // Do not key on logo/qr paths — logoAssetPath flips with
+                // sideIndex and would recreate the PageView mid-swipe
+                // (queer 1/2 ↔ 2/2 animation). Editors already avoid this.
+                key: ValueKey('preview-$_imageEpoch'),
                 vm: _previewVm,
                 showPager: false,
                 singleLineText: true,
                 matchEditorText: true,
+                pageGap: 2,
               ),
             ),
             Positioned(

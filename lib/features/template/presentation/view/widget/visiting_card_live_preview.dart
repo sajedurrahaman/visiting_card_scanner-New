@@ -248,11 +248,9 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     // page. Taking over with animateToPage cuts that fling short.
     if (offset.round() == page) return;
 
-    // Details/download preview has no in-widget pager. Jump so capture never
-    // snapshots the mid-swipe frame (front-right + back-left stitched).
-    // Arrow changes still animate, except while a capture is running.
-    final animateSideChange = !widget.vm.jumpSideForCapture &&
-        (widget.showPager || widget.enableFieldTransform);
+    // Jump only while capture is running so download/share never snapshots a
+    // mid-swipe frame. Arrow / side changes still animate (Card Details too).
+    final animateSideChange = !widget.vm.jumpSideForCapture;
 
     _ignorePageCallback = true;
     if (!animateSideChange) {
