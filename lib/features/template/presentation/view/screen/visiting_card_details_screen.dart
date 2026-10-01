@@ -37,15 +37,20 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
     VisitingCardEditContactViewModel vm,
     int side,
   ) async {
-    vm.setSide(side);
-    await waitForVisitingCardCaptureFrame();
+    final previousCaptureMode = vm.jumpSideForCapture;
+    vm.jumpSideForCapture = true;
     try {
+      vm.setSide(side);
+      await waitForVisitingCardCaptureFrame();
       return await captureVisitingCardPngBytes(
         _cardCaptureKey,
         isHorizontal: vm.isHorizontal,
       );
     } catch (_) {
       return null;
+    } finally {
+      vm.jumpSideForCapture = previousCaptureMode;
+      if (mounted) setState(() {});
     }
   }
 

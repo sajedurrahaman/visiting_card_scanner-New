@@ -248,8 +248,7 @@ class _RecentThumbnail extends StatelessWidget {
 
   final RecentCardItem item;
 
-  /// Matches PDF-Scanner Discover/Directory list image thumbs:
-  /// 50×46, radius 8, [Image.file] + [BoxFit.cover].
+  /// Fixed list slot; the image keeps its original aspect ratio inside it.
   static double get _width => 80.w;
   static double get _qrBarcodeWidth => 70.w;
   static double get _height => 46.h;
@@ -290,21 +289,53 @@ class _RecentThumbnail extends StatelessWidget {
 
     Widget child;
     if (file != null) {
-      child = ClipRRect(
-        borderRadius: radius,
-        child: Image.file(
-          file,
+      if (item.fileType == 'visiting_card') {
+        // Center gives the image loose constraints, so its layout follows its
+        // aspect ratio. Attach the shadow to that image, not the list slot.
+        return SizedBox(
           width: _thumbWidth,
           height: _height,
-          fit: _isQrOrBarcode ? BoxFit.contain : BoxFit.fill,
-          filterQuality: FilterQuality.medium,
-          gaplessPlayback: true,
-          errorBuilder: (context, error, stackTrace) {
-            return _placeholder(
-              icon: Icons.broken_image_outlined,
-              background: Colors.grey.shade200,
-            );
-          },
+          child: Padding(
+            padding: EdgeInsets.all(3.r),
+            child: Center(
+              child: _floatingBox(
+                Image.file(
+                  file,
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.medium,
+                  gaplessPlayback: true,
+                  errorBuilder: (context, error, stackTrace) => _placeholder(
+                    icon: Icons.broken_image_outlined,
+                    background: Colors.grey.shade200,
+                  ),
+                ),
+                borderRadius: BorderRadius.zero,
+              ),
+            ),
+          ),
+        );
+      }
+      child = ClipRRect(
+        borderRadius: radius,
+        child: SizedBox(
+          width: _thumbWidth,
+          height: _height,
+          child: Padding(
+            // Keep card corners clear of the rounded thumbnail clip.
+            padding: _isQrOrBarcode ? EdgeInsets.zero : EdgeInsets.all(3.r),
+            child: Image.file(
+              file,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.medium,
+              gaplessPlayback: true,
+              errorBuilder: (context, error, stackTrace) {
+                return _placeholder(
+                  icon: Icons.broken_image_outlined,
+                  background: Colors.grey.shade200,
+                );
+              },
+            ),
+          ),
         ),
       );
     } else if (item.isTextFile) {
@@ -352,19 +383,23 @@ class _RecentThumbnail extends StatelessWidget {
     );
   }
 
-  Widget _floatingBox(Widget child) {
+  Widget _floatingBox(Widget child, {BorderRadius? borderRadius}) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10.r),
+        borderRadius: borderRadius ?? BorderRadius.circular(10.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.10),
-            blurRadius: 10,
+            color: Colors.black.withValues(
+              alpha: item.fileType == 'visiting_card' ? 0.16 : 0.10,
+            ),
+            blurRadius: item.fileType == 'visiting_card' ? 12 : 10,
             offset: const Offset(0, 3),
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 4,
+            color: Colors.black.withValues(
+              alpha: item.fileType == 'visiting_card' ? 0.07 : 0.04,
+            ),
+            blurRadius: item.fileType == 'visiting_card' ? 5 : 4,
             offset: const Offset(0, 1),
           ),
         ],

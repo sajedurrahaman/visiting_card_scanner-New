@@ -1913,6 +1913,10 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       await File(frontPath).writeAsBytes(_toJpeg(frontBytes), flush: true);
       await File(backPath).writeAsBytes(_toJpeg(backBytes), flush: true);
 
+      // Updates reuse these paths; don't keep displaying the previous capture.
+      await FileImage(File(frontPath)).evict();
+      await FileImage(File(backPath)).evict();
+
       final savedContact = SavedContactInfo(
         name: names.first.value.trim(),
         designation: designations.first.value.trim(),

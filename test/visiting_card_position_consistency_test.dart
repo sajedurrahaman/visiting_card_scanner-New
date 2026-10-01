@@ -122,6 +122,40 @@ void main() {
     }
   }
 
+  for (final horizontal in [true, false]) {
+    testWidgets('capture snaps a partially swiped ${horizontal ? 'horizontal' : 'vertical'} card', (tester) async {
+      addTearDown(tester.view.reset);
+      final vm = VisitingCardEditContactViewModel(
+        templateId: horizontal ? 'h19' : 'v1',
+        isHorizontal: horizontal,
+        frontAssetWithoutData: 'assets/images/unused-test-background.png',
+        backAssetWithoutData: 'assets/images/unused-test-background.png',
+      );
+      vm.names.first.value = 'Emma Wilson';
+      await measure(tester, vm, width: 320, contactInfo: true);
+      final controller = tester.widget<PageView>(find.byType(PageView)).controller!;
+      for (final fraction in [0.49, 0.51]) {
+        vm.jumpSideForCapture = false;
+        controller.jumpTo(controller.position.viewportDimension * fraction);
+        await tester.pump();
+        expect(controller.page, closeTo(fraction, 0.0001));
+        // Request the side that round() already considers selected: capture
+        // must still cancel the partial swipe rather than returning early.
+        vm.jumpSideForCapture = true;
+        vm.setSide(fraction.round());
+        await tester.pump();
+        expect(controller.page, fraction.round().toDouble());
+        expect(tester.widget<PageView>(find.byType(PageView)).physics,
+            isA<NeverScrollableScrollPhysics>());
+        vm.setSide(1 - fraction.round());
+        await tester.pump();
+        expect(controller.page, (1 - fraction.round()).toDouble());
+      }
+      await tester.pumpWidget(const SizedBox());
+      vm.dispose();
+    });
+  }
+
   for (final id in ['h18', 'h20']) {
     testWidgets('$id wraps the reported addresses into two complete lines', (tester) async {
       addTearDown(tester.view.reset);

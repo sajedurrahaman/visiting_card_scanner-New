@@ -182,22 +182,21 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
 
   void _animateTo(int page) {
     if (!_pageController.hasClients) return;
+    // A fractional page can round to the requested side while still showing
+    // both faces. Capture must snap even when that side is already selected.
+    if (widget.vm.jumpSideForCapture) {
+      _ignorePageCallback = true;
+      _pageController.jumpToPage(page);
+      _ignorePageCallback = false;
+      return;
+    }
     final offset =
         _pageController.page ?? _pageController.initialPage.toDouble();
     // A finger swipe already owns the motion once it has crossed onto this
     // page. Taking over with animateToPage cuts that fling short.
     if (offset.round() == page) return;
 
-    // Jump only while capture is running so download/share never snapshots a
-    // mid-swipe frame. Arrow / side changes still animate (Card Details too).
-    final animateSideChange = !widget.vm.jumpSideForCapture;
-
     _ignorePageCallback = true;
-    if (!animateSideChange) {
-      _pageController.jumpToPage(page);
-      _ignorePageCallback = false;
-      return;
-    }
     _pageController
         .animateToPage(
           page,
@@ -284,7 +283,8 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     // finger swipe does not construct the other face mid-gesture.
     final pager = PageView(
       controller: _pageController,
-      physics: widget.enableFieldTransform && widget.vm.hasSelection
+      physics: widget.vm.jumpSideForCapture ||
+              (widget.enableFieldTransform && widget.vm.hasSelection)
           ? const NeverScrollableScrollPhysics()
           : const BouncingScrollPhysics(
               parent: AlwaysScrollableScrollPhysics(),

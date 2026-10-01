@@ -309,15 +309,20 @@ class _VisitingCardScannedDetailsScreenState
   }
 
   Future<Uint8List?> _captureTemplateSide(int side) async {
-    _previewVm.setSide(side);
-    await waitForVisitingCardCaptureFrame();
+    final previousCaptureMode = _previewVm.jumpSideForCapture;
+    _previewVm.jumpSideForCapture = true;
     try {
+      _previewVm.setSide(side);
+      await waitForVisitingCardCaptureFrame();
       return await captureVisitingCardPngBytes(
         _templateCaptureKey,
         isHorizontal: _previewVm.isHorizontal,
       );
     } catch (_) {
       return null;
+    } finally {
+      _previewVm.jumpSideForCapture = previousCaptureMode;
+      if (mounted) setState(() {});
     }
   }
 
