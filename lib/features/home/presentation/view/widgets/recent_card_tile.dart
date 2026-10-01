@@ -45,10 +45,10 @@ class RecentCardTile extends StatelessWidget {
           label: 'Download',
         ),
       _buildMenuItem(
-        value: RecentCardMenuAction.share,
-        icon: Icons.share_outlined,
-        label: 'Share',
-      ),
+          value: RecentCardMenuAction.share,
+          icon: Icons.share_outlined,
+          label: 'Share',
+        ),
       _buildMenuItem(
         value: RecentCardMenuAction.delete,
         icon: Icons.delete_outline,
@@ -57,8 +57,7 @@ class RecentCardTile extends StatelessWidget {
     ];
 
     return GestureDetector(
-      onTap:
-          onTap ??
+      onTap: onTap ??
           (isSelectionMode
               ? null
               : () async {
@@ -119,7 +118,10 @@ class RecentCardTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: ui.AppTextStyles.helperText(
                       color: const Color(0xFF1A1A1A),
-                    ).copyWith(fontWeight: FontWeight.w600, fontSize: 12.sp),
+                    ).copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12.sp,
+                    ),
                   ),
                   SizedBox(height: 4.h),
                   Row(
@@ -233,7 +235,11 @@ class RecentCardTile extends StatelessWidget {
       }
     }
 
-    await menuViewModel.handleMenuAction(context, item: item, action: action);
+    await menuViewModel.handleMenuAction(
+      context,
+      item: item,
+      action: action,
+    );
   }
 }
 
@@ -242,12 +248,17 @@ class _RecentThumbnail extends StatelessWidget {
 
   final RecentCardItem item;
 
-  /// Matches PDF-Scanner Discover/Directory list image thumbs:
-  /// 50×46, radius 8, [Image.file] + [BoxFit.cover].
-  static double get _width => 70.w;
+  /// Fixed list slot; the image keeps its original aspect ratio inside it.
+  static double get _width => 80.w;
+  static double get _qrBarcodeWidth => 70.w;
   static double get _height => 46.h;
 
-  File? _resolveImageFileSync() {
+  bool get _isQrOrBarcode =>
+      item.fileType == 'qr' || item.fileType == 'barcode';
+
+  double get _thumbWidth => _isQrOrBarcode ? _qrBarcodeWidth : _width;
+
+  File? _resolveImageFile() {
     // Scan .txt files are not images — never load them via Image.file.
     if (item.isTextFile) return null;
 
@@ -271,90 +282,140 @@ class _RecentThumbnail extends StatelessWidget {
     return null;
   }
 
-  Future<File?> _resolveImageFileAsync() async {
-    final sync = _resolveImageFileSync();
-    if (sync != null || item.isTextFile || item.fileType == 'visiting_card') {
-      return sync;
-    }
-    for (final raw in [item.thumbnailPath, item.path]) {
-      final healed =
-          await VisitingCardFolderPaths.resolveStoredAbsolutePath(raw);
-      if (healed == null || healed.isEmpty) continue;
-      final lower = healed.toLowerCase();
-      if (lower.endsWith('.txt') || lower.endsWith('.json')) continue;
-      if (Directory(healed).existsSync()) continue;
-      final file = File(healed);
-      if (file.existsSync()) return file;
-    }
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final syncFile = _resolveImageFileSync();
+    final file = _resolveImageFile();
     final radius = BorderRadius.circular(8.r);
 
-    Widget imageOrPlaceholder(File? file) {
-      if (file != null) {
-        return ClipRRect(
-          borderRadius: radius,
-          child: Image.file(
-            file,
-            width: _width,
-            height: _height,
-            fit: BoxFit.fill,
-            filterQuality: FilterQuality.medium,
-            gaplessPlayback: true,
-            errorBuilder: (context, error, stackTrace) {
-              return _placeholder(
-                icon: Icons.broken_image_outlined,
-                background: Colors.grey.shade200,
-              );
-            },
+    Widget child;
+    if (file != null) {
+      if (item.fileType == 'visiting_card') {
+        // Center gives the image loose constraints, so its layout follows its
+        // aspect ratio. Attach the shadow to that image, not the list slot.
+        return SizedBox(
+          width: _thumbWidth,
+          height: _height,
+          child: Padding(
+            padding: EdgeInsets.all(3.r),
+            child: Center(
+              child: _floatingBox(
+                Image.file(
+                  file,
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.medium,
+                  gaplessPlayback: true,
+                  errorBuilder: (context, error, stackTrace) => _placeholder(
+                    icon: Icons.broken_image_outlined,
+                    background: Colors.grey.shade200,
+                  ),
+                ),
+                borderRadius: BorderRadius.zero,
+              ),
+            ),
           ),
         );
       }
-
-      if (item.isTextFile) {
-        return _assetThumb(
-          asset: item.fileType == 'barcode'
-              ? ui.AppAssets.barcodeThumbIcon
-              : item.fileType == 'qr'
-              ? ui.AppAssets.qrCodeThumbIcon
-              : ui.AppAssets.txtFileThumbIcon,
-          background: item.fileType == 'barcode'
-              ? const Color(0xFFE7E0FE)
-              : const Color(0xFFDAEDFF),
-        );
-      }
-
-      return _placeholder(
-        icon: item.fileType == 'barcode'
-            ? Icons.qr_code_2_outlined
+      child = ClipRRect(
+        borderRadius: radius,
+        child: SizedBox(
+          width: _thumbWidth,
+          height: _height,
+          child: Padding(
+            // Keep card corners clear of the rounded thumbnail clip.
+            padding: _isQrOrBarcode ? EdgeInsets.zero : EdgeInsets.all(3.r),
+            child: Image.file(
+              file,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.medium,
+              gaplessPlayback: true,
+              errorBuilder: (context, error, stackTrace) {
+                return _placeholder(
+                  icon: Icons.broken_image_outlined,
+                  background: Colors.grey.shade200,
+                );
+              },
+            ),
+          ),
+        ),
+      );
+    } else if (item.isTextFile) {
+      child = _assetThumb(
+        asset: item.fileType == 'barcode'
+            ? ui.AppAssets.barcodeThumbIcon
             : item.fileType == 'qr'
-            ? Icons.qr_code_outlined
-            : Icons.credit_card,
+                ? ui.AppAssets.qrCodeThumbIcon
+                : ui.AppAssets.txtFileThumbIcon,
+        background: item.fileType == 'barcode'
+            ? const Color(0xFFE7E0FE)
+            : const Color(0xFFDAEDFF),
+        iconWidth: item.fileType == 'barcode' ? 36.w : 26.w,
+        iconHeight: item.fileType == 'barcode' ? 20.h : 26.w,
+      );
+    } else if (_isQrOrBarcode) {
+      child = _assetThumb(
+        asset: item.fileType == 'barcode'
+            ? ui.AppAssets.barcodeThumbIcon
+            : ui.AppAssets.qrCodeThumbIcon,
+        background: item.fileType == 'barcode'
+            ? const Color(0xFFE7E0FE)
+            : const Color(0xFFDAEDFF),
+        iconWidth: item.fileType == 'barcode' ? 36.w : 26.w,
+        iconHeight: item.fileType == 'barcode' ? 20.h : 26.w,
+      );
+    } else {
+      child = _placeholder(
+        icon: Icons.credit_card,
         background: const Color(0xFFF3F3F3),
       );
     }
 
-    if (syncFile != null ||
-        item.isTextFile ||
-        item.fileType == 'visiting_card') {
-      return imageOrPlaceholder(syncFile);
-    }
+    return _isQrOrBarcode ? _elevationBox(child) : _floatingBox(child);
+  }
 
-    return FutureBuilder<File?>(
-      future: _resolveImageFileAsync(),
-      builder: (context, snapshot) {
-        return imageOrPlaceholder(snapshot.data ?? syncFile);
-      },
+  Widget _elevationBox(Widget child) {
+    return Material(
+      elevation: 20,
+      color: Colors.white,
+      shadowColor: Colors.black26,
+      borderRadius: BorderRadius.circular(8.r),
+      clipBehavior: Clip.antiAlias,
+      child: child,
     );
   }
 
-  Widget _assetThumb({required String asset, required Color background}) {
+  Widget _floatingBox(Widget child, {BorderRadius? borderRadius}) {
     return Container(
-      width: _width,
+      decoration: BoxDecoration(
+        borderRadius: borderRadius ?? BorderRadius.circular(10.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: item.fileType == 'visiting_card' ? 0.16 : 0.10,
+            ),
+            blurRadius: item.fileType == 'visiting_card' ? 12 : 10,
+            offset: const Offset(0, 3),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: item.fileType == 'visiting_card' ? 0.07 : 0.04,
+            ),
+            blurRadius: item.fileType == 'visiting_card' ? 5 : 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _assetThumb({
+    required String asset,
+    required Color background,
+    double? iconWidth,
+    double? iconHeight,
+  }) {
+    return Container(
+      width: _thumbWidth,
       height: _height,
       decoration: BoxDecoration(
         color: background,
@@ -363,8 +424,8 @@ class _RecentThumbnail extends StatelessWidget {
       alignment: Alignment.center,
       child: SvgPicture.asset(
         asset,
-        width: 28.w,
-        height: 28.w,
+        width: iconWidth ?? 28.w,
+        height: iconHeight ?? 28.w,
         fit: BoxFit.contain,
       ),
     );
@@ -376,7 +437,7 @@ class _RecentThumbnail extends StatelessWidget {
     Color iconColor = const Color(0xFF9E9E9E),
   }) {
     return Container(
-      width: _width,
+      width: _thumbWidth,
       height: _height,
       decoration: BoxDecoration(
         color: background,

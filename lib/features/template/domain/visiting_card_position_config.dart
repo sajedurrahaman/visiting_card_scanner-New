@@ -738,7 +738,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.21,
         top: 0.345,
-        width: 0.60,
+        width: 0.50,
         fontSize: 10,
         color: Color(0xFF404040),
         maxLines: 4,
@@ -865,7 +865,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.21,
         top: 0.525,
-        width: 0.70,
+        width: 0.60,
         fontSize: 10,
         color: Color(0xFF404040),
         maxLines: 2,
@@ -946,7 +946,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.18,
         top: 0.57,
-        width: 0.70,
+        width: 0.60,
         fontSize: 10,
         color: Color(0xFF606060),
         maxLines: 2,
@@ -1051,7 +1051,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.21,
         top: 0.525,
-        width: 0.70,
+        width: 0.60,
         fontSize: 10,
         color: Color(0xFF404040),
         maxLines: 2,
@@ -1158,7 +1158,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.26,
         top: 0.43,
-        width: 0.70,
+        width: 0.60,
         fontSize: 10,
         color: Color(0xFF1A1A1A),
         maxLines: 2,
@@ -1609,16 +1609,17 @@ class VisitingCardPositionConfig {
       ),
       qr: VisitingCardFieldPosition(left: 0.06, top: 0.62, size: 0.16),
       address: VisitingCardFieldPosition(
-        left: 0.55,
+        left: 0.50,
         top: 0.46,
-        width: 0.34,
+        width: 0.39,
         fontSize: 7,
         color: Color(0xFF08296C),
-        maxLines: 3,
+        textAlign: TextAlign.right,
+        maxLines: 2,
       ),
       website: VisitingCardFieldPosition(
         left: 0.55,
-        top: 0.60,
+        top: 0.595,
         width: 0.34,
         fontSize: 7,
         color: Color(0xFF08296C),
@@ -1626,7 +1627,7 @@ class VisitingCardPositionConfig {
       ),
       email: VisitingCardFieldPosition(
         left: 0.55,
-        top: 0.72,
+        top: 0.71,
         width: 0.34,
         fontSize: 7,
         color: Color(0xFF08296C),
@@ -1634,7 +1635,7 @@ class VisitingCardPositionConfig {
       ),
       phone: VisitingCardFieldPosition(
         left: 0.55,
-        top: 0.84,
+        top: 0.82,
         width: 0.34,
         fontSize: 7,
         color: Color(0xFF08296C),
@@ -1678,7 +1679,7 @@ class VisitingCardPositionConfig {
       ),
       qr: VisitingCardFieldPosition(left: 0.06, top: 0.62, size: 0.16),
       phone: VisitingCardFieldPosition(
-        left: 0.46,
+        left: 0.42,
         top: 0.52,
         width: 0.42,
         fontSize: 7,
@@ -1686,15 +1687,16 @@ class VisitingCardPositionConfig {
         textAlign: TextAlign.right,
       ),
       address: VisitingCardFieldPosition(
-        left: 0.46,
+        left: 0.49,
         top: 0.60,
-        width: 0.42,
+        width: 0.35,
         fontSize: 7,
         color: Color(0xFFFDFEFF),
-        maxLines: 3,
+        textAlign: TextAlign.right,
+        maxLines: 2,
       ),
       website: VisitingCardFieldPosition(
-        left: 0.46,
+        left: 0.42,
         top: 0.72,
         width: 0.42,
         fontSize: 7,
@@ -1702,7 +1704,7 @@ class VisitingCardPositionConfig {
         textAlign: TextAlign.right,
       ),
       email: VisitingCardFieldPosition(
-        left: 0.46,
+        left: 0.42,
         top: 0.80,
         width: 0.42,
         fontSize: 7,
@@ -1711,10 +1713,10 @@ class VisitingCardPositionConfig {
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(left: 0.08, top: 0.46, size: 0.20),
+      logo: VisitingCardFieldPosition(left: 0.08, top: 0.42, size: 0.20),
       tagline: VisitingCardFieldPosition(
         left: 0.08,
-        top: 0.66,
+        top: 0.68,
         width: 0.42,
         fontSize: 8,
         color: Color(0xFF54C12A),
@@ -1750,23 +1752,23 @@ class VisitingCardPositionConfig {
         color: Color(0xFF032C40),
       ),
       phone: VisitingCardFieldPosition(
-        left: 0.64,
-        top: 0.46,
+        left: 0.34,
+        top: 0.45,
         width: 0.46,
         fontSize: 7,
         color: Color(0xFF032C40),
         textAlign: TextAlign.right,
       ),
       email: VisitingCardFieldPosition(
-        left: 0.52,
-        top: 0.58,
+        left: 0.34,
+        top: 0.57,
         width: 0.46,
         fontSize: 7,
         color: Color(0xFF032C40),
         textAlign: TextAlign.right,
       ),
       website: VisitingCardFieldPosition(
-        left: 0.60,
+        left: 0.34,
         top: 0.70,
         width: 0.46,
         fontSize: 7,
@@ -1774,19 +1776,20 @@ class VisitingCardPositionConfig {
         textAlign: TextAlign.right,
       ),
       address: VisitingCardFieldPosition(
-        left: 0.34,
-        top: 0.82,
-        width: 0.50,
+        left: 0.50,
+        top: 0.81,
+        width: 0.30,
         fontSize: 7,
         color: Color(0xFF032C40),
-        maxLines: 3,
+        textAlign: TextAlign.right,
+        maxLines: 2,
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(left: 0.40, top: 0.32, size: 0.22),
+      logo: VisitingCardFieldPosition(left: 0.40, top: 0.30, size: 0.22),
       tagline: VisitingCardFieldPosition(
-        left: 0.35,
-        top: 0.54,
+        left: 0.37,
+        top: 0.60,
         width: 0.64,
         fontSize: 8,
         uppercase: true,
@@ -1805,7 +1808,7 @@ class VisitingCardPositionConfig {
     front: VisitingCardSidePositions(
       logo: VisitingCardFieldPosition(left: 0.02, top: 0.09, size: 0.15),
       name: VisitingCardFieldPosition(
-        left: 0.40,
+        left: 0.47,
         top: 0.16,
         width: 0.52,
         fontSize: 16,
@@ -1815,7 +1818,7 @@ class VisitingCardPositionConfig {
         maxDisplayNameLength: 18,
       ),
       designation: VisitingCardFieldPosition(
-        left: 0.40,
+        left: 0.47,
         top: 0.28,
         width: 0.50,
         fontSize: 8,
@@ -1911,12 +1914,12 @@ class VisitingCardPositionConfig {
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(left: 0.36, top: 0.36, size: 0.22),
+      logo: VisitingCardFieldPosition(left: 0.38, top: 0.34, size: 0.24),
       tagline: VisitingCardFieldPosition(
         left: 0.38,
-        top: 0.56,
+        top: 0.62,
         width: 0.56,
-        fontSize: 8,
+        fontSize: 7,
         color: Color(0xFFFBAA19),
         textAlign: TextAlign.center,
       ),
@@ -1975,16 +1978,16 @@ class VisitingCardPositionConfig {
         left: 0.58,
         top: 0.57,
         width: 0.40,
-        fontSize: 8,
+        fontSize: 7,
         color: Color(0xFF032C40),
         maxLines: 3,
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(left: 0.42, top: 0.34, size: 0.24),
+      logo: VisitingCardFieldPosition(left: 0.42, top: 0.32, size: 0.24),
       tagline: VisitingCardFieldPosition(
-        left: 0.40,
-        top: 0.56,
+        left: 0.42,
+        top: 0.62,
         width: 0.64,
         fontSize: 7,
         uppercase: true,
@@ -2035,17 +2038,17 @@ class VisitingCardPositionConfig {
         color: Color(0xFFFFFFFF),
       ),
       address: VisitingCardFieldPosition(
-        left: 0.13,
-        top: 0.82,
+        left: 0.14,
+        top: 0.81,
         width: 0.30,
         fontSize: 6,
         color: Color(0xFFFFFFFF),
         maxLines: 2,
       ),
-      logo: VisitingCardFieldPosition(left: 0.70, top: 0.38, size: 0.22),
+      logo: VisitingCardFieldPosition(left: 0.70, top: 0.32, size: 0.22),
       tagline: VisitingCardFieldPosition(
-        left: 0.70,
-        top: 0.55,
+        left: 0.72,
+        top: 0.61,
         width: 0.42,
         fontSize: 6,
         color: Color(0xFF111525),
@@ -2053,10 +2056,10 @@ class VisitingCardPositionConfig {
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(left: 0.36, top: 0.20, size: 0.28),
+      logo: VisitingCardFieldPosition(left: 0.36, top: 0.16, size: 0.28),
       tagline: VisitingCardFieldPosition(
-        left: 0.36,
-        top: 0.44,
+        left: 0.38,
+        top: 0.49,
         width: 0.56,
         fontSize: 7,
         color: Color(0xFF111525),
@@ -2075,9 +2078,9 @@ class VisitingCardPositionConfig {
     front: VisitingCardSidePositions(
       logo: VisitingCardFieldPosition(left: 0.08, top: 0.12, size: 0.22),
       name: VisitingCardFieldPosition(
-        left: 0.54,
+        left: 0.585,
         top: 0.14,
-        width: 0.52,
+        width: 0.60,
         fontSize: 14,
         fontWeight: FontWeight.w700,
         uppercase: true,
@@ -2085,43 +2088,44 @@ class VisitingCardPositionConfig {
         maxDisplayNameLength: 18,
       ),
       designation: VisitingCardFieldPosition(
-        left: 0.70,
+        left: 0.36,
         top: 0.28,
-        width: 0.42,
+        width: 0.57,
         fontSize: 8,
         color: Color(0xFFFFFFFF),
         textAlign: TextAlign.right,
       ),
       qr: VisitingCardFieldPosition(left: 0.08, top: 0.66, size: 0.16),
       address: VisitingCardFieldPosition(
-        left: 0.44,
-        top: 0.52,
-        width: 0.42,
+        // Narrow the text area while keeping its right edge beside the icon.
+        left: 0.57,
+        top: 0.51,
+        width: 0.30,
         fontSize: 6.5,
         color: Color(0xFF032C40),
         textAlign: TextAlign.right,
-        maxLines: 3,
+        maxLines: 2,
       ),
       website: VisitingCardFieldPosition(
-        left: 0.70,
+        left: 0.36,
         top: 0.62,
-        width: 0.42,
+        width: 0.51,
         fontSize: 7,
         color: Color(0xFF032C40),
         textAlign: TextAlign.right,
       ),
       email: VisitingCardFieldPosition(
-        left: 0.58,
+        left: 0.36,
         top: 0.72,
-        width: 0.42,
+        width: 0.51,
         fontSize: 7,
         color: Color(0xFF032C40),
         textAlign: TextAlign.right,
       ),
       phone: VisitingCardFieldPosition(
-        left: 0.70,
+        left: 0.36,
         top: 0.82,
-        width: 0.42,
+        width: 0.51,
         fontSize: 7,
         color: Color(0xFF032C40),
         textAlign: TextAlign.right,
@@ -2131,7 +2135,7 @@ class VisitingCardPositionConfig {
     back: VisitingCardSidePositions(
       logo: VisitingCardFieldPosition(left: 0.37, top: 0.40, size: 0.30),
       website: VisitingCardFieldPosition(
-        left: 0.40,
+        left: 0.34,
         top: 0.76,
         width: 0.64,
         fontSize: 9,
@@ -2148,6 +2152,11 @@ class VisitingCardPositionConfig {
   static const horizontalTemplate19 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.montserrat,
     front: VisitingCardSidePositions(
+      logo: VisitingCardFieldPosition(
+          left: 0.118,
+          top: 0.52,
+          size: 0.15,
+      ),
       name: VisitingCardFieldPosition(
         left: 0.05,
         top: 0.08,
@@ -2169,7 +2178,7 @@ class VisitingCardPositionConfig {
       qr: VisitingCardFieldPosition(left: 0.78, top: 0.06, size: 0.14),
       phone: VisitingCardFieldPosition(
         left: 0.64,
-        top: 0.52,
+        top: 0.51,
         width: 0.42,
         fontSize: 8,
         color: Color(0xFFFFFFFF),
@@ -2177,7 +2186,7 @@ class VisitingCardPositionConfig {
       ),
       address: VisitingCardFieldPosition(
         left: 0.64,
-        top: 0.70,
+        top: 0.67,
         width: 0.42,
         fontSize: 8,
         color: Color(0xFFFFFFFF),
@@ -2185,7 +2194,7 @@ class VisitingCardPositionConfig {
       ),
       website: VisitingCardFieldPosition(
         left: 0.64,
-        top: 0.88,
+        top: 0.87,
         width: 0.42,
         fontSize: 8,
         color: Color(0xFFFFFFFF),
@@ -2204,17 +2213,17 @@ class VisitingCardPositionConfig {
     fontFamily: VisitingCardFonts.montserrat,
     front: VisitingCardSidePositions(
       name: VisitingCardFieldPosition(
-        left: 0.08,
+        left: 0.135,
         top: 0.08,
         width: 0.62,
         fontSize: 18,
         fontWeight: FontWeight.w700,
         uppercase: true,
         color: Color(0xFFFFFFFF),
-        maxDisplayNameLength: 18,
+        maxDisplayNameLength: 24,
       ),
       designation: VisitingCardFieldPosition(
-        left: 0.08,
+        left: 0.135,
         top: 0.32,
         width: 0.55,
         fontSize: 11,
@@ -2245,8 +2254,8 @@ class VisitingCardPositionConfig {
       ),
       address: VisitingCardFieldPosition(
         left: 0.18,
-        top: 0.815,
-        width: 0.55,
+        top: 0.81,
+        width: 0.36,
         fontSize: 8,
         color: Color(0xFF20438D),
       ),
@@ -2308,7 +2317,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.38,
         top: 0.63,
-        width: 0.62,
+        width: 0.52,
         fontSize: 10,
         color: Color(0xFF404040),
         maxLines: 2,
@@ -2452,7 +2461,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.24,
         top: 0.345,
-        width: 0.68,
+        width: 0.58,
         fontSize: 10,
         color: Color(0xFF404040),
         maxLines: 2,
@@ -2519,7 +2528,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.30,
         top: 0.54,
-        width: 0.68,
+        width: 0.58,
         fontSize: 10,
         color: Color(0xFF404040),
         maxLines: 2,
@@ -2643,8 +2652,8 @@ class VisitingCardPositionConfig {
       ),
       address: VisitingCardFieldPosition(
         left: 0.24,
-        top: 0.30,
-        width: 0.68,
+        top: 0.29,
+        width: 0.58,
         fontSize: 9,
         color: Color(0xFF032C40),
         maxLines: 2,
@@ -2726,7 +2735,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.36,
         top: 0.91,
-        width: 0.62,
+        width: 0.52,
         fontSize: 9,
         color: Color(0xFFFFFFFF),
         maxLines: 2,
@@ -2787,7 +2796,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.22,
         top: 0.88,
-        width: 0.72,
+        width: 0.52,
         fontSize: 9,
         color: Color(0xFF032C40),
         maxLines: 2,
@@ -2795,10 +2804,10 @@ class VisitingCardPositionConfig {
     ),
     back: VisitingCardSidePositions(
       qr: VisitingCardFieldPosition(left: 0.40, top: 0.16, size: 0.20),
-      logo: VisitingCardFieldPosition(left: 0.30, top: 0.66, size: 0.40),
+      logo: VisitingCardFieldPosition(left: 0.30, top: 0.62, size: 0.40),
       tagline: VisitingCardFieldPosition(
         left: 0.36,
-        top: 0.77,
+        top: 0.80,
         width: 0.76,
         fontSize: 8,
         color: Color(0xFF404041),
@@ -2814,7 +2823,7 @@ class VisitingCardPositionConfig {
   static const verticalTemplate14 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.montserrat,
     front: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(left: 0.33, top: 0.18, size: 0.36),
+      logo: VisitingCardFieldPosition(left: 0.33, top: 0.12, size: 0.36),
       tagline: VisitingCardFieldPosition(
         left: 0.38,
         top: 0.285,
@@ -2865,17 +2874,17 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.33,
         top: 0.815,
-        width: 0.70,
+        width: 0.60,
         fontSize: 9,
         color: Color(0xFF032C40),
         maxLines: 2,
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(left: 0.30, top: 0.23, size: 0.38),
+      logo: VisitingCardFieldPosition(left: 0.30, top: 0.25, size: 0.38),
       tagline: VisitingCardFieldPosition(
         left: 0.36,
-        top: 0.34,
+        top: 0.44,
         width: 0.76,
         fontSize: 8,
         color: Color(0xFF404041),
@@ -2928,7 +2937,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.23,
         top: 0.73,
-        width: 0.72,
+        width: 0.52,
         fontSize: 9,
         color: Color(0xFF6B6B6B),
       ),
@@ -2954,10 +2963,10 @@ class VisitingCardPositionConfig {
     front: VisitingCardSidePositions(
       logo: VisitingCardFieldPosition(left: 0.30, top: 0.12, size: 0.42),
       name: VisitingCardFieldPosition(
-        left: 0.08,
+        left: 0.13,
         top: 0.56,
         width: 0.84,
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: FontWeight.w700,
         color: Color(0xFF032C40),
         firstNameColor: Color(0xFF032C40),
@@ -2965,7 +2974,7 @@ class VisitingCardPositionConfig {
         maxDisplayNameLength: 20,
       ),
       designation: VisitingCardFieldPosition(
-        left: 0.08,
+        left: 0.13,
         top: 0.60,
         width: 0.75,
         fontSize: 10,
@@ -2973,8 +2982,8 @@ class VisitingCardPositionConfig {
       ),
       address: VisitingCardFieldPosition(
         left: 0.22,
-        top: 0.69,
-        width: 0.70,
+        top: 0.68,
+        width: 0.50,
         fontSize: 9,
         color: Color(0xFF032C40),
         maxLines: 2,
@@ -3056,23 +3065,23 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.20,
         top: 0.88,
-        width: 0.74,
+        width: 0.54,
         fontSize: 9,
         color: Color(0xFF032C40),
         maxLines: 2,
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(left: 0.32, top: 0.17, size: 0.38),
+      logo: VisitingCardFieldPosition(left: 0.32, top: 0.15, size: 0.38),
       tagline: VisitingCardFieldPosition(
         left: 0.36,
-        top: 0.29,
+        top: 0.33,
         width: 0.76,
         fontSize: 8,
         color: Color(0xFFB6CF32),
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(left: 0.36, top: 0.34, size: 0.22),
+      qr: VisitingCardFieldPosition(left: 0.36, top: 0.36, size: 0.22),
     ),
   );
 
@@ -3116,7 +3125,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.27,
         top: 0.35,
-        width: 0.70,
+        width: 0.50,
         fontSize: 9,
         color: Color(0xFF032C40),
         maxLines: 2,
@@ -3184,7 +3193,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.24,
         top: 0.38,
-        width: 0.70,
+        width: 0.50,
         fontSize: 9,
         color: Color(0xFF000000),
         maxLines: 2,
@@ -3222,7 +3231,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.25,
         top: 0.56,
-        width: 0.70,
+        width: 0.50,
         fontSize: 9,
         color: Color(0xFF000000),
         maxLines: 2,
@@ -3253,13 +3262,13 @@ class VisitingCardPositionConfig {
       logo: VisitingCardFieldPosition(left: 0.32, top: 0.14, size: 0.38),
       tagline: VisitingCardFieldPosition(
         left: 0.38,
-        top: 0.26,
+        top: 0.34,
         width: 0.84,
         fontSize: 8,
         color: Color(0xFF000000),
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(left: 0.36, top: 0.30, size: 0.26),
+      qr: VisitingCardFieldPosition(left: 0.36, top: 0.38, size: 0.26),
     ),
   );
 
@@ -3312,8 +3321,8 @@ class VisitingCardPositionConfig {
       ),
       address: VisitingCardFieldPosition(
         left: 0.28,
-        top: 0.54,
-        width: 0.70,
+        top: 0.535,
+        width: 0.60,
         fontSize: 9,
         color: Color(0xFF2E2E82),
         maxLines: 2,

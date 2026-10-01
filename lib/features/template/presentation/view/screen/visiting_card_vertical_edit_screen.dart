@@ -356,6 +356,7 @@ class _VisitingCardVerticalEditScreenState
     final field = vm.selectedOverlay ?? VisitingCardOverlayField.name;
     final next = await VisitingCardLandscapeEditTextScreen.open(
       context,
+      singleLine: vm.selectedOverlay == VisitingCardOverlayField.address,
       initialValue: vm.selectedDuplicateId == null
           ? vm.overlayText(field)
           : vm.currentOverlays[VisitingCardEditContactViewModel.duplicateKey(
@@ -448,15 +449,8 @@ class _VisitingCardVerticalEditScreenState
       context: context,
       barrierColor: const Color(0x99000000),
       builder: (dialogContext) {
-        final view = MediaQuery.sizeOf(dialogContext);
-        // Portrait dialog is narrow — size the ring from width, not height,
-        // so the Row (ring + actions) never overflows.
-        const inset = 48.0;
-        const pad = 32.0;
-        const gap = 18.0;
-        const actionsW = 108.0;
-        final ring = (view.width - inset - pad - gap - actionsW)
-            .clamp(120.0, 200.0);
+        final viewHeight = MediaQuery.sizeOf(dialogContext).height;
+        final ring = (viewHeight * 0.62).clamp(160.0, 240.0);
         return Dialog(
           backgroundColor: const Color(0xFF003303),
           insetPadding:
@@ -478,7 +472,7 @@ class _VisitingCardVerticalEditScreenState
                         setDialogState(() => picked = color);
                       },
                     ),
-                    const SizedBox(width: gap),
+                    const SizedBox(width: 18),
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -594,12 +588,6 @@ class _VisitingCardVerticalEditScreenState
   List<_BarSpec> _mainBarItems() {
     const dir = 'assets/visiting_card_option_icon';
     return [
-      _BarSpec(asset: '$dir/save_option_icon.svg', label: 'Save', onTap: _onSave),
-      _BarSpec(
-        asset: '$dir/download_option_icon.svg',
-        label: 'Download',
-        onTap: _onDownload,
-      ),
       _BarSpec(
         asset: '$dir/text_option_icon.svg',
         label: 'Text',
@@ -837,7 +825,7 @@ class _VisitingCardVerticalEditScreenState
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         final ratio = vm.isHorizontal ? 1.75 : 0.63;
-                        final scale = _previewing ? 0.90 : 0.92;
+                        final scale = _previewing ? 0.82 : 0.84;
                         const pagerRoom = 64.0;
                         final room = math.max(
                           40.0,
@@ -846,7 +834,7 @@ class _VisitingCardVerticalEditScreenState
                         var cardW = constraints.maxWidth * scale;
                         var cardH = cardW / ratio;
                         final maxH = math.min(
-                          constraints.maxHeight * (_previewing ? 0.90 : 0.85),
+                          constraints.maxHeight * (_previewing ? 0.86 : 0.78),
                           room,
                         );
                         if (cardH > maxH) {
@@ -898,21 +886,15 @@ class _VisitingCardVerticalEditScreenState
                       },
                     ),
                   ),
-                  // Toolbar only — Color/Size overlay above it so the card
-                  // keeps the same size and aspect ratio.
-                  if (!_previewing) _verticalToolBar(vm),
+                  if (!_previewing) ...[
+                    ?_openPanel(vm),
+                    _verticalToolBar(vm),
+                  ],
               ],
             ),
-            if (!_previewing)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 72 + MediaQuery.paddingOf(context).bottom,
-                child: _openPanel(vm) ?? const SizedBox.shrink(),
-              ),
             if (_previewing && !_booting)
               Positioned(
-                top: MediaQuery.paddingOf(context).top + 28,
+                top: MediaQuery.paddingOf(context).top + 60,
                 left: 0,
                 right: 0,
                 child: Center(
@@ -1340,7 +1322,11 @@ class _AdjustBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final percent = (fraction.clamp(0.0, 1.0) * 100).round();
+    final clamped = fraction.clamp(0.0, 1.0);
+    final isRotate = label == 'Rotate';
+    final valueLabel = isRotate
+        ? '${(clamped * 360).round()}°'
+        : '${(clamped * 100).round()}%';
     return Container(
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1423,15 +1409,15 @@ class _AdjustBar extends StatelessWidget {
                   ),
                 ),
                 child: Slider(
-                  value: fraction.clamp(0.0, 1.0),
+                  value: clamped,
                   onChanged: onChanged,
                 ),
               ),
             ),
             SizedBox(
-              width: 42,
+              width: isRotate ? 48 : 42,
               child: Text(
-                '$percent%',
+                valueLabel,
                 textAlign: TextAlign.right,
                 style: const TextStyle(
                   color: Colors.white,

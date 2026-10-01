@@ -303,8 +303,6 @@ class _VisitingCardContactDetailsScreenState
   }
 
   Future<Uint8List?> _captureTemplateSide(int side) async {
-    // Jump (do not animate) so back capture is never a mid-swipe stitch of
-    // front-right + back-left — same pattern as landscape/vertical editors.
     _previewVm.jumpSideForCapture = true;
     _previewVm.setSide(side);
     await waitForVisitingCardCaptureFrame();
@@ -354,6 +352,7 @@ class _VisitingCardContactDetailsScreenState
       final frontBytes = await _captureTemplateSide(0);
       final backBytes = await _captureTemplateSide(1);
       if (!mounted) return;
+      _previewVm.jumpSideForCapture = false;
       _previewVm.setSide(previous);
 
       if (frontBytes == null || backBytes == null) {
@@ -380,6 +379,7 @@ class _VisitingCardContactDetailsScreenState
       ui.AppToast.success(context, 'Downloaded to gallery');
     } catch (_) {
       if (!mounted) return;
+      _previewVm.jumpSideForCapture = false;
       _previewVm.setSide(previous);
       ui.AppToast.show(context, message: 'Failed to download visiting card');
     } finally {
@@ -401,11 +401,7 @@ class _VisitingCardContactDetailsScreenState
         }
       }
       if (files.isEmpty) return;
-      await VisitingCardShareHelper.shareXFiles(
-        context,
-        files,
-        text: 'Visiting Card',
-      );
+      await Share.shareXFiles(files, text: 'Visiting Card');
     } catch (_) {
       if (!mounted) return;
       ui.AppToast.show(context, message: 'Failed to share scanned card');
@@ -423,6 +419,7 @@ class _VisitingCardContactDetailsScreenState
       final frontBytes = await _captureTemplateSide(0);
       final backBytes = await _captureTemplateSide(1);
       if (!mounted) return;
+      _previewVm.jumpSideForCapture = false;
       _previewVm.setSide(previous);
 
       if (frontBytes == null || backBytes == null) {
@@ -439,13 +436,13 @@ class _VisitingCardContactDetailsScreenState
       );
       await frontFile.writeAsBytes(frontBytes, flush: true);
       await backFile.writeAsBytes(backBytes, flush: true);
-      await VisitingCardShareHelper.shareXFiles(
-        context,
+      await Share.shareXFiles(
         [XFile(frontFile.path), XFile(backFile.path)],
         text: 'Visiting Card',
       );
     } catch (_) {
       if (!mounted) return;
+      _previewVm.jumpSideForCapture = false;
       _previewVm.setSide(previous);
       ui.AppToast.show(context, message: 'Failed to share visiting card');
     } finally {
@@ -682,20 +679,15 @@ class _VisitingCardContactDetailsScreenState
             RepaintBoundary(
               key: _templateCaptureKey,
               child: VisitingCardLivePreview(
-                key: ValueKey(
-                  // Front/back logos must both be in the key — never the
-                  // current-side logoAssetPath, or a 1↔2 swipe rebuilds the
-                  // PageView mid-animation (same fix as the card editors).
-                  'preview-$_imageEpoch-'
-                  '${_previewVm.qrAssetPath}-'
-                  '${_previewVm.frontLogoAssetPath}-'
-                  '${_previewVm.backLogoAssetPath}',
-                ),
+                // Do not key on logo/qr paths — logoAssetPath flips with
+                // sideIndex and would recreate the PageView mid-swipe
+                // (queer 1/2 ↔ 2/2 animation). Editors already avoid this.
+                key: ValueKey('preview-$_imageEpoch'),
                 vm: _previewVm,
                 showPager: false,
                 singleLineText: true,
                 matchEditorText: true,
-                pageGap: 4,
+                pageGap: 2,
               ),
             ),
             Positioned(

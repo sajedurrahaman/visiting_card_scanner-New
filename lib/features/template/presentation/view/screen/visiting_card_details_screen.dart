@@ -37,16 +37,20 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
     VisitingCardEditContactViewModel vm,
     int side,
   ) async {
+    final previousCaptureMode = vm.jumpSideForCapture;
     vm.jumpSideForCapture = true;
-    vm.setSide(side);
-    await waitForVisitingCardCaptureFrame();
     try {
+      vm.setSide(side);
+      await waitForVisitingCardCaptureFrame();
       return await captureVisitingCardPngBytes(
         _cardCaptureKey,
         isHorizontal: vm.isHorizontal,
       );
     } catch (_) {
       return null;
+    } finally {
+      vm.jumpSideForCapture = previousCaptureMode;
+      if (mounted) setState(() {});
     }
   }
 
@@ -91,7 +95,6 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
       vm.setSide(previous);
       ui.AppToast.show(context, message: 'Failed to download visiting card');
     } finally {
-      vm.jumpSideForCapture = false;
       if (mounted) setState(() => _isDownloading = false);
     }
   }
@@ -112,7 +115,6 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
       folderViewModel: folder,
       captureSide: (side) => _captureSide(vm, side),
     );
-    vm.jumpSideForCapture = false;
 
     if (!mounted) return;
     vm.setSide(previous);
@@ -167,8 +169,7 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
       );
       await frontFile.writeAsBytes(frontBytes, flush: true);
       await backFile.writeAsBytes(backBytes, flush: true);
-      await VisitingCardShareHelper.shareXFiles(
-        context,
+      await Share.shareXFiles(
         [XFile(frontFile.path), XFile(backFile.path)],
         text: 'Visiting Card',
       );
@@ -177,7 +178,6 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
       vm.setSide(previous);
       ui.AppToast.show(context, message: 'Failed to share visiting card');
     } finally {
-      vm.jumpSideForCapture = false;
       if (mounted) setState(() => _isSharingCard = false);
     }
   }
@@ -301,7 +301,6 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
                               showPager: false,
                               singleLineText: true,
                               matchEditorText: true,
-                              pageGap: 4,
                             ),
                           ),
                           Positioned(

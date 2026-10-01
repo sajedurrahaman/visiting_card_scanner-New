@@ -8,19 +8,23 @@ class VisitingCardLandscapeEditTextScreen extends StatefulWidget {
   const VisitingCardLandscapeEditTextScreen({
     super.key,
     required this.initialValue,
+    this.singleLine = false,
   });
 
   final String initialValue;
+  final bool singleLine;
 
   static Future<String?> open(
     BuildContext context, {
     required String initialValue,
+    bool singleLine = false,
   }) {
     return Navigator.push<String>(
       context,
       MaterialPageRoute(
         builder: (_) => VisitingCardLandscapeEditTextScreen(
           initialValue: initialValue,
+          singleLine: singleLine,
         ),
       ),
     );
@@ -73,13 +77,13 @@ class _VisitingCardLandscapeEditTextScreenState
     return TextField(
       controller: _controller,
       focusNode: _focusNode,
-      minLines: 3,
-      maxLines: 3,
+      minLines: widget.singleLine ? 1 : 3,
+      maxLines: widget.singleLine ? 1 : 3,
       onTapOutside: (_) {
         FocusManager.instance.primaryFocus?.unfocus();
       },
       textAlignVertical: TextAlignVertical.top,
-      textInputAction: TextInputAction.newline,
+      textInputAction: widget.singleLine ? TextInputAction.done : TextInputAction.newline,
       style: const TextStyle(
         color: Color(0xFF1A1A1A),
         fontSize: 15,

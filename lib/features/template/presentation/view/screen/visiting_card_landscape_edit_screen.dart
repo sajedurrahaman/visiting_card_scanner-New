@@ -15,6 +15,7 @@ import 'package:visiting_card/features/parent/presentation/view_model/parent_vie
 import 'package:visiting_card/features/scan/presentation/helper/visiting_card_share_helper.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_export_utils.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
+import 'package:visiting_card/features/template/presentation/helper/visiting_card_qr_payload.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_edit_text_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_icon_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_logo_screen.dart';
@@ -23,6 +24,7 @@ import 'package:visiting_card/features/template/presentation/view/screen/visitin
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_font_style_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_template_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_landscape_rename_screen.dart';
+import 'package:visiting_card/features/template/presentation/view/screen/visiting_card_tempalte_qrcode_screen.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_live_preview.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
 
@@ -309,6 +311,55 @@ class _VisitingCardLandscapeEditScreenState
     return VisitingCardLandscapeLogoScreen.open(context);
   }
 
+  /// Opens QR Template (portrait ScreenUtil screen), then places / replaces QR
+  /// like Logos: selected QR → replace; unselected → add new QR on the card.
+  Future<void> _onPickQr() async {
+    if (_busy || _booting) return;
+    final vm = context.read<VisitingCardEditContactViewModel>();
+    final alreadyPortrait =
+        MediaQuery.sizeOf(context).height > MediaQuery.sizeOf(context).width;
+
+    setState(() => _booting = true);
+    await WidgetsBinding.instance.endOfFrame;
+    if (!alreadyPortrait) {
+      await SystemChrome.setPreferredOrientations(const [
+        DeviceOrientation.portraitUp,
+      ]);
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      await _waitUntil(landscape: false);
+      if (!mounted) return;
+    }
+
+    final path = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => VisitingCardTempalteQrcodeScreen(
+          qrData: VisitingCardQrPayload.fromEditContact(vm),
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+    if (!alreadyPortrait) {
+      await SystemChrome.setPreferredOrientations(const [
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      await _waitUntil(landscape: true);
+      if (!mounted) return;
+    }
+    setState(() => _booting = false);
+
+    if (path == null || path.isEmpty) return;
+    var resolved = path;
+    if (!path.startsWith('assets/')) {
+      resolved = await vm.persistQrFile(File(path));
+      if (!mounted) return;
+    }
+    vm.placeQr(resolved);
+  }
+
   Future<void> _onPickImage() async {
     final picked = await ImagePicker().pickImage(
       source: ImageSource.gallery,
@@ -367,6 +418,7 @@ class _VisitingCardLandscapeEditScreenState
     final field = vm.selectedOverlay ?? VisitingCardOverlayField.name;
     final next = await VisitingCardLandscapeEditTextScreen.open(
       context,
+      singleLine: vm.selectedOverlay == VisitingCardOverlayField.address,
       initialValue: vm.selectedDuplicateId == null
           ? vm.overlayText(field)
           : vm.currentOverlays[VisitingCardEditContactViewModel.duplicateKey(
@@ -557,7 +609,7 @@ class _VisitingCardLandscapeEditScreenState
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         final ratio = vm.isHorizontal ? 1.75 : 0.63;
-                        final scale = _previewing ? 0.88 : 0.80;
+                        final scale = _previewing ? 0.82 : 0.68;
                         final topGap = _previewing ? 0.0 : pad;
                         // Pager plus the gap under the card. Kept out of the
                         // card budget so the column cannot overflow.
@@ -600,14 +652,14 @@ class _VisitingCardLandscapeEditScreenState
                                         showPager: false,
                                         enableFieldTransform: !_previewing,
                                         selectionBorderOnlyWhenSelected: true,
-                                        pageGap: 2,
+                                        pageGap: 4,
                                       ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 7),
+                            const SizedBox(height: 10),
                             Opacity(
                               opacity: _booting ? 0 : 1,
                               child: _LandscapeSidePager(
@@ -735,6 +787,12 @@ class _VisitingCardLandscapeEditScreenState
                                       ),
                                       _RailItem(
                                         asset:
+                                            'assets/visiting_card_option_icon/qrcode_option_icon.svg',
+                                        label: 'QR Code',
+                                        onTap: _onPickQr,
+                                      ),
+                                      _RailItem(
+                                        asset:
                                             'assets/visiting_card_option_icon/image_option_icon.svg',
                                         label: 'Images',
                                         onTap: _onPickImage,
@@ -768,6 +826,8 @@ class _VisitingCardLandscapeEditScreenState
                                     onReplaceLogo: vm.selectedIsLogo
                                         ? _onPickLogo
                                         : null,
+                                    onReplaceQr:
+                                        vm.selectedIsQr ? _onPickQr : null,
                                     onEditText: _onEditText,
                                     onColor: _onColor,
                                     colorActive: _panel == 'Color',
@@ -870,8 +930,8 @@ class _LandscapeSidePager extends StatelessWidget {
           onTap: onPrevious,
         ),
         Container(
-          margin: const EdgeInsets.symmetric(horizontal: 6),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(6),
@@ -923,11 +983,11 @@ class _PagerArrow extends StatelessWidget {
         customBorder: const CircleBorder(),
         onTap: enabled ? onTap : null,
         child: SizedBox(
-          width: 22,
-          height: 22,
+          width: 28,
+          height: 28,
           child: Icon(
             icon,
-            size: 18,
+            size: 20,
             color: enabled ? const Color(0xFF1A1A1A) : Colors.black26,
           ),
         ),
@@ -1071,6 +1131,7 @@ class _SelectedFieldRail extends StatelessWidget {
     required this.showTextTools,
     required this.showColor,
     required this.onReplaceLogo,
+    required this.onReplaceQr,
     required this.onEditText,
     required this.onColor,
     required this.colorActive,
@@ -1093,6 +1154,7 @@ class _SelectedFieldRail extends StatelessWidget {
   final bool showTextTools;
   final bool showColor;
   final VoidCallback? onReplaceLogo;
+  final VoidCallback? onReplaceQr;
   final VoidCallback onEditText;
   final VoidCallback onColor;
   final bool colorActive;
@@ -1121,6 +1183,12 @@ class _SelectedFieldRail extends StatelessWidget {
             asset: 'assets/visiting_card_option_icon/logo_option_icon.svg',
             label: 'Replace logo',
             onTap: onReplaceLogo!,
+          ),
+        if (onReplaceQr != null)
+          _SelectRailItem(
+            asset: 'assets/visiting_card_option_icon/qrcode_option_icon.svg',
+            label: 'Replace QRCode',
+            onTap: onReplaceQr!,
           ),
         if (showTextTools)
           _SelectRailItem(
@@ -1659,7 +1727,11 @@ class _AdjustBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final percent = (fraction.clamp(0.0, 1.0) * 100).round();
+    final clamped = fraction.clamp(0.0, 1.0);
+    final isRotate = label == 'Rotate';
+    final valueLabel = isRotate
+        ? '${(clamped * 360).round()}°'
+        : '${(clamped * 100).round()}%';
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Container(
@@ -1749,15 +1821,15 @@ class _AdjustBar extends StatelessWidget {
                   ),
                 ),
                 child: Slider(
-                  value: fraction.clamp(0.0, 1.0),
+                  value: clamped,
                   onChanged: onChanged,
                 ),
               ),
             ),
             SizedBox(
-              width: 42,
+              width: isRotate ? 48 : 42,
               child: Text(
-                '$percent%',
+                valueLabel,
                 textAlign: TextAlign.right,
                 style: const TextStyle(
                   color: Colors.white,

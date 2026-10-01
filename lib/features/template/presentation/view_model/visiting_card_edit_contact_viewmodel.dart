@@ -217,6 +217,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       'h14',
       'h17',
       'h18',
+      'h19',
       'v1',
       'v2',
       'v4',
@@ -510,6 +511,15 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     return selectedOverlay == VisitingCardOverlayField.logo;
   }
 
+  /// Template QR field, or an extra QR added from the QR Code tool.
+  bool get selectedIsQr {
+    if (selectedDuplicateId != null) {
+      return currentOverlays[duplicateKey(selectedDuplicateId!)]?.duplicateOf ==
+          'qr';
+    }
+    return selectedOverlay == VisitingCardOverlayField.qr;
+  }
+
   bool get selectedIsImage {
     if (selectedDuplicateId != null) {
       return _sourceIsImage(
@@ -687,6 +697,47 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       return;
     }
     applyLogoImage(value);
+  }
+
+  /// Adds another QR on the current side. The QR already on the card stays.
+  void addCustomQr(String assetPath) {
+    final path = assetPath.trim();
+    if (path.isEmpty) return;
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+    final existing = currentOverlays.values
+        .where((t) => t.duplicateOf == 'qr')
+        .length;
+    final nudge = (existing % 6) * 0.05;
+    currentOverlays[duplicateKey(id)] = VisitingCardFieldTransform(
+      left: (0.62 + nudge).clamp(0.06, 0.82),
+      top: (0.55 + nudge).clamp(0.06, 0.78),
+      size: 0.14,
+      duplicateOf: 'qr',
+      duplicateImagePath: path,
+    );
+    selectedOverlay = null;
+    selectedDuplicateId = id;
+    notifyListeners();
+  }
+
+  /// Replaces the selected QR, or adds a new one when no QR is selected.
+  void placeQr(String path) {
+    final value = path.trim();
+    if (value.isEmpty) return;
+    if (!selectedIsQr) {
+      addCustomQr(value);
+      return;
+    }
+    if (selectedDuplicateId != null) {
+      final key = duplicateKey(selectedDuplicateId!);
+      final current = currentOverlays[key];
+      if (current != null) {
+        currentOverlays[key] = current.copyWith(duplicateImagePath: value);
+        notifyListeners();
+      }
+      return;
+    }
+    applyQrImage(value);
   }
 
   /// Adds a new text field on the current side and selects it.
@@ -894,8 +945,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         ? field.isImageOverlay
         : _sourceIsImage(current.duplicateOf);
     final next = isImage
-        ? (current.size + pixelDeltaY / cardSize.width)
-            .clamp(imageSizeMin, imageSizeMax)
+        ? (current.size + pixelDeltaY / cardSize.width).clamp(imageSizeMin, imageSizeMax)
         : (current.size + pixelDeltaY * 0.08).clamp(textSizeMin, textSizeMax);
     currentOverlays[key] = current.copyWith(size: next);
     notifyListeners();
@@ -1194,8 +1244,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
 
     if (isImage) {
       final next =
-          (current.size + pixelDelta / cardSize.width)
-              .clamp(imageSizeMin, imageSizeMax);
+          (current.size + pixelDelta / cardSize.width).clamp(imageSizeMin,imageSizeMax);
       final applied = next - current.size;
       if (fixRight) {
         left = (left - applied).clamp(-0.2, 0.95);
@@ -1248,14 +1297,35 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     if (duplicateId == null) _ensureOverlay(field);
     final current = currentOverlays[key];
     if (current == null) return;
+    if (current.duplicateOf == customShapeSource) {
+      final oldW = (seedWidthFraction ?? current.size * current.shapeScaleX) * cardSize.width;
+      final oldH = seedHeightPx ?? current.size * current.shapeScaleY * cardSize.width;
+      final oldExtent = horizontal ? oldW : oldH;
+      if (oldExtent <= 0) return;
+      final extent = (oldExtent + pixelDelta).clamp(
+        imageSizeMin * cardSize.width, imageSizeMax * cardSize.width);
+      final applied = extent - oldExtent;
+      final localShift = fixOpposite
+          ? (horizontal ? Offset(-applied, 0) : Offset(0, -applied))
+          : Offset.zero;
+      final c = math.cos(current.rotation);
+      final s = math.sin(current.rotation);
+      currentOverlays[key] = current.copyWith(
+        shapeScaleX: horizontal ? current.shapeScaleX * extent / oldExtent : current.shapeScaleX,
+        shapeScaleY: horizontal ? current.shapeScaleY : current.shapeScaleY * extent / oldExtent,
+        left: current.left + (localShift.dx * c - localShift.dy * s) / cardSize.width,
+        top: current.top + (localShift.dx * s + localShift.dy * c) / cardSize.height,
+      );
+      notifyListeners();
+      return;
+    }
     final isImage = duplicateId == null
         ? field.isImageOverlay
         : _sourceIsImage(current.duplicateOf);
     if (horizontal) {
       if (isImage) {
         final next =
-            (current.size + pixelDelta / cardSize.width)
-                .clamp(imageSizeMin, imageSizeMax);
+            (current.size + pixelDelta / cardSize.width).clamp(imageSizeMin,imageSizeMax);
         final applied = next - current.size;
         final left = fixOpposite
             ? (current.left - applied).clamp(-0.2, 0.95)
@@ -1278,8 +1348,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     } else {
       if (isImage) {
         final next =
-            (current.size + pixelDelta / cardSize.height)
-                .clamp(imageSizeMin, imageSizeMax);
+            (current.size + pixelDelta / cardSize.height).clamp(imageSizeMin,imageSizeMax);
         final appliedPx = (next - current.size) * cardSize.height;
         final top = fixOpposite
             ? (current.top - appliedPx / cardSize.height).clamp(-0.2, 0.95)
@@ -1494,6 +1563,22 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         : 'jpg';
     final dest = File(
       '${logoDir.path}/logo_${DateTime.now().millisecondsSinceEpoch}.$ext',
+    );
+    await source.copy(dest.path);
+    return dest.path;
+  }
+
+  Future<String> persistQrFile(File source) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final qrDir = Directory('${dir.path}/visiting_card/qr_embed');
+    if (!await qrDir.exists()) {
+      await qrDir.create(recursive: true);
+    }
+    final ext = source.path.contains('.')
+        ? source.path.split('.').last
+        : 'png';
+    final dest = File(
+      '${qrDir.path}/qr_${DateTime.now().millisecondsSinceEpoch}.$ext',
     );
     await source.copy(dest.path);
     return dest.path;
@@ -1849,6 +1934,10 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       final backPath = p.join(contactFolder.path, 'card_back.jpg');
       await File(frontPath).writeAsBytes(_toJpeg(frontBytes), flush: true);
       await File(backPath).writeAsBytes(_toJpeg(backBytes), flush: true);
+
+      // Updates reuse these paths; don't keep displaying the previous capture.
+      await FileImage(File(frontPath)).evict();
+      await FileImage(File(backPath)).evict();
 
       final savedContact = SavedContactInfo(
         name: names.first.value.trim(),

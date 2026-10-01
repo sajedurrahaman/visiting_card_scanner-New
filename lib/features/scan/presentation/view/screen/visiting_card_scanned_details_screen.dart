@@ -309,16 +309,20 @@ class _VisitingCardScannedDetailsScreenState
   }
 
   Future<Uint8List?> _captureTemplateSide(int side) async {
+    final previousCaptureMode = _previewVm.jumpSideForCapture;
     _previewVm.jumpSideForCapture = true;
-    _previewVm.setSide(side);
-    await waitForVisitingCardCaptureFrame();
     try {
+      _previewVm.setSide(side);
+      await waitForVisitingCardCaptureFrame();
       return await captureVisitingCardPngBytes(
         _templateCaptureKey,
         isHorizontal: _previewVm.isHorizontal,
       );
     } catch (_) {
       return null;
+    } finally {
+      _previewVm.jumpSideForCapture = previousCaptureMode;
+      if (mounted) setState(() {});
     }
   }
 
@@ -399,7 +403,6 @@ class _VisitingCardScannedDetailsScreenState
       _previewVm.setSide(previous);
       ui.AppToast.show(context, message: 'Failed to download visiting card');
     } finally {
-      _previewVm.jumpSideForCapture = false;
       if (mounted) {
         setState(() => _isDownloadingTemplate = false);
       }
@@ -429,7 +432,6 @@ class _VisitingCardScannedDetailsScreenState
         return _captureTemplateSide(side);
       },
     );
-    _previewVm.jumpSideForCapture = false;
     if (!mounted) return;
     _previewVm.setSide(previousSide);
 
@@ -488,11 +490,7 @@ class _VisitingCardScannedDetailsScreenState
         files.add(XFile(tmp.path));
       }
       if (files.isEmpty) return;
-      await VisitingCardShareHelper.shareXFiles(
-        context,
-        files,
-        text: 'Visiting Card',
-      );
+      await Share.shareXFiles(files, text: 'Visiting Card');
     } catch (_) {
       if (!mounted) return;
       ui.AppToast.show(context, message: 'Failed to share scanned card');
@@ -527,8 +525,7 @@ class _VisitingCardScannedDetailsScreenState
       );
       await frontFile.writeAsBytes(frontBytes, flush: true);
       await backFile.writeAsBytes(backBytes, flush: true);
-      await VisitingCardShareHelper.shareXFiles(
-        context,
+      await Share.shareXFiles(
         [XFile(frontFile.path), XFile(backFile.path)],
         text: 'Visiting Card',
       );
@@ -537,7 +534,6 @@ class _VisitingCardScannedDetailsScreenState
       _previewVm.setSide(previous);
       ui.AppToast.show(context, message: 'Failed to share visiting card');
     } finally {
-      _previewVm.jumpSideForCapture = false;
       if (mounted) setState(() => _isDownloadingTemplate = false);
     }
   }
@@ -723,7 +719,6 @@ class _VisitingCardScannedDetailsScreenState
                           child: VisitingCardLivePreview(
                             vm: _previewVm,
                             showPager: false,
-                            pageGap: 4,
                           ),
                         ),
                         Positioned(
