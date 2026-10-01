@@ -17,6 +17,7 @@ void main() {
     required double width,
     required bool contactInfo,
     bool selected = false,
+    int? expectedAddressLines,
   }) async {
     final screen = contactInfo || !vm.isHorizontal
         ? const Size(390, 844)
@@ -79,6 +80,10 @@ void main() {
           expect(text.maxLines, 2);
           expect(text.softWrap, isTrue);
           expect(lines, lessThanOrEqualTo(2));
+          if (expectedAddressLines != null) {
+            expect(lines, expectedAddressLines);
+            expect(painter.didExceedMaxLines, isFalse);
+          }
         }
         painter.dispose();
       }
@@ -115,6 +120,31 @@ void main() {
       expect(newBox.height, closeTo(oldBox.height,
         before[i].rounding + after[i].rounding + 0.0001), reason: reason);
     }
+  }
+
+  for (final id in ['h18', 'h20']) {
+    testWidgets('$id wraps the reported addresses into two complete lines', (tester) async {
+      addTearDown(tester.view.reset);
+      final vm = VisitingCardEditContactViewModel(
+        templateId: id,
+        isHorizontal: true,
+        frontAssetWithoutData: 'assets/images/unused-test-background.png',
+        backAssetWithoutData: 'assets/images/unused-test-background.png',
+      );
+      for (final address in [
+        'Khapara Road, Khilkhet, Dhaka, Bangladesh',
+        '12/2, khapara road, khilket, dhaka, bangladesh',
+      ]) {
+        vm.addresses.first.value = address;
+        final contact = await measure(tester, vm,
+          width: 320, contactInfo: true, expectedAddressLines: 2);
+        final landscape = await measure(tester, vm,
+          width: 440, contactInfo: false, expectedAddressLines: 2);
+        expectSame(contact, landscape, '$id: $address');
+      }
+      await tester.pumpWidget(const SizedBox());
+      vm.dispose();
+    });
   }
 
   for (final horizontal in [true, false]) {
