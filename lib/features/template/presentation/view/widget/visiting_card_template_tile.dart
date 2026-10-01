@@ -14,6 +14,7 @@ class VisitingCardTemplateTile extends StatefulWidget {
     required this.onTap,
     required this.onShowFront,
     required this.onShowBack,
+    this.pageGap = 3,
   });
 
   final VisitingCardTemplateItem item;
@@ -23,6 +24,7 @@ class VisitingCardTemplateTile extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onShowFront;
   final VoidCallback onShowBack;
+  final double pageGap;
 
   static const _totalSides = 2;
 
@@ -118,16 +120,25 @@ class _VisitingCardTemplateTileState extends State<VisitingCardTemplateTile> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            PageView(
-              controller: _pageController,
-              onPageChanged: _onPageChanged,
-              physics: const BouncingScrollPhysics(
-                parent: AlwaysScrollableScrollPhysics(),
+            Positioned(
+              left: -widget.pageGap / 2,
+              right: -widget.pageGap / 2,
+              top: 0,
+              bottom: 0,
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: _onPageChanged,
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
+                children: [
+                  for (final asset in [widget.item.frontAsset, widget.item.backAsset])
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: widget.pageGap / 2),
+                      child: _sideImage(asset),
+                    ),
+                ],
               ),
-              children: [
-                _sideImage(widget.item.frontAsset),
-                _sideImage(widget.item.backAsset),
-              ],
             ),
             Positioned(
               left: 0,
