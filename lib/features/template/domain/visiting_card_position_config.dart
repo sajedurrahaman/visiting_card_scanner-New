@@ -1750,7 +1750,7 @@ class VisitingCardPositionConfig {
         color: Color(0xFF032C40),
       ),
       phone: VisitingCardFieldPosition(
-        left: 0.64,
+        left: 0.34,
         top: 0.46,
         width: 0.46,
         fontSize: 7,
@@ -1758,7 +1758,7 @@ class VisitingCardPositionConfig {
         textAlign: TextAlign.right,
       ),
       email: VisitingCardFieldPosition(
-        left: 0.52,
+        left: 0.34,
         top: 0.58,
         width: 0.46,
         fontSize: 7,
@@ -1766,7 +1766,7 @@ class VisitingCardPositionConfig {
         textAlign: TextAlign.right,
       ),
       website: VisitingCardFieldPosition(
-        left: 0.60,
+        left: 0.34,
         top: 0.70,
         width: 0.46,
         fontSize: 7,
@@ -1774,12 +1774,13 @@ class VisitingCardPositionConfig {
         textAlign: TextAlign.right,
       ),
       address: VisitingCardFieldPosition(
-        left: 0.34,
-        top: 0.82,
-        width: 0.50,
+        left: 0.50,
+        top: 0.80,
+        width: 0.30,
         fontSize: 7,
         color: Color(0xFF032C40),
-        maxLines: 3,
+        textAlign: TextAlign.right,
+        maxLines: 2,
       ),
     ),
     back: VisitingCardSidePositions(
@@ -1805,7 +1806,7 @@ class VisitingCardPositionConfig {
     front: VisitingCardSidePositions(
       logo: VisitingCardFieldPosition(left: 0.02, top: 0.09, size: 0.15),
       name: VisitingCardFieldPosition(
-        left: 0.40,
+        left: 0.47,
         top: 0.16,
         width: 0.52,
         fontSize: 16,
@@ -1815,7 +1816,7 @@ class VisitingCardPositionConfig {
         maxDisplayNameLength: 18,
       ),
       designation: VisitingCardFieldPosition(
-        left: 0.40,
+        left: 0.47,
         top: 0.28,
         width: 0.50,
         fontSize: 8,
@@ -1911,12 +1912,12 @@ class VisitingCardPositionConfig {
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(left: 0.36, top: 0.36, size: 0.22),
+      logo: VisitingCardFieldPosition(left: 0.38, top: 0.34, size: 0.24),
       tagline: VisitingCardFieldPosition(
         left: 0.38,
-        top: 0.56,
+        top: 0.62,
         width: 0.56,
-        fontSize: 8,
+        fontSize: 7,
         color: Color(0xFFFBAA19),
         textAlign: TextAlign.center,
       ),
