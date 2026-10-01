@@ -36,6 +36,8 @@ class VisitingCardFieldTransform {
     required this.size,
     this.rotation = 0,
     this.width,
+    this.shapeScaleX = 1,
+    this.shapeScaleY = 1,
     this.flipX = false,
     this.flipY = false,
     this.textColorValue,
@@ -62,6 +64,10 @@ class VisitingCardFieldTransform {
   final double size;
   final double rotation;
   final double? width;
+
+  /// Independent shape stretching, applied after the original image aspect ratio.
+  final double shapeScaleX;
+  final double shapeScaleY;
   final bool flipX;
   final bool flipY;
 
@@ -143,6 +149,8 @@ class VisitingCardFieldTransform {
     double? size,
     double? rotation,
     double? width,
+    double? shapeScaleX,
+    double? shapeScaleY,
     bool? flipX,
     bool? flipY,
     int? textColorValue,
@@ -169,6 +177,8 @@ class VisitingCardFieldTransform {
       size: size ?? this.size,
       rotation: rotation ?? this.rotation,
       width: width ?? this.width,
+      shapeScaleX: shapeScaleX ?? this.shapeScaleX,
+      shapeScaleY: shapeScaleY ?? this.shapeScaleY,
       flipX: flipX ?? this.flipX,
       flipY: flipY ?? this.flipY,
       textColorValue: textColorValue ?? this.textColorValue,
@@ -197,6 +207,8 @@ class VisitingCardFieldTransform {
         'size': size,
         'rotation': rotation,
         if (width != null) 'width': width,
+        if (shapeScaleX != 1) 'shapeScaleX': shapeScaleX,
+        if (shapeScaleY != 1) 'shapeScaleY': shapeScaleY,
         if (flipX) 'flipX': flipX,
         if (flipY) 'flipY': flipY,
         if (textColorValue != null) 'textColor': textColorValue,
@@ -225,6 +237,8 @@ class VisitingCardFieldTransform {
       size: (json['size'] as num?)?.toDouble() ?? 0.14,
       rotation: (json['rotation'] as num?)?.toDouble() ?? 0,
       width: (json['width'] as num?)?.toDouble(),
+      shapeScaleX: (json['shapeScaleX'] as num?)?.toDouble() ?? 1,
+      shapeScaleY: (json['shapeScaleY'] as num?)?.toDouble() ?? 1,
       flipX: json['flipX'] == true,
       flipY: json['flipY'] == true,
       textColorValue: (json['textColor'] as num?)?.toInt(),

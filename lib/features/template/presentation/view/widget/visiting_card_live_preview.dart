@@ -1155,6 +1155,14 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
             interactive: interactive,
             selected: selected,
             borderOnlyWhenSelected: landscape,
+            onResizeShape: isShape
+                ? (delta, box, {required horizontal, required fixRight, required fixBottom}) {
+                    vm.stretchOverlayAxis(gestureField,
+                      horizontal: horizontal, pixelDelta: delta, cardSize: size,
+                      duplicateId: id, fixOpposite: horizontal ? fixRight : fixBottom,
+                      seedWidthFraction: box.width / size.width, seedHeightPx: box.height);
+                  }
+                : null,
             onSelect: () => vm.selectDuplicate(id),
             onDeselect: vm.clearOverlaySelection,
             onMove: (dx, dy) =>
@@ -1423,6 +1431,7 @@ class _AspectFitTransformImage extends StatefulWidget {
     required this.onMove,
     required this.onResize,
     required this.onRotate,
+    this.onResizeShape,
     this.onUniformScale,
     this.onStretchHorizontal,
     this.onStretchVertical,
@@ -1430,6 +1439,12 @@ class _AspectFitTransformImage extends StatefulWidget {
     this.onGestureEnd,
     this.borderOnlyWhenSelected = false,
   });
+
+  final void Function(double delta, Size box, {
+    required bool horizontal,
+    required bool fixRight,
+    required bool fixBottom,
+  })? onResizeShape;
 
   final Size cardSize;
   final VisitingCardFieldTransform transform;
@@ -1509,12 +1524,17 @@ class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
     stream.addListener(listener);
   }
 
+  bool get _isShape => widget.transform.duplicateOf ==
+      VisitingCardEditContactViewModel.customShapeSource;
+
   (double, double) _boxFor(double aspect) {
     final maxSide = widget.cardSize.width * widget.transform.size;
-    if (aspect >= 1) {
-      return (maxSide, maxSide / aspect);
-    }
-    return (maxSide * aspect, maxSide);
+    final width = aspect >= 1 ? maxSide : maxSide * aspect;
+    final height = aspect >= 1 ? maxSide / aspect : maxSide;
+    return (
+      width * (_isShape ? widget.transform.shapeScaleX : 1),
+      height * (_isShape ? widget.transform.shapeScaleY : 1),
+    );
   }
 
   @override
@@ -1531,7 +1551,7 @@ class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
         key: ValueKey(widget.assetPath),
         width: boxW,
         height: boxH,
-        fit: BoxFit.contain,
+        fit: _isShape ? BoxFit.fill : BoxFit.contain,
       );
     } else if (widget.isAsset) {
       image = Image.asset(
@@ -1600,8 +1620,16 @@ class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
       onMove: widget.onMove,
       onResize: widget.onResize,
       onUniformScale: widget.onUniformScale,
-      onStretchHorizontal: widget.onStretchHorizontal,
-      onStretchVertical: widget.onStretchVertical,
+      onStretchHorizontal: widget.onResizeShape == null
+          ? widget.onStretchHorizontal
+          : (delta, {required fixOpposite}) =>
+              widget.onResizeShape!(delta, Size(boxW, boxH), horizontal: true,
+                fixRight: fixOpposite, fixBottom: false),
+      onStretchVertical: widget.onResizeShape == null
+          ? widget.onStretchVertical
+          : (delta, {required fixOpposite}) =>
+              widget.onResizeShape!(delta, Size(boxW, boxH), horizontal: false,
+                fixRight: false, fixBottom: fixOpposite),
       onRotate: widget.onRotate,
       onGestureStart: widget.onGestureStart,
       onGestureEnd: widget.onGestureEnd,

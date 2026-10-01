@@ -156,6 +156,47 @@ void main() {
     });
   }
 
+  for (final horizontal in [true, false]) {
+    testWidgets('shape handles resize only their axis in ${horizontal ? 'landscape' : 'vertical'} preview', (tester) async {
+      addTearDown(tester.view.reset);
+      final vm = VisitingCardEditContactViewModel(
+        templateId: horizontal ? 'h19' : 'v1', isHorizontal: horizontal,
+        frontAssetWithoutData: 'assets/images/unused-test-background.png',
+        backAssetWithoutData: 'assets/images/unused-test-background.png',
+      );
+      const asset = 'assets/visiting_card_scanner_shape/Group-14.png';
+      vm.addCustomShape(asset);
+      await measure(tester, vm, width: 320, contactInfo: !horizontal);
+      await tester.runAsync(() => precacheImage(const AssetImage(asset),
+          tester.element(find.byType(VisitingCardLivePreview))));
+      await tester.pumpAndSettle();
+      VisitingCardTransformOverlay overlay() =>
+          tester.widget<VisitingCardTransformOverlay>(find.byType(VisitingCardTransformOverlay));
+      final before = overlay();
+      before.onStretchHorizontal!(12, fixOpposite: true);
+      await tester.pumpAndSettle();
+      final wider = overlay();
+      expect(wider.boxWidth, closeTo(before.boxWidth + 12, 1e-6));
+      expect(wider.boxHeight, closeTo(before.boxHeight, 1e-6));
+      expect(wider.left + wider.boxWidth,
+          closeTo(before.left + before.boxWidth, 1e-6));
+      wider.onStretchVertical!(8, fixOpposite: true);
+      await tester.pumpAndSettle();
+      final taller = overlay();
+      expect(taller.boxHeight, closeTo(wider.boxHeight + 8, 1e-6));
+      expect(taller.boxWidth, closeTo(wider.boxWidth, 1e-6));
+      expect(taller.top + taller.boxHeight,
+          closeTo(wider.top + wider.boxHeight, 1e-6));
+      taller.onUniformScale!(10, fixRight: false, fixBottom: false);
+      await tester.pumpAndSettle();
+      final scaled = overlay();
+      expect(scaled.boxWidth / scaled.boxHeight,
+          closeTo(taller.boxWidth / taller.boxHeight, 1e-6));
+      await tester.pumpWidget(const SizedBox());
+      vm.dispose();
+    });
+  }
+
   for (final id in ['h18', 'h20']) {
     testWidgets('$id wraps the reported addresses into two complete lines', (tester) async {
       addTearDown(tester.view.reset);

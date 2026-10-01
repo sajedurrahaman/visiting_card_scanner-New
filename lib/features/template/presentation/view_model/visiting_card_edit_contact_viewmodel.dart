@@ -1297,6 +1297,28 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     if (duplicateId == null) _ensureOverlay(field);
     final current = currentOverlays[key];
     if (current == null) return;
+    if (current.duplicateOf == customShapeSource) {
+      final oldW = (seedWidthFraction ?? current.size * current.shapeScaleX) * cardSize.width;
+      final oldH = seedHeightPx ?? current.size * current.shapeScaleY * cardSize.width;
+      final oldExtent = horizontal ? oldW : oldH;
+      if (oldExtent <= 0) return;
+      final extent = (oldExtent + pixelDelta).clamp(
+        imageSizeMin * cardSize.width, imageSizeMax * cardSize.width);
+      final applied = extent - oldExtent;
+      final localShift = fixOpposite
+          ? (horizontal ? Offset(-applied, 0) : Offset(0, -applied))
+          : Offset.zero;
+      final c = math.cos(current.rotation);
+      final s = math.sin(current.rotation);
+      currentOverlays[key] = current.copyWith(
+        shapeScaleX: horizontal ? current.shapeScaleX * extent / oldExtent : current.shapeScaleX,
+        shapeScaleY: horizontal ? current.shapeScaleY : current.shapeScaleY * extent / oldExtent,
+        left: current.left + (localShift.dx * c - localShift.dy * s) / cardSize.width,
+        top: current.top + (localShift.dx * s + localShift.dy * c) / cardSize.height,
+      );
+      notifyListeners();
+      return;
+    }
     final isImage = duplicateId == null
         ? field.isImageOverlay
         : _sourceIsImage(current.duplicateOf);
