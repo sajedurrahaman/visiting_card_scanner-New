@@ -588,12 +588,6 @@ class _VisitingCardVerticalEditScreenState
   List<_BarSpec> _mainBarItems() {
     const dir = 'assets/visiting_card_option_icon';
     return [
-      _BarSpec(asset: '$dir/save_option_icon.svg', label: 'Save', onTap: _onSave),
-      _BarSpec(
-        asset: '$dir/download_option_icon.svg',
-        label: 'Download',
-        onTap: _onDownload,
-      ),
       _BarSpec(
         asset: '$dir/text_option_icon.svg',
         label: 'Text',

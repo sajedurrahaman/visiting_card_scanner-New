@@ -3262,13 +3262,13 @@ class VisitingCardPositionConfig {
       logo: VisitingCardFieldPosition(left: 0.32, top: 0.14, size: 0.38),
       tagline: VisitingCardFieldPosition(
         left: 0.38,
-        top: 0.26,
+        top: 0.34,
         width: 0.84,
         fontSize: 8,
         color: Color(0xFF000000),
         textAlign: TextAlign.center,
       ),
-      qr: VisitingCardFieldPosition(left: 0.36, top: 0.30, size: 0.26),
+      qr: VisitingCardFieldPosition(left: 0.36, top: 0.38, size: 0.26),
     ),
   );
 
@@ -3321,7 +3321,7 @@ class VisitingCardPositionConfig {
       ),
       address: VisitingCardFieldPosition(
         left: 0.28,
-        top: 0.54,
+        top: 0.535,
         width: 0.70,
         fontSize: 9,
         color: Color(0xFF2E2E82),
