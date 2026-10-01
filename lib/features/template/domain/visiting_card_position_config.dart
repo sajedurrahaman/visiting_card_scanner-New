@@ -274,7 +274,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.14,
         top: 0.745,
-        width: 0.40,
+        width: 0.50,
         fontSize: 9,
         fontWeight: FontWeight.w500,
         color: Color(0xFF404040),
@@ -2255,7 +2255,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.18,
         top: 0.81,
-        width: 0.36,
+        width: 0.50,
         fontSize: 8,
         color: Color(0xFF20438D),
       ),
