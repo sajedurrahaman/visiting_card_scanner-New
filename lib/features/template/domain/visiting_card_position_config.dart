@@ -738,7 +738,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.21,
         top: 0.345,
-        width: 0.60,
+        width: 0.50,
         fontSize: 10,
         color: Color(0xFF404040),
         maxLines: 4,
@@ -865,7 +865,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.21,
         top: 0.525,
-        width: 0.70,
+        width: 0.60,
         fontSize: 10,
         color: Color(0xFF404040),
         maxLines: 2,
@@ -946,7 +946,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.18,
         top: 0.57,
-        width: 0.70,
+        width: 0.60,
         fontSize: 10,
         color: Color(0xFF606060),
         maxLines: 2,
@@ -1051,7 +1051,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.21,
         top: 0.525,
-        width: 0.70,
+        width: 0.60,
         fontSize: 10,
         color: Color(0xFF404040),
         maxLines: 2,
@@ -1158,7 +1158,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.26,
         top: 0.43,
-        width: 0.70,
+        width: 0.60,
         fontSize: 10,
         color: Color(0xFF1A1A1A),
         maxLines: 2,
@@ -2317,7 +2317,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.38,
         top: 0.63,
-        width: 0.62,
+        width: 0.52,
         fontSize: 10,
         color: Color(0xFF404040),
         maxLines: 2,
@@ -2461,7 +2461,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.24,
         top: 0.345,
-        width: 0.68,
+        width: 0.58,
         fontSize: 10,
         color: Color(0xFF404040),
         maxLines: 2,
@@ -2528,7 +2528,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.30,
         top: 0.54,
-        width: 0.68,
+        width: 0.58,
         fontSize: 10,
         color: Color(0xFF404040),
         maxLines: 2,
@@ -2653,7 +2653,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.24,
         top: 0.30,
-        width: 0.68,
+        width: 0.58,
         fontSize: 9,
         color: Color(0xFF032C40),
         maxLines: 2,
@@ -2735,7 +2735,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.36,
         top: 0.91,
-        width: 0.62,
+        width: 0.52,
         fontSize: 9,
         color: Color(0xFFFFFFFF),
         maxLines: 2,
@@ -2796,7 +2796,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.22,
         top: 0.88,
-        width: 0.72,
+        width: 0.62,
         fontSize: 9,
         color: Color(0xFF032C40),
         maxLines: 2,
@@ -2874,7 +2874,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.33,
         top: 0.815,
-        width: 0.70,
+        width: 0.60,
         fontSize: 9,
         color: Color(0xFF032C40),
         maxLines: 2,
@@ -2937,7 +2937,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.23,
         top: 0.73,
-        width: 0.72,
+        width: 0.52,
         fontSize: 9,
         color: Color(0xFF6B6B6B),
       ),
@@ -2983,7 +2983,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.22,
         top: 0.69,
-        width: 0.70,
+        width: 0.50,
         fontSize: 9,
         color: Color(0xFF032C40),
         maxLines: 2,
@@ -3065,7 +3065,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.20,
         top: 0.88,
-        width: 0.74,
+        width: 0.54,
         fontSize: 9,
         color: Color(0xFF032C40),
         maxLines: 2,
@@ -3125,7 +3125,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.27,
         top: 0.35,
-        width: 0.70,
+        width: 0.50,
         fontSize: 9,
         color: Color(0xFF032C40),
         maxLines: 2,
@@ -3193,7 +3193,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.24,
         top: 0.38,
-        width: 0.70,
+        width: 0.50,
         fontSize: 9,
         color: Color(0xFF000000),
         maxLines: 2,
@@ -3231,7 +3231,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.25,
         top: 0.56,
-        width: 0.70,
+        width: 0.50,
         fontSize: 9,
         color: Color(0xFF000000),
         maxLines: 2,
@@ -3322,7 +3322,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.28,
         top: 0.535,
-        width: 0.70,
+        width: 0.60,
         fontSize: 9,
         color: Color(0xFF2E2E82),
         maxLines: 2,
