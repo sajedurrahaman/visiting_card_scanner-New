@@ -2796,7 +2796,7 @@ class VisitingCardPositionConfig {
       address: VisitingCardFieldPosition(
         left: 0.22,
         top: 0.88,
-        width: 0.62,
+        width: 0.52,
         fontSize: 9,
         color: Color(0xFF032C40),
         maxLines: 2,
@@ -2804,10 +2804,10 @@ class VisitingCardPositionConfig {
     ),
     back: VisitingCardSidePositions(
       qr: VisitingCardFieldPosition(left: 0.40, top: 0.16, size: 0.20),
-      logo: VisitingCardFieldPosition(left: 0.30, top: 0.66, size: 0.40),
+      logo: VisitingCardFieldPosition(left: 0.30, top: 0.62, size: 0.40),
       tagline: VisitingCardFieldPosition(
         left: 0.36,
-        top: 0.77,
+        top: 0.80,
         width: 0.76,
         fontSize: 8,
         color: Color(0xFF404041),
@@ -2823,7 +2823,7 @@ class VisitingCardPositionConfig {
   static const verticalTemplate14 = VisitingCardTemplatePositions(
     fontFamily: VisitingCardFonts.montserrat,
     front: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(left: 0.33, top: 0.18, size: 0.36),
+      logo: VisitingCardFieldPosition(left: 0.33, top: 0.12, size: 0.36),
       tagline: VisitingCardFieldPosition(
         left: 0.38,
         top: 0.285,
@@ -2881,10 +2881,10 @@ class VisitingCardPositionConfig {
       ),
     ),
     back: VisitingCardSidePositions(
-      logo: VisitingCardFieldPosition(left: 0.30, top: 0.23, size: 0.38),
+      logo: VisitingCardFieldPosition(left: 0.30, top: 0.25, size: 0.38),
       tagline: VisitingCardFieldPosition(
         left: 0.36,
-        top: 0.34,
+        top: 0.44,
         width: 0.76,
         fontSize: 8,
         color: Color(0xFF404041),
