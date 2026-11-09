@@ -5,9 +5,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
+import 'package:visiting_card/features/template/domain/visiting_card_contact_icon_layout.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_font_style.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_position_config.dart';
+import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_multi_select_chrome.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_transform_overlay.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
 
@@ -283,8 +285,9 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     // finger swipe does not construct the other face mid-gesture.
     final pager = PageView(
       controller: _pageController,
-      physics: widget.vm.jumpSideForCapture ||
-              (widget.enableFieldTransform && widget.vm.hasSelection)
+      // Editor mode locks paging so marquee-drag select is not stolen by
+      // the front/back PageView; use the side pager buttons instead.
+      physics: widget.vm.jumpSideForCapture || widget.enableFieldTransform
           ? const NeverScrollableScrollPhysics()
           : const BouncingScrollPhysics(
               parent: AlwaysScrollableScrollPhysics(),
@@ -326,6 +329,25 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         final size = Size(constraints.maxWidth, constraints.maxHeight);
         final interactive =
             widget.enableFieldTransform && sideIndex == widget.vm.sideIndex;
+        final hitTargets = <({String key, Rect rect})>[];
+        final overlays = _buildOverlayChildren(
+          size: size,
+          side: side,
+          fontFamily: layout.fontFamily,
+          isFront: isFront,
+          interactive: interactive,
+          hitTargets: hitTargets,
+        );
+        final vm = widget.vm;
+        Rect? groupBounds;
+        if (interactive && vm.hasMultiSelection) {
+          Rect? union;
+          for (final t in hitTargets) {
+            if (!vm.multiSelectedKeys.contains(t.key)) continue;
+            union = union == null ? t.rect : union.expandToInclude(t.rect);
+          }
+          groupBounds = union;
+        }
         return Stack(
           fit: StackFit.expand,
           children: [
@@ -338,19 +360,26 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
               ),
             ),
             if (interactive)
-              Positioned.fill(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: widget.vm.clearOverlaySelection,
-                ),
+              VisitingCardMarqueeLayer(
+                cardSize: size,
+                hitTargets: hitTargets,
+                onTapClear: vm.clearOverlaySelection,
+                onMarqueeStart: vm.beginMarquee,
+                onMarqueeUpdate: (local) => vm.updateMarquee(local, hitTargets),
+                onMarqueeEnd: vm.endMarquee,
               ),
-            ..._buildOverlayChildren(
-              size: size,
-              side: side,
-              fontFamily: layout.fontFamily,
-              isFront: isFront,
-              interactive: interactive,
-            ),
+            ...overlays,
+            if (interactive && vm.marqueeActive && vm.marqueeRect != null)
+              VisitingCardMarqueePaint(rect: vm.marqueeRect!),
+            if (interactive && vm.showMoveGrid) const VisitingCardMoveGrid(),
+            if (interactive && groupBounds != null)
+              VisitingCardGroupSelectionBox(
+                bounds: groupBounds,
+                cardSize: size,
+                onMove: (dx, dy) => vm.moveMultiSelection(dx, dy, size),
+                onGestureStart: vm.beginOverlayGesture,
+                onGestureEnd: vm.endOverlayGesture,
+              ),
           ],
         );
       },
@@ -363,9 +392,18 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     required String fontFamily,
     required bool isFront,
     required bool interactive,
+    required List<({String key, Rect rect})> hitTargets,
   }) {
     final vm = widget.vm;
     final layers = <(int, int, Widget)>[];
+    final multi = vm.hasMultiSelection;
+
+    void trackHit(String key, double left, double top, double w, double h) {
+      if (!interactive) return;
+      hitTargets.add((key: key, rect: Rect.fromLTWH(left, top, w, h)));
+    }
+
+    bool keySelected(String key) => vm.isOverlayKeySelected(key);
     var layerSeq = 0;
     // Every editable preview uses the same card-relative typography. Using
     // ScreenUtil in Contact Info and a clamped scale in the landscape editor
@@ -655,6 +693,13 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         return;
       }
 
+      trackHit(
+        VisitingCardFieldTransform.keyOf(field),
+        size.width * t.left,
+        size.height * t.top,
+        boxW,
+        boxH,
+      );
       addOverlay(
         VisitingCardTransformOverlay(
           cardSize: size,
@@ -663,13 +708,17 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           boxWidth: boxW,
           boxHeight: boxH,
           rotation: t.rotation,
-          selected: vm.selectedOverlay == field,
+          selected: keySelected(VisitingCardFieldTransform.keyOf(field)),
           tightBorder: true,
           borderOnlyWhenSelected: landscape,
-          showHandles: !t.locked,
+          showHandles: !t.locked && !multi,
           onSelect: () => vm.selectOverlay(field),
-          onDeselect: vm.clearOverlaySelection,
-          onMove: (dx, dy) => vm.moveOverlay(field, dx, dy, size),
+          onDeselect: () => multi
+              ? vm.selectOverlay(field)
+              : vm.clearOverlaySelection(),
+          onMove: multi
+              ? (dx, dy) => vm.moveMultiSelection(dx, dy, size)
+              : (dx, dy) => vm.moveOverlay(field, dx, dy, size),
           onResize: (d) => vm.resizeOverlay(field, d, size),
           onUniformScale: landscape
               ? (d, {required fixRight, required fixBottom}) =>
@@ -910,6 +959,13 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         return;
       }
 
+      trackHit(
+        VisitingCardFieldTransform.keyOf(field),
+        size.width * t.left,
+        size.height * t.top,
+        boxW,
+        boxH,
+      );
       addOverlay(
         VisitingCardTransformOverlay(
           cardSize: size,
@@ -918,13 +974,17 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           boxWidth: boxW,
           boxHeight: boxH,
           rotation: t.rotation,
-          selected: vm.selectedOverlay == field,
+          selected: keySelected(VisitingCardFieldTransform.keyOf(field)),
           tightBorder: true,
           borderOnlyWhenSelected: landscape,
-          showHandles: !t.locked,
+          showHandles: !t.locked && !multi,
           onSelect: () => vm.selectOverlay(field),
-          onDeselect: vm.clearOverlaySelection,
-          onMove: (dx, dy) => vm.moveOverlay(field, dx, dy, size),
+          onDeselect: () => multi
+              ? vm.selectOverlay(field)
+              : vm.clearOverlaySelection(),
+          onMove: multi
+              ? (dx, dy) => vm.moveMultiSelection(dx, dy, size)
+              : (dx, dy) => vm.moveOverlay(field, dx, dy, size),
           onResize: (d) => vm.resizeOverlay(field, d, size),
           onUniformScale: landscape
               ? (d, {required fixRight, required fixBottom}) =>
@@ -977,6 +1037,14 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       if (!isAsset && !File(assetPath).existsSync()) return;
 
       final t = vm.resolvedTransform(field, isFront: isFront);
+      final imgBox = size.width * t.size;
+      trackHit(
+        VisitingCardFieldTransform.keyOf(field),
+        size.width * t.left,
+        size.height * t.top,
+        imgBox,
+        imgBox,
+      );
       addOverlay(
         _AspectFitTransformImage(
           key: ValueKey('transform-$field-$assetPath-$isFront'),
@@ -985,11 +1053,16 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           assetPath: assetPath,
           isAsset: isAsset,
           interactive: interactive,
-          selected: vm.selectedOverlay == field,
+          selected: keySelected(VisitingCardFieldTransform.keyOf(field)),
           borderOnlyWhenSelected: landscape,
+          showHandles: !t.locked && !multi,
           onSelect: () => vm.selectOverlay(field),
-          onDeselect: vm.clearOverlaySelection,
-          onMove: (dx, dy) => vm.moveOverlay(field, dx, dy, size),
+          onDeselect: () => multi
+              ? vm.selectOverlay(field)
+              : vm.clearOverlaySelection(),
+          onMove: multi
+              ? (dx, dy) => vm.moveMultiSelection(dx, dy, size)
+              : (dx, dy) => vm.moveOverlay(field, dx, dy, size),
           onResize: (d) => vm.resizeOverlay(field, d, size),
           onUniformScale: landscape
               ? (d, {required fixRight, required fixBottom}) =>
@@ -1086,7 +1159,162 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       );
     }
 
+    void addContactIcon(VisitingCardOverlayField field) {
+      final seed = VisitingCardContactIconLayout.positionFor(
+        iconField: field,
+        side: side,
+        templateId: vm.templateId,
+      );
+      if (seed == null) return;
+
+      final hidden = vm.isContactIconHidden(field, isFront: isFront);
+      final t = vm.resolvedTransform(field, isFront: isFront);
+      final customPath = vm.contactIconAsset(field, isFront: isFront);
+      final seedLeftFrac = seed.left ?? 0;
+      final seedTopFrac = seed.top ?? 0;
+      final seedSize = seed.size ?? VisitingCardContactIconLayout.defaultSize;
+      // Draw our own icon only after move/resize/replace/rotate; until then the
+      // baked PNG is the visual and this overlay is just a hit target.
+      final needsDrawnIcon = customPath != null ||
+          (t.left - seedLeftFrac).abs() > 0.004 ||
+          (t.top - seedTopFrac).abs() > 0.004 ||
+          (t.size - seedSize).abs() > 0.004 ||
+          t.rotation.abs() > 0.01 ||
+          hidden;
+
+      if (needsDrawnIcon) {
+        final seedLeft = size.width * seedLeftFrac;
+        final seedTop = size.height * seedTopFrac;
+        final seedBox = size.width * seedSize;
+        final coverBox = seedBox * VisitingCardContactIconLayout.coverScale;
+        final coverPad = (coverBox - seedBox) / 2;
+        addLayer(
+          Positioned(
+            left: seedLeft - coverPad,
+            top: seedTop - coverPad,
+            width: coverBox,
+            height: coverBox,
+            child: const DecoratedBox(
+              decoration: BoxDecoration(
+                color: VisitingCardContactIconLayout.coverColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          VisitingCardFieldTransform.naturalZ(field) - 1,
+        );
+      }
+
+      if (hidden) return;
+
+      final box = size.width * t.size;
+      final accent = seed.color;
+      final drawn = needsDrawnIcon
+          ? _ContactIconVisual(
+              field: field,
+              accent: accent,
+              customAssetPath: customPath,
+            )
+          : const SizedBox.expand();
+      final iconChild = _fadeField(drawn, t);
+
+      if (!interactive) {
+        addLayer(
+          Positioned(
+            left: size.width * t.left,
+            top: size.height * t.top,
+            width: box,
+            height: box,
+            child: Transform.rotate(
+              alignment: landscape ? Alignment.topLeft : Alignment.center,
+              angle: t.rotation,
+              child: _flipField(iconChild, t),
+            ),
+          ),
+          VisitingCardFieldTransform.stackZ(
+            VisitingCardFieldTransform.keyOf(field),
+            t,
+          ),
+        );
+        return;
+      }
+
+      trackHit(
+        VisitingCardFieldTransform.keyOf(field),
+        size.width * t.left,
+        size.height * t.top,
+        box,
+        box,
+      );
+      addOverlay(
+        VisitingCardTransformOverlay(
+          cardSize: size,
+          left: size.width * t.left,
+          top: size.height * t.top,
+          boxWidth: box,
+          boxHeight: box,
+          rotation: t.rotation,
+          selected: keySelected(VisitingCardFieldTransform.keyOf(field)),
+          tightBorder: true,
+          borderOnlyWhenSelected: landscape,
+          showHandles: !t.locked && !multi,
+          onSelect: () => vm.selectOverlay(field),
+          onDeselect: () => multi
+              ? vm.selectOverlay(field)
+              : vm.clearOverlaySelection(),
+          onMove: multi
+              ? (dx, dy) => vm.moveMultiSelection(dx, dy, size)
+              : (dx, dy) => vm.moveOverlay(field, dx, dy, size),
+          onResize: (d) => vm.resizeOverlay(field, d, size),
+          onUniformScale: landscape
+              ? (d, {required fixRight, required fixBottom}) =>
+                    vm.scaleOverlayUniform(
+                      field,
+                      d,
+                      size,
+                      fixRight: fixRight,
+                      fixBottom: fixBottom,
+                    )
+              : null,
+          onStretchHorizontal: landscape
+              ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
+                  field,
+                  horizontal: true,
+                  pixelDelta: d,
+                  cardSize: size,
+                  fixOpposite: fixOpposite,
+                )
+              : null,
+          onStretchVertical: landscape
+              ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
+                  field,
+                  horizontal: false,
+                  pixelDelta: d,
+                  cardSize: size,
+                  fixOpposite: fixOpposite,
+                )
+              : null,
+          onRotate: (r) => vm.rotateOverlay(field, r),
+          onGestureStart: vm.beginOverlayGesture,
+          onGestureEnd: vm.endOverlayGesture,
+          child: _flipField(iconChild, t),
+        ),
+        field,
+      );
+    }
+
+    for (final iconField in VisitingCardContactIconLayout.contactIconFields) {
+      addContactIcon(iconField);
+    }
+
     VisitingCardFieldPosition? posFor(VisitingCardOverlayField field) {
+      if (field.isContactIcon) {
+        return VisitingCardContactIconLayout.positionFor(
+          iconField: field,
+          side: side,
+          templateId: vm.templateId,
+        );
+      }
       return switch (field) {
         VisitingCardOverlayField.name => side.name,
         VisitingCardOverlayField.designation => side.designation,
@@ -1098,6 +1326,11 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         VisitingCardOverlayField.address => side.address,
         VisitingCardOverlayField.logo => side.logo,
         VisitingCardOverlayField.qr => side.qr,
+        VisitingCardOverlayField.phoneIcon ||
+        VisitingCardOverlayField.emailIcon ||
+        VisitingCardOverlayField.websiteIcon ||
+        VisitingCardOverlayField.addressIcon =>
+          null,
       };
     }
 
@@ -1126,7 +1359,6 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
             )
           : posFor(source!);
       final gestureField = source ?? VisitingCardOverlayField.name;
-      final selected = vm.selectedDuplicateId == id;
       void place(Widget overlay) {
         addLayer(
           overlay,
@@ -1137,6 +1369,104 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         );
       }
 
+      final isContactIconDup = source?.isContactIcon ?? false;
+      if (isContactIconDup) {
+        final box = size.width * t.size;
+        final accent = VisitingCardContactIconLayout.accentFor(side);
+        final path = t.duplicateImagePath;
+        final iconChild = _fadeField(
+          _ContactIconVisual(
+            field: source!,
+            accent: accent,
+            customAssetPath: (path == null || path.isEmpty) ? null : path,
+          ),
+          t,
+        );
+        if (!interactive) {
+          place(
+            Positioned(
+              left: size.width * t.left,
+              top: size.height * t.top,
+              width: box,
+              height: box,
+              child: Transform.rotate(
+                alignment: landscape ? Alignment.topLeft : Alignment.center,
+                angle: t.rotation,
+                child: _flipField(iconChild, t),
+              ),
+            ),
+          );
+          return;
+        }
+        trackHit(
+          VisitingCardEditContactViewModel.duplicateKey(id),
+          size.width * t.left,
+          size.height * t.top,
+          box,
+          box,
+        );
+        place(
+          VisitingCardTransformOverlay(
+            cardSize: size,
+            left: size.width * t.left,
+            top: size.height * t.top,
+            boxWidth: box,
+            boxHeight: box,
+            rotation: t.rotation,
+            selected: keySelected(VisitingCardEditContactViewModel.duplicateKey(id)),
+            tightBorder: true,
+            borderOnlyWhenSelected: landscape,
+            showHandles: !t.locked && !multi,
+            onSelect: () => vm.selectDuplicate(id),
+            onDeselect: () => multi
+                ? vm.selectDuplicate(id)
+                : vm.clearOverlaySelection(),
+            onMove: multi
+                ? (dx, dy) => vm.moveMultiSelection(dx, dy, size)
+                : (dx, dy) => vm.moveOverlay(
+                    gestureField, dx, dy, size, duplicateId: id),
+            onResize: (d) =>
+                vm.resizeOverlay(gestureField, d, size, duplicateId: id),
+            onUniformScale: landscape
+                ? (d, {required fixRight, required fixBottom}) =>
+                      vm.scaleOverlayUniform(
+                        gestureField,
+                        d,
+                        size,
+                        fixRight: fixRight,
+                        fixBottom: fixBottom,
+                        duplicateId: id,
+                      )
+                : null,
+            onStretchHorizontal: landscape
+                ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
+                    gestureField,
+                    horizontal: true,
+                    pixelDelta: d,
+                    cardSize: size,
+                    fixOpposite: fixOpposite,
+                    duplicateId: id,
+                  )
+                : null,
+            onStretchVertical: landscape
+                ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
+                    gestureField,
+                    horizontal: false,
+                    pixelDelta: d,
+                    cardSize: size,
+                    fixOpposite: fixOpposite,
+                    duplicateId: id,
+                  )
+                : null,
+            onRotate: (r) => vm.rotateOverlay(gestureField, r, duplicateId: id),
+            onGestureStart: vm.beginOverlayGesture,
+            onGestureEnd: vm.endOverlayGesture,
+            child: _flipField(iconChild, t),
+          ),
+        );
+        return;
+      }
+
       if (isIcon ||
           isShape ||
           isPhoto ||
@@ -1145,6 +1475,14 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         if (path == null || path.isEmpty) return;
         final isAsset = path.startsWith('assets/');
         if (!isAsset && !File(path).existsSync()) return;
+        final dupImgBox = size.width * t.size;
+        trackHit(
+          VisitingCardEditContactViewModel.duplicateKey(id),
+          size.width * t.left,
+          size.height * t.top,
+          dupImgBox,
+          dupImgBox,
+        );
         place(
           _AspectFitTransformImage(
             key: ValueKey('dup-$id-$path'),
@@ -1153,8 +1491,9 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
             assetPath: path,
             isAsset: isAsset,
             interactive: interactive,
-            selected: selected,
+            selected: keySelected(VisitingCardEditContactViewModel.duplicateKey(id)),
             borderOnlyWhenSelected: landscape,
+            showHandles: !t.locked && !multi,
             onResizeShape: isShape
                 ? (delta, box, {required horizontal, required fixRight, required fixBottom}) {
                     vm.stretchOverlayAxis(gestureField,
@@ -1164,9 +1503,13 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
                   }
                 : null,
             onSelect: () => vm.selectDuplicate(id),
-            onDeselect: vm.clearOverlaySelection,
-            onMove: (dx, dy) =>
-                vm.moveOverlay(gestureField, dx, dy, size, duplicateId: id),
+            onDeselect: () => multi
+                ? vm.selectDuplicate(id)
+                : vm.clearOverlaySelection(),
+            onMove: multi
+                ? (dx, dy) => vm.moveMultiSelection(dx, dy, size)
+                : (dx, dy) => vm.moveOverlay(
+                    gestureField, dx, dy, size, duplicateId: id),
             onResize: (d) =>
                 vm.resizeOverlay(gestureField, d, size, duplicateId: id),
             onUniformScale: landscape
@@ -1336,6 +1679,13 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         );
         return;
       }
+      trackHit(
+        VisitingCardEditContactViewModel.duplicateKey(id),
+        size.width * t.left,
+        size.height * t.top,
+        boxW,
+        boxH,
+      );
       place(
         VisitingCardTransformOverlay(
           key: ValueKey('dup-text-$id'),
@@ -1345,14 +1695,18 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           boxWidth: boxW,
           boxHeight: boxH,
           rotation: t.rotation,
-          selected: selected,
+          selected: keySelected(VisitingCardEditContactViewModel.duplicateKey(id)),
           tightBorder: true,
           borderOnlyWhenSelected: landscape,
-          showHandles: !t.locked,
+          showHandles: !t.locked && !multi,
           onSelect: () => vm.selectDuplicate(id),
-          onDeselect: vm.clearOverlaySelection,
-          onMove: (dx, dy) =>
-              vm.moveOverlay(gestureField, dx, dy, size, duplicateId: id),
+          onDeselect: () => multi
+              ? vm.selectDuplicate(id)
+              : vm.clearOverlaySelection(),
+          onMove: multi
+              ? (dx, dy) => vm.moveMultiSelection(dx, dy, size)
+              : (dx, dy) => vm.moveOverlay(
+                  gestureField, dx, dy, size, duplicateId: id),
           onResize: (d) =>
               vm.resizeOverlay(gestureField, d, size, duplicateId: id),
           onUniformScale: landscape
@@ -1438,6 +1792,7 @@ class _AspectFitTransformImage extends StatefulWidget {
     this.onGestureStart,
     this.onGestureEnd,
     this.borderOnlyWhenSelected = false,
+    this.showHandles = true,
   });
 
   final void Function(double delta, Size box, {
@@ -1452,6 +1807,7 @@ class _AspectFitTransformImage extends StatefulWidget {
   final bool isAsset;
   final bool interactive;
   final bool selected;
+  final bool showHandles;
   final VoidCallback onSelect;
   final VoidCallback onDeselect;
   final void Function(double dx, double dy) onMove;
@@ -1614,7 +1970,7 @@ class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
       selected: widget.selected,
       tightBorder: true,
       borderOnlyWhenSelected: widget.borderOnlyWhenSelected,
-      showHandles: !widget.transform.locked,
+      showHandles: widget.showHandles && !widget.transform.locked,
       onSelect: widget.onSelect,
       onDeselect: widget.onDeselect,
       onMove: widget.onMove,
@@ -1703,6 +2059,56 @@ class VisitingCardSidePager extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Default circular badge (covers template PNG icons) or a replaced SVG/image.
+class _ContactIconVisual extends StatelessWidget {
+  const _ContactIconVisual({
+    required this.field,
+    required this.accent,
+    this.customAssetPath,
+  });
+
+  final VisitingCardOverlayField field;
+  final Color accent;
+  final String? customAssetPath;
+
+  @override
+  Widget build(BuildContext context) {
+    final path = customAssetPath?.trim();
+    if (path != null && path.isNotEmpty) {
+      final isAsset = path.startsWith('assets/');
+      final isSvg = path.toLowerCase().endsWith('.svg');
+      if (isSvg && isAsset) {
+        return SvgPicture.asset(path, fit: BoxFit.contain);
+      }
+      if (isAsset) {
+        return Image.asset(path, fit: BoxFit.contain);
+      }
+      if (File(path).existsSync()) {
+        return Image.file(File(path), fit: BoxFit.contain);
+      }
+    }
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: accent,
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: FractionallySizedBox(
+          widthFactor: 0.58,
+          heightFactor: 0.58,
+          child: FittedBox(
+            child: Icon(
+              VisitingCardContactIconLayout.materialIcon(field),
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

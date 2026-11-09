@@ -674,6 +674,7 @@ class _VisitingCardLandscapeEditScreenState
                             if (!_previewing &&
                                 _panel == 'Color' &&
                                 vm.hasSelection &&
+                                !vm.hasMultiSelection &&
                                 (!vm.selectedIsImage || vm.selectedIsShape))
                               _TextColorBar(
                                 selected: vm.activeTransform?.textColor,
@@ -683,7 +684,8 @@ class _VisitingCardLandscapeEditScreenState
                               )
                             else if (!_previewing &&
                                 _panel == 'Size' &&
-                                vm.hasSelection)
+                                vm.hasSelection &&
+                                !vm.hasMultiSelection)
                               _TextSizeBar(
                                 fraction: vm.selectedOverlaySizeFraction(),
                                 onClose: () => setState(() => _panel = ''),
@@ -692,6 +694,7 @@ class _VisitingCardLandscapeEditScreenState
                             else if (!_previewing &&
                                 _isAdjustPanel &&
                                 vm.hasSelection &&
+                                !vm.hasMultiSelection &&
                                 !(vm.selectedIsImage &&
                                     (_panel == 'Spacing' ||
                                         _panel == 'Stroke' ||
@@ -819,7 +822,17 @@ class _VisitingCardLandscapeEditScreenState
                                       ),
                                     ],
                                   )
-                                : _SelectedFieldRail(
+                                : vm.hasMultiSelection
+                                    ? _MultiSelectRail(
+                                        count: vm.multiSelectedKeys.length,
+                                        onDelete: _onDelete,
+                                        onNudge: vm.nudgeSelectedOverlay,
+                                        onClose: () {
+                                          setState(() => _panel = '');
+                                          vm.clearOverlaySelection();
+                                        },
+                                      )
+                                    : _SelectedFieldRail(
                                     showTextTools: !vm.selectedIsImage,
                                     showColor:
                                         !vm.selectedIsImage || vm.selectedIsShape,
@@ -828,6 +841,8 @@ class _VisitingCardLandscapeEditScreenState
                                         : null,
                                     onReplaceQr:
                                         vm.selectedIsQr ? _onPickQr : null,
+                                    onReplaceIcon:
+                                        vm.selectedIsIcon ? _onAddIcon : null,
                                     onEditText: _onEditText,
                                     onColor: _onColor,
                                     colorActive: _panel == 'Color',
@@ -1125,6 +1140,56 @@ class _RailItem extends StatelessWidget {
 
 const _selectIconDir = 'assets/visiting_card_select_text_icon';
 
+/// Right rail while multiple fields are selected via marquee drag.
+class _MultiSelectRail extends StatelessWidget {
+  const _MultiSelectRail({
+    required this.count,
+    required this.onDelete,
+    required this.onNudge,
+    required this.onClose,
+  });
+
+  final int count;
+  final VoidCallback onDelete;
+  final void Function(double dxFraction, double dyFraction) onNudge;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            '$count selected',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        _MoveAndFlipCard(
+          onNudge: onNudge,
+          onFlip: (_) {},
+        ),
+        _SelectRailItem(
+          asset: '$_selectIconDir/delete_icon.svg',
+          label: 'Delete',
+          onTap: onDelete,
+        ),
+        _SelectRailItem(
+          asset: '$_selectIconDir/close_icon.svg',
+          label: 'Close',
+          onTap: onClose,
+        ),
+      ],
+    );
+  }
+}
+
 /// Right rail shown while a card field is selected (Figma text tools).
 class _SelectedFieldRail extends StatelessWidget {
   const _SelectedFieldRail({
@@ -1132,6 +1197,7 @@ class _SelectedFieldRail extends StatelessWidget {
     required this.showColor,
     required this.onReplaceLogo,
     required this.onReplaceQr,
+    this.onReplaceIcon,
     required this.onEditText,
     required this.onColor,
     required this.colorActive,
@@ -1155,6 +1221,7 @@ class _SelectedFieldRail extends StatelessWidget {
   final bool showColor;
   final VoidCallback? onReplaceLogo;
   final VoidCallback? onReplaceQr;
+  final VoidCallback? onReplaceIcon;
   final VoidCallback onEditText;
   final VoidCallback onColor;
   final bool colorActive;
@@ -1189,6 +1256,12 @@ class _SelectedFieldRail extends StatelessWidget {
             asset: 'assets/visiting_card_option_icon/qrcode_option_icon.svg',
             label: 'Replace QRCode',
             onTap: onReplaceQr!,
+          ),
+        if (onReplaceIcon != null)
+          _SelectRailItem(
+            asset: 'assets/visiting_card_option_icon/icon_option_icon.svg',
+            label: 'Replace Icon',
+            onTap: onReplaceIcon!,
           ),
         if (showTextTools)
           _SelectRailItem(

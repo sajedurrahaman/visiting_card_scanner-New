@@ -14,6 +14,7 @@ import 'package:visiting_card/features/folder/presentation/view_model/folder_vie
 import 'package:visiting_card/features/home/domain/model/saved_file_model.dart';
 import 'package:visiting_card/features/home/presentation/view_model/home_view_model.dart';
 import 'package:visiting_card/features/scan/domain/saved_contact_info.dart';
+import 'package:visiting_card/features/template/domain/visiting_card_contact_icon_layout.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_font_style.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_position_config.dart';
@@ -138,8 +139,21 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   /// Id of a Duplicate copy when that copy is selected.
   String? selectedDuplicateId;
 
+  /// Keys of fields selected together via marquee drag (`name`, `dup:…`, …).
+  final Set<String> multiSelectedKeys = {};
+
+  /// True while a marquee drag is in progress on the card.
+  bool marqueeActive = false;
+
+  /// Marquee rectangle in card-local pixels while dragging.
+  Rect? marqueeRect;
+
   /// True while user is dragging / resizing a field overlay (skip scroll toast).
   bool overlayGestureActive = false;
+
+  /// Alignment grid over the card while moving a multi-selection.
+  bool get showMoveGrid =>
+      overlayGestureActive && multiSelectedKeys.length > 1;
 
   /// Download/save capture jumps to the side instead of animating the pager,
   /// so the PNG is not a mid-swipe mix of the front and back.
@@ -373,6 +387,17 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     return firstError;
   }
 
+  /// Back side (2/2): QR + logo must be chosen before submit.
+  String? validateRequiredBackMedia() {
+    if (hasQr && !hasChosenQr) {
+      return 'Please choose a QR Code';
+    }
+    if (!hasChosenLogo) {
+      return 'Please choose a logo';
+    }
+    return null;
+  }
+
   void setSide(int index) {
     if (index < 0 || index > 1) return;
     final changed = index != sideIndex;
@@ -428,18 +453,32 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       isHorizontal: isHorizontal,
     );
     final side = useFront ? layout.front : layout.back;
-    final pos = switch (field) {
-      VisitingCardOverlayField.name => side.name,
-      VisitingCardOverlayField.designation => side.designation,
-      VisitingCardOverlayField.company => side.company,
-      VisitingCardOverlayField.tagline => side.tagline,
-      VisitingCardOverlayField.phone => side.phone,
-      VisitingCardOverlayField.email => side.email,
-      VisitingCardOverlayField.website => side.website,
-      VisitingCardOverlayField.address => side.address,
-      VisitingCardOverlayField.logo => side.logo,
-      VisitingCardOverlayField.qr => side.qr,
-    };
+    final VisitingCardFieldPosition? pos;
+    if (field.isContactIcon) {
+      pos = VisitingCardContactIconLayout.positionFor(
+        iconField: field,
+        side: side,
+        templateId: templateId,
+      );
+    } else {
+      pos = switch (field) {
+        VisitingCardOverlayField.name => side.name,
+        VisitingCardOverlayField.designation => side.designation,
+        VisitingCardOverlayField.company => side.company,
+        VisitingCardOverlayField.tagline => side.tagline,
+        VisitingCardOverlayField.phone => side.phone,
+        VisitingCardOverlayField.email => side.email,
+        VisitingCardOverlayField.website => side.website,
+        VisitingCardOverlayField.address => side.address,
+        VisitingCardOverlayField.logo => side.logo,
+        VisitingCardOverlayField.qr => side.qr,
+        VisitingCardOverlayField.phoneIcon ||
+        VisitingCardOverlayField.emailIcon ||
+        VisitingCardOverlayField.websiteIcon ||
+        VisitingCardOverlayField.addressIcon =>
+          null,
+      };
+    }
     if (pos == null) return null;
     final left = pos.left ?? 0;
     final top = pos.top ??
@@ -473,9 +512,25 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   }
 
   bool get hasSelection =>
-      selectedOverlay != null || selectedDuplicateId != null;
+      selectedOverlay != null ||
+      selectedDuplicateId != null ||
+      multiSelectedKeys.isNotEmpty;
+
+  bool get hasMultiSelection => multiSelectedKeys.length > 1;
 
   static String duplicateKey(String id) => 'dup:$id';
+
+  /// True when [key] is part of the current selection (single or multi).
+  bool isOverlayKeySelected(String key) {
+    if (multiSelectedKeys.contains(key)) return true;
+    if (selectedDuplicateId != null) {
+      return key == duplicateKey(selectedDuplicateId!);
+    }
+    if (selectedOverlay != null) {
+      return key == VisitingCardFieldTransform.keyOf(selectedOverlay!);
+    }
+    return false;
+  }
 
   /// Free text added from the landscape Text tool. Not a template field.
   static const customTextSource = 'custom';
@@ -520,13 +575,50 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     return selectedOverlay == VisitingCardOverlayField.qr;
   }
 
+  /// Baked-in template contact icon (pin / email / phone / web).
+  bool get selectedIsContactIcon =>
+      selectedOverlay?.isContactIcon ?? false;
+
+  /// Contact icon or a free icon placed from the Icon picker.
+  bool get selectedIsIcon {
+    if (selectedIsContactIcon) return true;
+    if (selectedDuplicateId != null) {
+      final source =
+          currentOverlays[duplicateKey(selectedDuplicateId!)]?.duplicateOf;
+      if (source == customIconSource) return true;
+      final field = VisitingCardFieldTransform.fieldFromKey(source ?? '');
+      return field?.isContactIcon ?? false;
+    }
+    return false;
+  }
+
   bool get selectedIsImage {
     if (selectedDuplicateId != null) {
-      return _sourceIsImage(
-        currentOverlays[duplicateKey(selectedDuplicateId!)]?.duplicateOf,
-      );
+      final source =
+          currentOverlays[duplicateKey(selectedDuplicateId!)]?.duplicateOf;
+      if (_sourceIsImage(source)) return true;
+      final field = VisitingCardFieldTransform.fieldFromKey(source ?? '');
+      return field?.isImageOverlay ?? false;
     }
     return selectedOverlay?.isImageOverlay ?? false;
+  }
+
+  /// True when this contact icon was deleted (hidden) on the current side.
+  bool isContactIconHidden(VisitingCardOverlayField field, {bool? isFront}) {
+    if (!field.isContactIcon) return false;
+    final t = overlayFor(field, isFront: isFront);
+    return t != null && t.opacity <= 0;
+  }
+
+  /// Asset used for a contact icon after Replace; null keeps the default badge.
+  String? contactIconAsset(
+    VisitingCardOverlayField field, {
+    bool? isFront,
+  }) {
+    if (!field.isContactIcon) return null;
+    final path = resolvedTransform(field, isFront: isFront).duplicateImagePath;
+    if (path == null || path.trim().isEmpty) return null;
+    return path.trim();
   }
 
   VisitingCardFieldTransform? get activeTransform {
@@ -554,6 +646,11 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     _ensureOverlay(field);
     selectedOverlay = field;
     selectedDuplicateId = null;
+    multiSelectedKeys
+      ..clear()
+      ..add(VisitingCardFieldTransform.keyOf(field));
+    marqueeActive = false;
+    marqueeRect = null;
     // Writing the default layout is not an edit, so Undo stays off.
     _absorbUnchangedEdit();
     notifyListeners();
@@ -564,14 +661,104 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     if (currentOverlays[duplicateKey(id)] == null) return;
     selectedOverlay = null;
     selectedDuplicateId = id;
+    multiSelectedKeys
+      ..clear()
+      ..add(duplicateKey(id));
+    marqueeActive = false;
+    marqueeRect = null;
     notifyListeners();
   }
 
   void clearOverlaySelection() {
-    if (selectedOverlay == null && selectedDuplicateId == null) return;
+    if (selectedOverlay == null &&
+        selectedDuplicateId == null &&
+        multiSelectedKeys.isEmpty &&
+        !marqueeActive) {
+      return;
+    }
     selectedOverlay = null;
     selectedDuplicateId = null;
+    multiSelectedKeys.clear();
+    marqueeActive = false;
+    marqueeRect = null;
     overlayGestureActive = false;
+    notifyListeners();
+  }
+
+  Offset? _marqueeStart;
+
+  void beginMarquee(Offset local) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    _marqueeStart = local;
+    marqueeActive = true;
+    marqueeRect = Rect.fromPoints(local, local);
+    multiSelectedKeys.clear();
+    selectedOverlay = null;
+    selectedDuplicateId = null;
+    notifyListeners();
+  }
+
+  void updateMarquee(Offset local, List<({String key, Rect rect})> targets) {
+    if (!marqueeActive || _marqueeStart == null) return;
+    marqueeRect = Rect.fromPoints(_marqueeStart!, local);
+    final hit = <String>{};
+    final band = marqueeRect!;
+    for (final t in targets) {
+      if (band.overlaps(t.rect)) hit.add(t.key);
+    }
+    multiSelectedKeys
+      ..clear()
+      ..addAll(hit);
+    notifyListeners();
+  }
+
+  void endMarquee() {
+    _marqueeStart = null;
+    marqueeActive = false;
+    marqueeRect = null;
+    if (multiSelectedKeys.isEmpty) {
+      notifyListeners();
+      return;
+    }
+    if (multiSelectedKeys.length == 1) {
+      final key = multiSelectedKeys.first;
+      if (key.startsWith('dup:')) {
+        selectDuplicate(key.substring(4));
+      } else {
+        final field = VisitingCardFieldTransform.fieldFromKey(key);
+        if (field != null) selectOverlay(field);
+      }
+      return;
+    }
+    for (final key in multiSelectedKeys) {
+      if (key.startsWith('dup:')) continue;
+      final field = VisitingCardFieldTransform.fieldFromKey(key);
+      if (field != null) _ensureOverlay(field);
+    }
+    selectedOverlay = null;
+    selectedDuplicateId = null;
+    notifyListeners();
+  }
+
+  /// Moves every multi-selected overlay by the same pixel delta.
+  void moveMultiSelection(double pixelDx, double pixelDy, Size cardSize) {
+    if (cardSize.width <= 0 || cardSize.height <= 0) return;
+    if (multiSelectedKeys.length < 2) return;
+    final dx = pixelDx / cardSize.width;
+    final dy = pixelDy / cardSize.height;
+    for (final key in multiSelectedKeys) {
+      if (!currentOverlays.containsKey(key)) {
+        final field = VisitingCardFieldTransform.fieldFromKey(key);
+        if (field == null) continue;
+        _ensureOverlay(field);
+      }
+      final t = currentOverlays[key];
+      if (t == null) continue;
+      currentOverlays[key] = t.copyWith(
+        left: (t.left + dx).clamp(-0.2, 0.95),
+        top: (t.top + dy).clamp(-0.2, 0.95),
+      );
+    }
     notifyListeners();
   }
 
@@ -590,6 +777,9 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     backOverlays.clear();
     selectedOverlay = null;
     selectedDuplicateId = null;
+    multiSelectedKeys.clear();
+    marqueeActive = false;
+    marqueeRect = null;
     overlayGestureActive = false;
     sideIndex = 0;
     notifyListeners();
@@ -613,6 +803,38 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     );
     selectedOverlay = null;
     selectedDuplicateId = id;
+    notifyListeners();
+  }
+
+  /// Replaces the selected icon, or adds a new one when nothing icon-like is
+  /// selected (same pattern as [placeLogo] / [placeQr]).
+  void placeIcon(String assetPath) {
+    final path = assetPath.trim();
+    if (path.isEmpty) return;
+    if (!selectedIsIcon) {
+      addCustomIcon(path);
+      return;
+    }
+    if (selectedDuplicateId != null) {
+      final key = duplicateKey(selectedDuplicateId!);
+      final current = currentOverlays[key];
+      if (current != null) {
+        currentOverlays[key] = current.copyWith(duplicateImagePath: path);
+        notifyListeners();
+      }
+      return;
+    }
+    final field = selectedOverlay;
+    if (field == null || !field.isContactIcon) {
+      addCustomIcon(path);
+      return;
+    }
+    _ensureOverlay(field);
+    final current = currentOverlays[VisitingCardFieldTransform.keyOf(field)]!;
+    currentOverlays[VisitingCardFieldTransform.keyOf(field)] = current.copyWith(
+      duplicateImagePath: path,
+      opacity: 1,
+    );
     notifyListeners();
   }
 
@@ -790,15 +1012,59 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
 
   /// Removes the selected field from the card and clears the selection.
   void deleteSelectedOverlay() {
+    if (hasMultiSelection) {
+      final keys = multiSelectedKeys.toList();
+      for (final key in keys) {
+        if (key.startsWith('dup:')) {
+          currentOverlays.remove(key);
+          continue;
+        }
+        final field = VisitingCardFieldTransform.fieldFromKey(key);
+        if (field == null) continue;
+        if (field.isContactIcon) {
+          _ensureOverlay(field);
+          final current = currentOverlays[key]!;
+          currentOverlays[key] = current.copyWith(opacity: 0);
+        } else if (field == VisitingCardOverlayField.logo) {
+          hasChosenLogo = false;
+          logoAssetPath = null;
+          currentOverlays.remove(key);
+        } else if (field == VisitingCardOverlayField.qr) {
+          hasChosenQr = false;
+          qrAssetPath = null;
+          currentOverlays.remove(key);
+        } else if (!field.isImageOverlay) {
+          setOverlayText(field, '');
+          currentOverlays.remove(key);
+        } else {
+          currentOverlays.remove(key);
+        }
+      }
+      clearOverlaySelection();
+      return;
+    }
     if (selectedDuplicateId != null) {
       currentOverlays.remove(duplicateKey(selectedDuplicateId!));
       selectedDuplicateId = null;
+      multiSelectedKeys.clear();
       overlayGestureActive = false;
       notifyListeners();
       return;
     }
     final field = selectedOverlay;
     if (field == null) return;
+    if (field.isContactIcon) {
+      // Hide the interactive icon but keep a cover so the baked PNG icon
+      // does not reappear.
+      _ensureOverlay(field);
+      final key = VisitingCardFieldTransform.keyOf(field);
+      final current = currentOverlays[key]!;
+      currentOverlays[key] = current.copyWith(opacity: 0);
+      selectedOverlay = null;
+      overlayGestureActive = false;
+      notifyListeners();
+      return;
+    }
     switch (field) {
       case VisitingCardOverlayField.logo:
         hasChosenLogo = false;
@@ -806,6 +1072,11 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       case VisitingCardOverlayField.qr:
         hasChosenQr = false;
         qrAssetPath = null;
+      case VisitingCardOverlayField.phoneIcon:
+      case VisitingCardOverlayField.emailIcon:
+      case VisitingCardOverlayField.websiteIcon:
+      case VisitingCardOverlayField.addressIcon:
+        break;
       default:
         setOverlayText(field, '');
     }
@@ -818,6 +1089,8 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
   void beginOverlayGesture() {
     if (overlayGestureActive) return;
     overlayGestureActive = true;
+    // Notify so the move grid can appear on the first pan frame.
+    if (hasMultiSelection) notifyListeners();
   }
 
   void endOverlayGesture() {
@@ -857,6 +1130,18 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
 
   /// Landscape arrow pad: nudge the selected field by a fraction of the card.
   void nudgeSelectedOverlay(double dxFraction, double dyFraction) {
+    if (hasMultiSelection) {
+      for (final key in multiSelectedKeys) {
+        final t = currentOverlays[key];
+        if (t == null) continue;
+        currentOverlays[key] = t.copyWith(
+          left: (t.left + dxFraction).clamp(-0.2, 0.95),
+          top: (t.top + dyFraction).clamp(-0.2, 0.95),
+        );
+      }
+      notifyListeners();
+      return;
+    }
     final current = activeTransform;
     if (current == null) return;
     _putActive(
@@ -892,7 +1177,13 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       VisitingCardOverlayField.website =>
         websites.isEmpty ? '' : websites.first.value,
       VisitingCardOverlayField.address => displayAddress,
-      VisitingCardOverlayField.logo || VisitingCardOverlayField.qr => '',
+      VisitingCardOverlayField.logo ||
+      VisitingCardOverlayField.qr ||
+      VisitingCardOverlayField.phoneIcon ||
+      VisitingCardOverlayField.emailIcon ||
+      VisitingCardOverlayField.websiteIcon ||
+      VisitingCardOverlayField.addressIcon =>
+        '',
     };
   }
 
@@ -924,6 +1215,10 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         updateSimpleField(addresses, 0, value);
       case VisitingCardOverlayField.logo:
       case VisitingCardOverlayField.qr:
+      case VisitingCardOverlayField.phoneIcon:
+      case VisitingCardOverlayField.emailIcon:
+      case VisitingCardOverlayField.websiteIcon:
+      case VisitingCardOverlayField.addressIcon:
         break;
     }
   }
@@ -1062,7 +1357,13 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       VisitingCardOverlayField.email => side.email,
       VisitingCardOverlayField.website => side.website,
       VisitingCardOverlayField.address => side.address,
-      VisitingCardOverlayField.logo || VisitingCardOverlayField.qr => null,
+      VisitingCardOverlayField.logo ||
+      VisitingCardOverlayField.qr ||
+      VisitingCardOverlayField.phoneIcon ||
+      VisitingCardOverlayField.emailIcon ||
+      VisitingCardOverlayField.websiteIcon ||
+      VisitingCardOverlayField.addressIcon =>
+        null,
     };
   }
 

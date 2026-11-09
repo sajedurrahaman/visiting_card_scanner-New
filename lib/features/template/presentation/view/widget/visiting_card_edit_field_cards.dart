@@ -5,17 +5,17 @@ import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
 
 List<BoxShadow> get _cardShadow => [
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.08),
-        blurRadius: 14,
-        offset: const Offset(0, 4),
-      ),
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.04),
-        blurRadius: 6,
-        offset: const Offset(0, 2),
-      ),
-    ];
+  BoxShadow(
+    color: Colors.black.withValues(alpha: 0.08),
+    blurRadius: 14,
+    offset: const Offset(0, 4),
+  ),
+  BoxShadow(
+    color: Colors.black.withValues(alpha: 0.04),
+    blurRadius: 6,
+    offset: const Offset(0, 2),
+  ),
+];
 
 class VisitingSelectActionCard extends StatelessWidget {
   const VisitingSelectActionCard({
@@ -203,7 +203,9 @@ class _VisitingTypedFieldCardState extends State<VisitingTypedFieldCard> {
   @override
   void didUpdateWidget(covariant VisitingTypedFieldCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _syncControllers(forceText: oldWidget.entries.length != widget.entries.length);
+    _syncControllers(
+      forceText: oldWidget.entries.length != widget.entries.length,
+    );
   }
 
   void _syncControllers({bool forceText = true}) {
@@ -296,8 +298,9 @@ class _VisitingTypedFieldCardState extends State<VisitingTypedFieldCard> {
                 ? entry.type
                 : widget.typeOptions.first;
             final rowError = error && index == 0;
-            final underlineColor =
-                rowError ? _errorColor : const Color(0xFFE0E0E0);
+            final underlineColor = rowError
+                ? _errorColor
+                : const Color(0xFFE0E0E0);
             final focusedColor = rowError
                 ? _errorColor
                 : ui.Colors.parentIconSelectTextColor;
@@ -325,10 +328,7 @@ class _VisitingTypedFieldCardState extends State<VisitingTypedFieldCard> {
                         ),
                         items: widget.typeOptions
                             .map(
-                              (t) => DropdownMenuItem(
-                                value: t,
-                                child: Text(t),
-                              ),
+                              (t) => DropdownMenuItem(value: t, child: Text(t)),
                             )
                             .toList(),
                         onChanged: (v) {
@@ -439,8 +439,9 @@ class _UnderlinedInputRowState extends State<_UnderlinedInputRow> {
 
   @override
   Widget build(BuildContext context) {
-    final underlineColor =
-        widget.hasError ? _errorColor : const Color(0xFFE0E0E0);
+    final underlineColor = widget.hasError
+        ? _errorColor
+        : const Color(0xFFE0E0E0);
     final focusedColor = widget.hasError
         ? _errorColor
         : ui.Colors.parentIconSelectTextColor;
@@ -452,8 +453,7 @@ class _UnderlinedInputRowState extends State<_UnderlinedInputRow> {
             autofocus: false,
             maxLength: widget.maxLength,
             onChanged: widget.onChanged,
-            onTapOutside: (_) =>
-                FocusManager.instance.primaryFocus?.unfocus(),
+            onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
             style: TextStyle(
               fontFamily: ui.AppFonts.sfPro,
               fontSize: 14.sp,

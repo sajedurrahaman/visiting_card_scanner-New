@@ -551,7 +551,11 @@ class _VisitingCardVerticalEditScreenState
   }
 
   Widget _verticalToolBar(VisitingCardEditContactViewModel vm) {
-    final items = vm.hasSelection ? _selectedBarItems(vm) : _mainBarItems();
+    final items = vm.hasMultiSelection
+        ? _multiBarItems(vm)
+        : vm.hasSelection
+            ? _selectedBarItems(vm)
+            : _mainBarItems();
     return ColoredBox(
       color: _bg,
       child: SafeArea(
@@ -631,6 +635,44 @@ class _VisitingCardVerticalEditScreenState
     ];
   }
 
+  List<_BarSpec> _multiBarItems(VisitingCardEditContactViewModel vm) {
+    return [
+      _BarSpec(
+        asset: '$_selectIconDir/delete_icon.svg',
+        label: 'Delete',
+        onTap: _onDelete,
+      ),
+      _BarSpec(
+        icon: Icons.keyboard_arrow_up_rounded,
+        label: 'Up',
+        onTap: () => vm.nudgeSelectedOverlay(0, -0.008),
+      ),
+      _BarSpec(
+        icon: Icons.keyboard_arrow_down_rounded,
+        label: 'Down',
+        onTap: () => vm.nudgeSelectedOverlay(0, 0.008),
+      ),
+      _BarSpec(
+        icon: Icons.keyboard_arrow_left_rounded,
+        label: 'Left',
+        onTap: () => vm.nudgeSelectedOverlay(-0.008, 0),
+      ),
+      _BarSpec(
+        icon: Icons.keyboard_arrow_right_rounded,
+        label: 'Right',
+        onTap: () => vm.nudgeSelectedOverlay(0.008, 0),
+      ),
+      _BarSpec(
+        asset: '$_selectIconDir/close_icon.svg',
+        label: 'Close',
+        onTap: () {
+          setState(() => _panel = '');
+          vm.clearOverlaySelection();
+        },
+      ),
+    ];
+  }
+
   List<_BarSpec> _selectedBarItems(VisitingCardEditContactViewModel vm) {
     final showText = !vm.selectedIsImage;
     final showColor = !vm.selectedIsImage || vm.selectedIsShape;
@@ -640,6 +682,12 @@ class _VisitingCardVerticalEditScreenState
           asset: 'assets/visiting_card_option_icon/logo_option_icon.svg',
           label: 'Replace',
           onTap: _onPickLogo,
+        ),
+      if (vm.selectedIsIcon)
+        _BarSpec(
+          asset: 'assets/visiting_card_option_icon/icon_option_icon.svg',
+          label: 'Replace',
+          onTap: _onAddIcon,
         ),
       if (showText)
         _BarSpec(
