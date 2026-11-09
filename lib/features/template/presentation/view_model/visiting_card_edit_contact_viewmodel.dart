@@ -2074,6 +2074,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     required HomeViewModel homeViewModel,
     required FolderViewModel folderViewModel,
     required Future<Uint8List?> Function(int side) captureSide,
+    String? cardTitle,
   }) async {
     if (isUpdatingExisting) {
       return updateCard(
@@ -2106,9 +2107,11 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
       final stamp = DateFormat('yyyyMMdd_HHmmss').format(now);
       final dateLabel = DateFormat('dd-MMM-yyyy HH:mm').format(now);
 
-      final contactName = names.first.value.trim().isNotEmpty
-          ? names.first.value.trim()
-          : 'Visiting Card';
+      final titleOverride = cardTitle?.trim();
+      final savedName = titleOverride != null && titleOverride.isNotEmpty
+          ? titleOverride
+          : names.first.value.trim();
+      final contactName = savedName.isNotEmpty ? savedName : 'Visiting Card';
       final safeFolderName = _safeFolderName('${contactName}_$stamp');
 
       final docs = await getApplicationDocumentsDirectory();
@@ -2130,7 +2133,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
 
       final imagePaths = [frontPath, backPath];
       final savedContact = SavedContactInfo(
-        name: names.first.value.trim(),
+        name: savedName,
         designation: designations.first.value.trim(),
         company: companies.first.value.trim(),
         tagline: taglines.isNotEmpty ? taglines.first.value.trim() : '',

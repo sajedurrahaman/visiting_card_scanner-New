@@ -35,16 +35,19 @@ class VisitingCardLandscapeEditScreen extends StatefulWidget {
   const VisitingCardLandscapeEditScreen({
     super.key,
     this.persistToRecent = true,
+    this.offerSaveToPhone = true,
   });
 
   /// When false (scan create flow), Save only applies name + pops — parent
   /// screen owns the final folder/recent save.
   final bool persistToRecent;
+  final bool offerSaveToPhone;
 
   static Future<bool?> open(
     BuildContext context, {
     required VisitingCardEditContactViewModel vm,
     bool persistToRecent = true,
+    bool offerSaveToPhone = true,
   }) {
     return Navigator.push<bool>(
       context,
@@ -55,6 +58,7 @@ class VisitingCardLandscapeEditScreen extends StatefulWidget {
           value: vm,
           child: VisitingCardLandscapeEditScreen(
             persistToRecent: persistToRecent,
+            offerSaveToPhone: offerSaveToPhone,
           ),
         ),
         transitionsBuilder: (_, animation, _, child) {
@@ -209,7 +213,7 @@ class _VisitingCardLandscapeEditScreenState
       return;
     }
 
-    if (vm.names.isNotEmpty) {
+    if (vm.names.isNotEmpty && widget.offerSaveToPhone) {
       vm.updateSimpleField(vm.names, 0, trimmed);
     }
 
@@ -231,6 +235,7 @@ class _VisitingCardLandscapeEditScreenState
       homeViewModel: home,
       folderViewModel: folder,
       captureSide: (side) => _captureSide(vm, side),
+      cardTitle: widget.offerSaveToPhone ? null : trimmed,
     );
     vm.jumpSideForCapture = false;
     if (!mounted) return;
@@ -253,8 +258,10 @@ class _VisitingCardLandscapeEditScreenState
       return;
     }
 
-    await VisitingCardShareHelper.saveContactToPhone(context, phoneContact);
-    if (!mounted) return;
+    if (widget.offerSaveToPhone) {
+      await VisitingCardShareHelper.saveContactToPhone(context, phoneContact);
+      if (!mounted) return;
+    }
     context.read<ParentViewModel>().changeIndex(0);
     await _leaveToPortrait(toRoot: true);
   }

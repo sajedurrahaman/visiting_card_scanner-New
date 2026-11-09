@@ -5,6 +5,7 @@ import '../../features/folder/presentation/view/screen/barcode_folder_screen.dar
 import '../../features/folder/presentation/view/screen/qr_code_folder_screen.dart';
 import '../../features/folder/presentation/view/screen/visiting_card_folder_screen.dart';
 import '../../features/home/presentation/view/screen/recent_screen.dart';
+import '../../features/onboarding/presentation/view/screen/onboarding_screen.dart';
 import '../../features/parent/presentation/view/parent_screen.dart';
 import '../../features/splash/presentation/view/screen/splash_screen.dart';
 
@@ -14,6 +15,7 @@ class AppRoutes {
 
   static Map<String, WidgetBuilder> get routes => {
         RouteNames.splash: (_) => const SplashScreen(),
+        RouteNames.onboarding: (_) => const OnboardingScreen(),
         RouteNames.parent: (_) => const ParentScreen(),
         RouteNames.recent: (_) => const RecentScreen(),
         RouteNames.visitingCardFolder: (_) => const VisitingCardFolderScreen(),

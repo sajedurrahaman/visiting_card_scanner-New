@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' hide Colors;
 import 'package:visiting_card/app/routes/route_names.dart';
+import 'package:visiting_card/app/storage/app_storage_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -21,7 +22,10 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _navigateToParent() async {
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, RouteNames.parent);
+    final destination = AppStorageService.instance.hasCompletedOnboarding
+        ? RouteNames.parent
+        : RouteNames.onboarding;
+    Navigator.pushReplacementNamed(context, destination);
   }
 
   @override

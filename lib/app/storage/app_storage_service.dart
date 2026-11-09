@@ -30,6 +30,7 @@ class AppStorageService {
   static const String _contactBackupMigratedKey =
       'isar_contact_json_from_prefs_v1';
   static const String _legacyContactBackupPrefix = 'vc_contact_backup_v1_';
+  static const String _onboardingCompleteKey = 'onboarding_complete_v1';
 
   List<SavedFileModel> _cache = const [];
   List<FolderRecord> _folderCache = const [];
@@ -73,6 +74,13 @@ class AppStorageService {
 
   List<SavedFileModel> getAllFiles() =>
       List<SavedFileModel>.unmodifiable(_cache);
+
+  bool get hasCompletedOnboarding =>
+      _storage.getBool(_onboardingCompleteKey) ?? false;
+
+  Future<void> markOnboardingComplete() async {
+    await _storage.setBool(_onboardingCompleteKey, true);
+  }
 
   SavedFileModel? getFileById(String fileId) {
     for (final file in _cache) {

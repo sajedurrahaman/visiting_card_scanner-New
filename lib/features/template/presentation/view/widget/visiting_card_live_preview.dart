@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -348,17 +349,20 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           }
           groupBounds = union;
         }
+        final cardBackground = backgroundAsset.toLowerCase().endsWith('.svg')
+            ? SvgPicture.asset(backgroundAsset, fit: BoxFit.cover)
+            : Image.asset(
+                backgroundAsset,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const ColoredBox(
+                  color: Color(0xFFF5F5F5),
+                  child: Center(child: Icon(Icons.broken_image_outlined)),
+                ),
+              );
         return Stack(
           fit: StackFit.expand,
           children: [
-            Image.asset(
-              backgroundAsset,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => const ColoredBox(
-                color: Color(0xFFF5F5F5),
-                child: Center(child: Icon(Icons.broken_image_outlined)),
-              ),
-            ),
+            cardBackground,
             if (interactive)
               VisitingCardMarqueeLayer(
                 cardSize: size,
@@ -1841,11 +1845,7 @@ class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
   @override
   void initState() {
     super.initState();
-    if (_isSvg) {
-      _aspect = 1;
-    } else {
-      _resolveAspect();
-    }
+    _resolveAspect();
   }
 
   @override
@@ -1858,6 +1858,46 @@ class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
   }
 
   void _resolveAspect() {
+    if (_isSvg && widget.isAsset) {
+      rootBundle
+          .loadString(widget.assetPath)
+          .then((source) {
+            final viewBox = RegExp(
+              r'\bviewBox="([^"]+)"',
+            ).firstMatch(source)?.group(1);
+            double? aspect;
+            if (viewBox != null) {
+              final values = viewBox
+                  .trim()
+                  .split(RegExp(r'[\s,]+'))
+                  .map(double.tryParse)
+                  .toList();
+              if (values.length == 4 &&
+                  values[2] != null &&
+                  values[3] != null &&
+                  values[3]! > 0) {
+                aspect = values[2]! / values[3]!;
+              }
+            }
+            if (aspect == null || aspect <= 0) {
+              final width = RegExp(r'\bwidth="([\d.]+)').firstMatch(source);
+              final height = RegExp(r'\bheight="([\d.]+)').firstMatch(source);
+              final widthValue = double.tryParse(width?.group(1) ?? '');
+              final heightValue = double.tryParse(height?.group(1) ?? '');
+              if (widthValue != null && heightValue != null && heightValue > 0) {
+                aspect = widthValue / heightValue;
+              }
+            }
+            if (!mounted) return;
+            setState(() => _aspect = aspect != null && aspect > 0 ? aspect : 1);
+          })
+          .catchError((_) {
+            if (!mounted) return;
+            setState(() => _aspect = 1);
+          });
+      return;
+    }
+
     final ImageProvider provider = widget.isAsset
         ? AssetImage(widget.assetPath)
         : FileImage(File(widget.assetPath));
