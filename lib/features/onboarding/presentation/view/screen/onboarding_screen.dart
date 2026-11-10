@@ -14,19 +14,21 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   static const _pages = [
     _OnboardingPage(
-      illustration: 'assets/images/onboarding_scan.png',
+      illustration: 'assets/images/onboarding_1.svg',
       title: 'Scan any visiting card',
       description:
           'Point your camera at a card or its QR code. We read the details and save them for you.',
+      isSvg: true,
     ),
     _OnboardingPage(
-      illustration: 'assets/images/onboarding_create.png',
+      illustration: 'assets/images/onboarding_2.svg',
       title: 'Create your own card',
       description:
           'Pick a template, add your details and a QR code, and your card is ready.',
+      isSvg: true,
     ),
     _OnboardingPage(
-      illustration: 'assets/images/onboarding_organize.svg',
+      illustration: 'assets/images/onboarding_3.svg',
       title: 'Keep every card organized',
       description:
           'Save scanned cards and custom designs in folders, so you can find and share them whenever you need.',
@@ -105,7 +107,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'Visiting Card Scanner',
+                      '',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: width * 0.047,
@@ -271,15 +273,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: _pages[_pageIndex].isSvg
                           ? DecoratedBox(
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.12),
+                                color: Colors.transparent,
                                 borderRadius: BorderRadius.circular(999),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.34),
-                                ),
+                                // border: Border.all(
+                                //   color: Colors.white.withValues(alpha: 0.34),
+                                // ),
                               ),
                               child: Center(
                                 child: Text(
-                                  'Skip',
+                                  '',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: width * 0.039,
