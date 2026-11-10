@@ -459,6 +459,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
         iconField: field,
         side: side,
         templateId: templateId,
+        isFront: useFront,
       );
     } else {
       pos = switch (field) {

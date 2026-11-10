@@ -99,6 +99,7 @@ flutter:
      - assets/images/
      - assets/images/visiting_card_template/horizontal/
      - assets/images/visiting_card_template/vertical/
+     - assets/images/visiting_card_contact_icons/
      - assets/images/visiting_card_template_without_data/horizontal/
      - assets/images/visiting_card_template_without_data/vertical/
      - assets/qrcode/

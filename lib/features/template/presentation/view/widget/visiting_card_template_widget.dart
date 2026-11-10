@@ -91,8 +91,8 @@ class VisitingCardTemplateWidget extends StatelessWidget {
           ],
         ),
         Positioned(
-          right: 22.w,
-          bottom: 94.h,
+          right: 14.w,
+          bottom: 106.h,
           child: Semantics(
             button: true,
             label: 'Create visiting card from scratch',
@@ -105,8 +105,8 @@ class VisitingCardTemplateWidget extends StatelessWidget {
                 customBorder: const CircleBorder(),
                 onTap: () => _openScratchEditor(context),
                 child: Container(
-                  width: 66.w,
-                  height: 66.w,
+                  width: 64.w,
+                  height: 64.w,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: const LinearGradient(
