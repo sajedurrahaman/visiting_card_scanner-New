@@ -37,7 +37,8 @@ class _VisitingCardEditContactInfoScreenState
     vm.clearOverlaySelection();
 
     if (vm.isFront) {
-      final error = vm.validateRequiredContactFields();
+      final error =
+          vm.validateRequiredContactFields() ?? vm.validateRequiredFrontMedia();
       if (error != null) {
         ui.AppToast.show(
           context,
@@ -191,16 +192,16 @@ class _VisitingCardEditContactInfoScreenState
               ),
             ),
             SizedBox(height: 14.h),
-            // Front (1/2): contact fields only.
-            // Back (2/2): QR + logo only — both required before submit.
+            if (vm.canEditQr)
+              VisitingSelectActionCard(
+                label: 'QR Code',
+                buttonLabel: 'Choose QR Code',
+                enabled: vm.canEditQr,
+                onTap: () => _onChooseQr(context, vm),
+              ),
+            // Back (2/2): choose the logo; QR appears here only for templates
+            // that place their QR on the back.
             if (vm.isBack) ...[
-              if (vm.hasQr)
-                VisitingSelectActionCard(
-                  label: 'QR Code',
-                  buttonLabel: 'Choose QR Code',
-                  enabled: vm.canEditQr,
-                  onTap: () => _onChooseQr(context, vm),
-                ),
               VisitingSelectActionCard(
                 label: 'Image Selected',
                 buttonLabel: 'Choose logo',

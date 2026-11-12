@@ -275,7 +275,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
 
   bool get canEditQr {
     if (!hasQr) return false;
-    return isBack || (isFront && hasFrontQr);
+    return hasFrontQr ? isFront : isBack;
   }
 
   /// Logo: back always; front only for templates that have front logo.
@@ -387,9 +387,17 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     return firstError;
   }
 
-  /// Back side (2/2): QR + logo must be chosen before submit.
+  /// Front-side QR must be chosen before moving to the back page.
+  String? validateRequiredFrontMedia() {
+    if (hasFrontQr && !hasChosenQr) {
+      return 'Please choose a QR Code';
+    }
+    return null;
+  }
+
+  /// Back-side QR (when present) and logo must be chosen before submit.
   String? validateRequiredBackMedia() {
-    if (hasQr && !hasChosenQr) {
+    if (hasQr && !hasFrontQr && !hasChosenQr) {
       return 'Please choose a QR Code';
     }
     if (!hasChosenLogo) {
