@@ -47,6 +47,7 @@ class _VisitingCardEditContactInfoScreenState
         );
         return;
       }
+      vm.copyChosenFrontLogoToBack();
       vm.showBack();
       await _scrollToTop();
       return;
@@ -199,16 +200,13 @@ class _VisitingCardEditContactInfoScreenState
                 enabled: vm.canEditQr,
                 onTap: () => _onChooseQr(context, vm),
               ),
-            // Back (2/2): choose the logo; QR appears here only for templates
-            // that place their QR on the back.
-            if (vm.isBack) ...[
+            if (vm.canEditLogo)
               VisitingSelectActionCard(
                 label: 'Image Selected',
                 buttonLabel: 'Choose logo',
                 enabled: vm.canEditLogo,
                 onTap: () => _onChooseLogo(context, vm),
               ),
-            ],
             if (vm.isFront) ...[
               VisitingSimpleFieldCard(
                 title: 'Name',

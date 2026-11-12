@@ -278,8 +278,8 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     return hasFrontQr ? isFront : isBack;
   }
 
-  /// Logo: back always; front only for templates that have front logo.
-  bool get canEditLogo => isBack || (isFront && hasFrontLogo);
+  /// Front-logo templates choose once on the front; all others choose on back.
+  bool get canEditLogo => hasFrontLogo ? isFront : isBack;
 
   String get currentBackgroundAsset =>
       isFront ? frontAssetWithoutData : backAssetWithoutData;
@@ -392,6 +392,9 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     if (hasFrontQr && !hasChosenQr) {
       return 'Please choose a QR Code';
     }
+    if (hasFrontLogo && !hasChosenFrontLogo) {
+      return 'Please choose a logo';
+    }
     return null;
   }
 
@@ -400,7 +403,7 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     if (hasQr && !hasFrontQr && !hasChosenQr) {
       return 'Please choose a QR Code';
     }
-    if (!hasChosenLogo) {
+    if (!hasFrontLogo && !hasChosenLogo) {
       return 'Please choose a logo';
     }
     return null;
@@ -1863,6 +1866,17 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     hasChosenLogo = true;
     logoAssetPath = path;
     notifyListeners();
+  }
+
+  /// Carries a chosen front logo to the back, where the back template's own
+  /// logo position is used. Called when advancing from the front page.
+  void copyChosenFrontLogoToBack() {
+    final path = frontLogoAssetPath;
+    if (!hasFrontLogo || !hasChosenFrontLogo || path == null || path.isEmpty) {
+      return;
+    }
+    backLogoAssetPath = path;
+    hasChosenBackLogo = true;
   }
 
   /// Puts logo and QR back to a previous snapshot. Used when Profile is closed
