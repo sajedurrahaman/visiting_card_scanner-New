@@ -208,7 +208,7 @@ class VisitingCardContactIconLayout {
             top: 0.5040,
             size: 0.039,
           ),
-          VisitingCardOverlayField.emailIcon: VisitingCardFieldPosition(
+          VisitingCardOverlayField.websiteIcon: VisitingCardFieldPosition(
             left: 0.0703,
             top: 0.6149,
             size: 0.039,
@@ -618,31 +618,31 @@ class VisitingCardContactIconLayout {
     },
     'h2': {
       VisitingCardOverlayField.phoneIcon:
-          'assets/images/visiting_card_contact_icons/lime_filled_phone.png',
+          'assets/images/visiting_card_contact_icons/h2_phone.png',
       VisitingCardOverlayField.emailIcon:
-          'assets/images/visiting_card_contact_icons/lime_filled_email.png',
+          'assets/images/visiting_card_contact_icons/h2_mail.png',
       VisitingCardOverlayField.websiteIcon:
-          'assets/images/visiting_card_contact_icons/lime_filled_web.png',
+          'assets/images/visiting_card_contact_icons/h2_web.png',
       VisitingCardOverlayField.addressIcon:
-          'assets/images/visiting_card_contact_icons/lime_filled_location.png',
+          'assets/images/visiting_card_contact_icons/h2_location.png',
     },
     'h3': {
       VisitingCardOverlayField.phoneIcon:
-          'assets/images/visiting_card_contact_icons/red_filled_phone_alt.png',
+          'assets/images/visiting_card_contact_icons/h3_phone.png',
       VisitingCardOverlayField.emailIcon:
-          'assets/images/visiting_card_contact_icons/red_filled_email.png',
+          'assets/images/visiting_card_contact_icons/h3_mail.png',
       VisitingCardOverlayField.websiteIcon:
-          'assets/images/visiting_card_contact_icons/red_filled_web.png',
+          'assets/images/visiting_card_contact_icons/h3_web.png',
       VisitingCardOverlayField.addressIcon:
-          'assets/images/visiting_card_contact_icons/red_filled_location.png',
+          'assets/images/visiting_card_contact_icons/h3_location.png',
     },
     'h4': {
       VisitingCardOverlayField.phoneIcon:
-          'assets/images/visiting_card_contact_icons/green_diamond_phone.png',
-      VisitingCardOverlayField.emailIcon:
-          'assets/images/visiting_card_contact_icons/green_diamond_web.png',
+          'assets/images/visiting_card_contact_icons/h4_phone.png',
+      VisitingCardOverlayField.websiteIcon:
+          'assets/images/visiting_card_contact_icons/h4_web.png',
       VisitingCardOverlayField.addressIcon:
-          'assets/images/visiting_card_contact_icons/green_diamond_location.png',
+          'assets/images/visiting_card_contact_icons/h4_location.png',
     },
     'h5': {
       VisitingCardOverlayField.phoneIcon:
