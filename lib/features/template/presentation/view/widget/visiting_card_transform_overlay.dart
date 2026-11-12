@@ -118,7 +118,7 @@ class _VisitingCardTransformOverlayState
       width: widget.boxWidth,
       height: widget.boxHeight,
       child: Transform.rotate(
-        alignment: Alignment.topLeft,
+        alignment: Alignment.center,
         angle: widget.rotation,
         child: GestureDetector(
           behavior: HitTestBehavior.translucent,
@@ -229,12 +229,7 @@ class _VisitingCardTransformOverlayState
       width: frameW + outer,
       height: frameH + outer,
       child: Transform.rotate(
-        alignment: _topLeftOfContent(
-          outerWidth: frameW + outer,
-          outerHeight: frameH + outer,
-          originX: outer / 2 + pad,
-          originY: outer / 2 + pad,
-        ),
+        alignment: Alignment.center,
         angle: widget.rotation,
         child: Stack(
           clipBehavior: Clip.none,
@@ -326,20 +321,6 @@ class _VisitingCardTransformOverlayState
           ],
         ),
       ),
-    );
-  }
-
-  /// Rotation pivot is the field's top-left, not the handle frame's corner.
-  Alignment _topLeftOfContent({
-    required double outerWidth,
-    required double outerHeight,
-    required double originX,
-    required double originY,
-  }) {
-    if (outerWidth <= 0 || outerHeight <= 0) return Alignment.topLeft;
-    return Alignment(
-      (originX / outerWidth) * 2 - 1,
-      (originY / outerHeight) * 2 - 1,
     );
   }
 

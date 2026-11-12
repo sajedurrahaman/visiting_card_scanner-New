@@ -20,6 +20,11 @@ class VisitingCardContactIconLayout {
 
   static const Color fallbackAccent = Color(0xFF8BC34A);
   static const String orangeDiamondWebWidget = 'widget:orange-diamond-web';
+  static const String limeEmailWidget = 'widget:email-lime';
+  static const String orangeEmailWidget = 'widget:email-orange';
+  static const String navyOutlineEmailWidget = 'widget:email-navy-outline';
+  static const String greenOutlineEmailWidget = 'widget:email-green-outline';
+  static const String blueEmailWidget = 'widget:email-blue';
 
   static const contactIconFields = <VisitingCardOverlayField>[
     VisitingCardOverlayField.addressIcon,
@@ -87,6 +92,11 @@ class VisitingCardContactIconLayout {
     String? templateId,
     required bool isFront,
   }) {
+    // The add-card scratch editor starts with a plain canvas and no template
+    // contact icons. Choosing a real template replaces this id and restores
+    // its configured icon overlays.
+    if (templateId == 'scratch') return null;
+
     final templateOverrides = isFront ? _overrides[templateId] : null;
     if (templateOverrides != null) return templateOverrides[iconField];
 
@@ -320,20 +330,277 @@ class VisitingCardContactIconLayout {
           ),
         },
         'h10': {
-          VisitingCardOverlayField.phoneIcon: VisitingCardFieldPosition(
-            left: 0.0306,
-            top: 0.5340,
+          VisitingCardOverlayField.addressIcon: VisitingCardFieldPosition(
+            left: 0.0485,
+            top: 0.4130,
             size: 0.032,
+            color: Color(0xFF414141),
+          ),
+          VisitingCardOverlayField.phoneIcon: VisitingCardFieldPosition(
+            left: 0.0485,
+            top: 0.5400,
+            size: 0.032,
+            color: Color(0xFF414141),
           ),
           VisitingCardOverlayField.emailIcon: VisitingCardFieldPosition(
-            left: 0.0306,
-            top: 0.6490,
+            left: 0.0485,
+            top: 0.6520,
             size: 0.032,
+            color: Color(0xFF414141),
           ),
           VisitingCardOverlayField.websiteIcon: VisitingCardFieldPosition(
-            left: 0.0306,
-            top: 0.7430,
+            left: 0.0485,
+            top: 0.7440,
             size: 0.032,
+            color: Color(0xFF414141),
+          ),
+        },
+        'h11': {
+          VisitingCardOverlayField.addressIcon: VisitingCardFieldPosition(
+            left: 0.906,
+            top: 0.462,
+            size: 0.054,
+            color: Color(0xFF00BDF2),
+          ),
+          VisitingCardOverlayField.websiteIcon: VisitingCardFieldPosition(
+            left: 0.906,
+            top: 0.575,
+            size: 0.054,
+            color: Color(0xFF009DDA),
+          ),
+          VisitingCardOverlayField.emailIcon: VisitingCardFieldPosition(
+            left: 0.906,
+            top: 0.688,
+            size: 0.054,
+            color: Color(0xFF0063B0),
+          ),
+          VisitingCardOverlayField.phoneIcon: VisitingCardFieldPosition(
+            left: 0.906,
+            top: 0.800,
+            size: 0.054,
+            color: Color(0xFF0063B0),
+          ),
+        },
+        'h12': {
+          VisitingCardOverlayField.phoneIcon: VisitingCardFieldPosition(
+            left: 0.874,
+            top: 0.532,
+            size: 0.026,
+            color: Color(0xFF59BA47),
+          ),
+          VisitingCardOverlayField.addressIcon: VisitingCardFieldPosition(
+            left: 0.874,
+            top: 0.620,
+            size: 0.026,
+            color: Color(0xFF59BA47),
+          ),
+          VisitingCardOverlayField.websiteIcon: VisitingCardFieldPosition(
+            left: 0.874,
+            top: 0.724,
+            size: 0.026,
+            color: Color(0xFF59BA47),
+          ),
+          VisitingCardOverlayField.emailIcon: VisitingCardFieldPosition(
+            left: 0.874,
+            top: 0.810,
+            size: 0.026,
+            color: Color(0xFF59BA47),
+          ),
+        },
+        'h13': {
+          VisitingCardOverlayField.phoneIcon: VisitingCardFieldPosition(
+            left: 0.831,
+            top: 0.431,
+            size: 0.052,
+            color: Color(0xFF032C40),
+          ),
+          VisitingCardOverlayField.emailIcon: VisitingCardFieldPosition(
+            left: 0.831,
+            top: 0.555,
+            size: 0.047,
+            color: Color(0xFF032C40),
+          ),
+          VisitingCardOverlayField.websiteIcon: VisitingCardFieldPosition(
+            left: 0.831,
+            top: 0.680,
+            size: 0.052,
+            color: Color(0xFF032C40),
+          ),
+          VisitingCardOverlayField.addressIcon: VisitingCardFieldPosition(
+            left: 0.831,
+            top: 0.804,
+            size: 0.052,
+            color: Color(0xFF032C40),
+          ),
+        },
+        'h14': {
+          VisitingCardOverlayField.phoneIcon: VisitingCardFieldPosition(
+            left: 0.468,
+            top: 0.478,
+            size: 0.041,
+            color: Color(0xFF358DCC),
+          ),
+          VisitingCardOverlayField.websiteIcon: VisitingCardFieldPosition(
+            left: 0.468,
+            top: 0.575,
+            size: 0.041,
+            color: Color(0xFF358DCC),
+          ),
+          VisitingCardOverlayField.emailIcon: VisitingCardFieldPosition(
+            left: 0.468,
+            top: 0.679,
+            size: 0.041,
+            color: Color(0xFF358DCC),
+          ),
+          VisitingCardOverlayField.addressIcon: VisitingCardFieldPosition(
+            left: 0.468,
+            top: 0.776,
+            size: 0.043,
+            color: Color(0xFF358DCC),
+          ),
+        },
+        'h15': {
+          VisitingCardOverlayField.phoneIcon: VisitingCardFieldPosition(
+            left: 0.052,
+            top: 0.375,
+            size: 0.032,
+            color: Color(0xFFFBAA19),
+          ),
+          VisitingCardOverlayField.emailIcon: VisitingCardFieldPosition(
+            left: 0.052,
+            top: 0.495,
+            size: 0.032,
+            color: Color(0xFFFBAA19),
+          ),
+          VisitingCardOverlayField.addressIcon: VisitingCardFieldPosition(
+            left: 0.052,
+            top: 0.612,
+            size: 0.032,
+            color: Color(0xFFFBAA19),
+          ),
+          VisitingCardOverlayField.websiteIcon: VisitingCardFieldPosition(
+            left: 0.052,
+            top: 0.728,
+            size: 0.032,
+            color: Color(0xFFFBAA19),
+          ),
+        },
+        'h16': {
+          VisitingCardOverlayField.phoneIcon: VisitingCardFieldPosition(
+            left: 0.519,
+            top: 0.246,
+            size: 0.042,
+            color: Color(0xFF3A9808),
+          ),
+          VisitingCardOverlayField.emailIcon: VisitingCardFieldPosition(
+            left: 0.519,
+            top: 0.353,
+            size: 0.042,
+            color: Color(0xFF3A9808),
+          ),
+          VisitingCardOverlayField.websiteIcon: VisitingCardFieldPosition(
+            left: 0.519,
+            top: 0.459,
+            size: 0.042,
+            color: Color(0xFF3A9808),
+          ),
+          VisitingCardOverlayField.addressIcon: VisitingCardFieldPosition(
+            left: 0.519,
+            top: 0.565,
+            size: 0.042,
+            color: Color(0xFF3A9808),
+          ),
+        },
+        'h17': {
+          VisitingCardOverlayField.phoneIcon: VisitingCardFieldPosition(
+            left: 0.071,
+            top: 0.512,
+            size: 0.053,
+            color: Color(0xFFF50302),
+          ),
+          VisitingCardOverlayField.emailIcon: VisitingCardFieldPosition(
+            left: 0.071,
+            top: 0.654,
+            size: 0.053,
+            color: Color(0xFFF50302),
+          ),
+          VisitingCardOverlayField.addressIcon: VisitingCardFieldPosition(
+            left: 0.071,
+            top: 0.794,
+            size: 0.053,
+            color: Color(0xFFF50302),
+          ),
+        },
+        'h18': {
+          VisitingCardOverlayField.addressIcon: VisitingCardFieldPosition(
+            left: 0.899,
+            top: 0.508,
+            size: 0.045,
+            color: Color(0xFF76BC43),
+          ),
+          VisitingCardOverlayField.websiteIcon: VisitingCardFieldPosition(
+            left: 0.899,
+            top: 0.610,
+            size: 0.045,
+            color: Color(0xFF76BC43),
+          ),
+          VisitingCardOverlayField.emailIcon: VisitingCardFieldPosition(
+            left: 0.899,
+            top: 0.712,
+            size: 0.045,
+            color: Color(0xFF76BC43),
+          ),
+          VisitingCardOverlayField.phoneIcon: VisitingCardFieldPosition(
+            left: 0.899,
+            top: 0.810,
+            size: 0.045,
+            color: Color(0xFF76BC43),
+          ),
+        },
+        'h19': {
+          VisitingCardOverlayField.phoneIcon: VisitingCardFieldPosition(
+            left: 0.534,
+            top: 0.472,
+            size: 0.077,
+            color: Color(0xFFF50302),
+          ),
+          VisitingCardOverlayField.addressIcon: VisitingCardFieldPosition(
+            left: 0.534,
+            top: 0.649,
+            size: 0.077,
+            color: Color(0xFFF50302),
+          ),
+          VisitingCardOverlayField.websiteIcon: VisitingCardFieldPosition(
+            left: 0.534,
+            top: 0.827,
+            size: 0.077,
+            color: Color(0xFFF50302),
+          ),
+        },
+        'h20': {
+          VisitingCardOverlayField.phoneIcon: VisitingCardFieldPosition(
+            left: 0.132,
+            top: 0.472,
+            size: 0.034,
+            color: Color(0xFF20438D),
+          ),
+          VisitingCardOverlayField.websiteIcon: VisitingCardFieldPosition(
+            left: 0.132,
+            top: 0.594,
+            size: 0.034,
+            color: Color(0xFF20438D),
+          ),
+          VisitingCardOverlayField.emailIcon: VisitingCardFieldPosition(
+            left: 0.132,
+            top: 0.710,
+            size: 0.034,
+            color: Color(0xFF20438D),
+          ),
+          VisitingCardOverlayField.addressIcon: VisitingCardFieldPosition(
+            left: 0.132,
+            top: 0.813,
+            size: 0.034,
+            color: Color(0xFF20438D),
           ),
         },
       };
@@ -361,7 +628,7 @@ class VisitingCardContactIconLayout {
     },
     'h3': {
       VisitingCardOverlayField.phoneIcon:
-          'assets/images/visiting_card_contact_icons/red_filled_phone.png',
+          'assets/images/visiting_card_contact_icons/red_filled_phone_alt.png',
       VisitingCardOverlayField.emailIcon:
           'assets/images/visiting_card_contact_icons/red_filled_email.png',
       VisitingCardOverlayField.websiteIcon:
@@ -392,19 +659,20 @@ class VisitingCardContactIconLayout {
           'assets/images/visiting_card_contact_icons/orange_diamond_phone.png',
       VisitingCardOverlayField.emailIcon:
           'assets/images/visiting_card_contact_icons/orange_diamond_email.png',
-      VisitingCardOverlayField.websiteIcon: orangeDiamondWebWidget,
+      VisitingCardOverlayField.websiteIcon:
+          'assets/images/visiting_card_contact_icons/orange_diamond_web.png',
       VisitingCardOverlayField.addressIcon:
           'assets/images/visiting_card_contact_icons/orange_diamond_location.png',
     },
     'h7': {
       VisitingCardOverlayField.phoneIcon:
-          'assets/images/visiting_card_contact_icons/black_smartphone.png',
-      VisitingCardOverlayField.emailIcon:
           'assets/images/visiting_card_contact_icons/black_phone_detail.png',
-      VisitingCardOverlayField.websiteIcon:
+      VisitingCardOverlayField.emailIcon:
           'assets/images/visiting_card_contact_icons/black_email.png',
-      VisitingCardOverlayField.addressIcon:
+      VisitingCardOverlayField.websiteIcon:
           'assets/images/visiting_card_contact_icons/black_web.png',
+      VisitingCardOverlayField.addressIcon:
+          'assets/images/visiting_card_contact_icons/black_location.png',
     },
     'h8': {
       VisitingCardOverlayField.phoneIcon:
@@ -420,19 +688,113 @@ class VisitingCardContactIconLayout {
       VisitingCardOverlayField.phoneIcon:
           'assets/images/visiting_card_contact_icons/red_filled_phone.png',
       VisitingCardOverlayField.emailIcon:
-          'assets/images/visiting_card_contact_icons/red_filled_email.png',
+          'assets/images/visiting_card_contact_icons/red_filled_email_alt.png',
       VisitingCardOverlayField.websiteIcon:
           'assets/images/visiting_card_contact_icons/red_filled_web_alt.png',
       VisitingCardOverlayField.addressIcon:
           'assets/images/visiting_card_contact_icons/red_filled_location_alt.png',
     },
     'h10': {
+      VisitingCardOverlayField.addressIcon:
+          'assets/images/visiting_card_contact_icons/h10_location.png',
       VisitingCardOverlayField.phoneIcon:
           'assets/images/visiting_card_contact_icons/h10_phone.png',
       VisitingCardOverlayField.emailIcon:
           'assets/images/visiting_card_contact_icons/black_email.png',
       VisitingCardOverlayField.websiteIcon:
           'assets/images/visiting_card_contact_icons/black_web.png',
+    },
+    'h11': {
+      VisitingCardOverlayField.phoneIcon:
+          'assets/images/visiting_card_contact_icons/h11_phone.png',
+      VisitingCardOverlayField.emailIcon:
+          'assets/images/visiting_card_contact_icons/h11_email.png',
+      VisitingCardOverlayField.websiteIcon:
+          'assets/images/visiting_card_contact_icons/h11_web.png',
+      VisitingCardOverlayField.addressIcon:
+          'assets/images/visiting_card_contact_icons/h11_location.png',
+    },
+    'h12': {
+      VisitingCardOverlayField.phoneIcon:
+          'assets/images/visiting_card_contact_icons/h12_phone.png',
+      VisitingCardOverlayField.emailIcon: limeEmailWidget,
+      VisitingCardOverlayField.websiteIcon:
+          'assets/images/visiting_card_contact_icons/h12_web.png',
+      VisitingCardOverlayField.addressIcon:
+          'assets/images/visiting_card_contact_icons/h12_location.png',
+    },
+    'h13': {
+      VisitingCardOverlayField.phoneIcon:
+          'assets/images/visiting_card_contact_icons/h13_phone.png',
+      VisitingCardOverlayField.emailIcon:
+          'assets/images/visiting_card_contact_icons/h13_email.png',
+      VisitingCardOverlayField.websiteIcon:
+          'assets/images/visiting_card_contact_icons/h13_web.png',
+      VisitingCardOverlayField.addressIcon:
+          'assets/images/visiting_card_contact_icons/h13_location.png',
+    },
+    'h14': {
+      VisitingCardOverlayField.phoneIcon:
+          'assets/images/visiting_card_contact_icons/h14_phone.png',
+      VisitingCardOverlayField.emailIcon:
+          'assets/images/visiting_card_contact_icons/h14_email.png',
+      VisitingCardOverlayField.websiteIcon:
+          'assets/images/visiting_card_contact_icons/h14_web.png',
+      VisitingCardOverlayField.addressIcon:
+          'assets/images/visiting_card_contact_icons/h14_location.png',
+    },
+    'h15': {
+      VisitingCardOverlayField.phoneIcon:
+          'assets/images/visiting_card_contact_icons/h15_phone.png',
+      VisitingCardOverlayField.emailIcon: orangeEmailWidget,
+      VisitingCardOverlayField.websiteIcon:
+          'assets/images/visiting_card_contact_icons/h15_web.png',
+      VisitingCardOverlayField.addressIcon:
+          'assets/images/visiting_card_contact_icons/h15_location.png',
+    },
+    'h16': {
+      VisitingCardOverlayField.phoneIcon:
+          'assets/images/visiting_card_contact_icons/h16_phone.png',
+      VisitingCardOverlayField.emailIcon: greenOutlineEmailWidget,
+      VisitingCardOverlayField.websiteIcon:
+          'assets/images/visiting_card_contact_icons/h16_web.png',
+      VisitingCardOverlayField.addressIcon:
+          'assets/images/visiting_card_contact_icons/h16_location.png',
+    },
+    'h17': {
+      VisitingCardOverlayField.phoneIcon:
+          'assets/images/visiting_card_contact_icons/h17_phone.png',
+      VisitingCardOverlayField.emailIcon:
+          'assets/images/visiting_card_contact_icons/h17_email.png',
+      VisitingCardOverlayField.addressIcon:
+          'assets/images/visiting_card_contact_icons/h17_location.png',
+    },
+    'h18': {
+      VisitingCardOverlayField.phoneIcon:
+          'assets/images/visiting_card_contact_icons/h18_phone.png',
+      VisitingCardOverlayField.emailIcon:
+          'assets/images/visiting_card_contact_icons/h18_email.png',
+      VisitingCardOverlayField.websiteIcon:
+          'assets/images/visiting_card_contact_icons/h18_web.png',
+      VisitingCardOverlayField.addressIcon:
+          'assets/images/visiting_card_contact_icons/h18_location.png',
+    },
+    'h19': {
+      VisitingCardOverlayField.phoneIcon:
+          'assets/images/visiting_card_contact_icons/h19_phone.png',
+      VisitingCardOverlayField.websiteIcon:
+          'assets/images/visiting_card_contact_icons/h19_web.png',
+      VisitingCardOverlayField.addressIcon:
+          'assets/images/visiting_card_contact_icons/h19_location.png',
+    },
+    'h20': {
+      VisitingCardOverlayField.phoneIcon:
+          'assets/images/visiting_card_contact_icons/h20_phone.png',
+      VisitingCardOverlayField.emailIcon: blueEmailWidget,
+      VisitingCardOverlayField.websiteIcon:
+          'assets/images/visiting_card_contact_icons/h20_web.png',
+      VisitingCardOverlayField.addressIcon:
+          'assets/images/visiting_card_contact_icons/h20_location.png',
     },
   };
 }

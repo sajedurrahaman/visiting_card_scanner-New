@@ -34,7 +34,7 @@ class VisitingCardTemplateWidget extends StatelessWidget {
   Future<void> _openScratchEditor(BuildContext context) async {
     const blankCanvas = 'assets/images/blank_visiting_card.svg';
     final vm = VisitingCardEditContactViewModel(
-      templateId: 'h1',
+      templateId: 'scratch',
       isHorizontal: true,
       frontAssetWithoutData: blankCanvas,
       backAssetWithoutData: blankCanvas,

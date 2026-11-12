@@ -1354,6 +1354,49 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       );
     }
 
+    if (isFront && vm.templateId == 'h6') {
+      const connectorFields = [
+        VisitingCardOverlayField.phoneIcon,
+        VisitingCardOverlayField.emailIcon,
+        VisitingCardOverlayField.addressIcon,
+        VisitingCardOverlayField.websiteIcon,
+      ];
+      final iconPositions = connectorFields
+          .map(
+            (field) => VisitingCardContactIconLayout.positionFor(
+              iconField: field,
+              side: side,
+              templateId: vm.templateId,
+              isFront: true,
+            ),
+          )
+          .whereType<VisitingCardFieldPosition>()
+          .toList(growable: false);
+      final lineWidth = math.max(1.0, size.width * 0.0025).toDouble();
+      final reach = size.width * 0.004;
+      for (var i = 0; i < iconPositions.length - 1; i++) {
+        final current = iconPositions[i];
+        final next = iconPositions[i + 1];
+        final currentBottom =
+            size.height * current.top! + size.width * current.size!;
+        final nextTop = size.height * next.top!;
+        final segmentHeight = nextTop - currentBottom + reach * 2;
+        if (segmentHeight <= 0) continue;
+
+        final centerX = size.width * (current.left! + current.size! / 2);
+        addLayer(
+          Positioned(
+            left: centerX - lineWidth / 2,
+            top: currentBottom - reach,
+            width: lineWidth,
+            height: segmentHeight,
+            child: const ColoredBox(color: Color(0xFFFF9D00)),
+          ),
+          -0x7FFFFFFE,
+        );
+      }
+    }
+
     for (final iconField in VisitingCardContactIconLayout.contactIconFields) {
       addContactIcon(iconField);
     }
@@ -2555,6 +2598,21 @@ class _TemplateContactIconAsset extends StatelessWidget {
     if (assetPath == VisitingCardContactIconLayout.orangeDiamondWebWidget) {
       return const _OrangeDiamondWebsiteIcon();
     }
+    if (assetPath == VisitingCardContactIconLayout.limeEmailWidget) {
+      return const _TemplateEmailGlyph(color: Color(0xFF59BA47));
+    }
+    if (assetPath == VisitingCardContactIconLayout.orangeEmailWidget) {
+      return const _TemplateEmailGlyph(color: Color(0xFFFBAA19));
+    }
+    if (assetPath == VisitingCardContactIconLayout.blueEmailWidget) {
+      return const _TemplateEmailGlyph(color: Color(0xFF20438D));
+    }
+    if (assetPath == VisitingCardContactIconLayout.navyOutlineEmailWidget) {
+      return const _TemplateEmailOutlineGlyph(color: Color(0xFF032C40));
+    }
+    if (assetPath == VisitingCardContactIconLayout.greenOutlineEmailWidget) {
+      return const _TemplateOutlinedEmailGlyph(color: Color(0xFF3A9808));
+    }
 
     Widget image = Image.asset(
       assetPath,
@@ -2568,6 +2626,75 @@ class _TemplateContactIconAsset extends StatelessWidget {
       );
     }
     return image;
+  }
+}
+
+class _TemplateEmailGlyph extends StatelessWidget {
+  const _TemplateEmailGlyph({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final side = math.min(constraints.maxWidth, constraints.maxHeight);
+        return Center(
+          child: Icon(Icons.email_rounded, color: color, size: side * 0.84),
+        );
+      },
+    );
+  }
+}
+
+class _TemplateOutlinedEmailGlyph extends StatelessWidget {
+  const _TemplateOutlinedEmailGlyph({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final side = math.min(constraints.maxWidth, constraints.maxHeight);
+        return Center(
+          child: SizedBox.square(
+            dimension: side,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: color, width: side * 0.065),
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.email_outlined,
+                  color: color,
+                  size: side * 0.66,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TemplateEmailOutlineGlyph extends StatelessWidget {
+  const _TemplateEmailOutlineGlyph({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final side = math.min(constraints.maxWidth, constraints.maxHeight);
+        return Center(
+          child: Icon(Icons.email_outlined, color: color, size: side * 0.84),
+        );
+      },
+    );
   }
 }
 

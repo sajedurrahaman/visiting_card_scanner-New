@@ -1,10 +1,8 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/app/firebase/firebase_services.dart';
-
 import 'app/routes/app_routes.dart';
 import 'app/storage/app_storage_service.dart';
 import 'app/view_models/app_viewmodels.dart';
