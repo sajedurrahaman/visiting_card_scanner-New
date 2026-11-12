@@ -608,13 +608,13 @@ class VisitingCardContactIconLayout {
   static const _templateIconAssets = <String, Map<VisitingCardOverlayField, String>>{
     'h1': {
       VisitingCardOverlayField.phoneIcon:
-          'assets/images/visiting_card_contact_icons/orange_filled_phone.png',
+          'assets/images/visiting_card_contact_icons/h1_phone.png',
       VisitingCardOverlayField.emailIcon:
-          'assets/images/visiting_card_contact_icons/orange_filled_email.png',
+          'assets/images/visiting_card_contact_icons/h1_mail.png',
       VisitingCardOverlayField.websiteIcon:
-          'assets/images/visiting_card_contact_icons/orange_filled_web.png',
+          'assets/images/visiting_card_contact_icons/h1_web.png',
       VisitingCardOverlayField.addressIcon:
-          'assets/images/visiting_card_contact_icons/orange_filled_location.png',
+          'assets/images/visiting_card_contact_icons/h1_location.png',
     },
     'h2': {
       VisitingCardOverlayField.phoneIcon:
