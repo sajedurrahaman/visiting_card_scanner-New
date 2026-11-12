@@ -100,7 +100,7 @@ class _VisitingCardLandscapeEditScreenState
         vm.selectedDuplicateId ?? vm.selectedOverlay?.name ?? '';
     if (selection == _panelSelection) return;
     _panelSelection = selection;
-    _panel = '';
+    _panel = vm.selectedIsShape ? 'Size' : '';
   }
 
   @override
@@ -850,6 +850,9 @@ class _VisitingCardLandscapeEditScreenState
                                         vm.selectedIsQr ? _onPickQr : null,
                                     onReplaceIcon:
                                         vm.selectedIsIcon ? _onAddIcon : null,
+                                    onReplaceShape: vm.selectedIsShape
+                                        ? _onAddShape
+                                        : null,
                                     onEditText: _onEditText,
                                     onColor: _onColor,
                                     colorActive: _panel == 'Color',
@@ -1205,6 +1208,7 @@ class _SelectedFieldRail extends StatelessWidget {
     required this.onReplaceLogo,
     required this.onReplaceQr,
     this.onReplaceIcon,
+    this.onReplaceShape,
     required this.onEditText,
     required this.onColor,
     required this.colorActive,
@@ -1229,6 +1233,7 @@ class _SelectedFieldRail extends StatelessWidget {
   final VoidCallback? onReplaceLogo;
   final VoidCallback? onReplaceQr;
   final VoidCallback? onReplaceIcon;
+  final VoidCallback? onReplaceShape;
   final VoidCallback onEditText;
   final VoidCallback onColor;
   final bool colorActive;
@@ -1269,6 +1274,12 @@ class _SelectedFieldRail extends StatelessWidget {
             asset: 'assets/visiting_card_option_icon/icon_option_icon.svg',
             label: 'Replace Icon',
             onTap: onReplaceIcon!,
+          ),
+        if (onReplaceShape != null)
+          _SelectRailItem(
+            asset: 'assets/visiting_card_option_icon/shape_option-icon.svg',
+            label: 'Replace Shape',
+            onTap: onReplaceShape!,
           ),
         if (showTextTools)
           _SelectRailItem(

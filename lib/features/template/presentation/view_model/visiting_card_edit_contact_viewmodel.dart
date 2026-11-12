@@ -860,6 +860,24 @@ class VisitingCardEditContactViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Replaces the selected custom shape, or adds one when no shape is selected.
+  void placeShape(String assetPath) {
+    final path = assetPath.trim();
+    if (path.isEmpty) return;
+    if (!selectedIsShape || selectedDuplicateId == null) {
+      addCustomShape(path);
+      return;
+    }
+    final key = duplicateKey(selectedDuplicateId!);
+    final current = currentOverlays[key];
+    if (current == null) {
+      addCustomShape(path);
+      return;
+    }
+    currentOverlays[key] = current.copyWith(duplicateImagePath: path);
+    notifyListeners();
+  }
+
   /// Adds another logo on the current side. The logo already on the card stays.
   void addCustomLogo(String assetPath) {
     final path = assetPath.trim();

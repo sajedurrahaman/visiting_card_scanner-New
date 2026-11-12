@@ -71,7 +71,7 @@ class _VisitingCardLandscapeShapeScreenState
   };
 
   void _place(String assetPath) {
-    context.read<VisitingCardEditContactViewModel>().addCustomShape(assetPath);
+    context.read<VisitingCardEditContactViewModel>().placeShape(assetPath);
     Navigator.pop(context);
   }
 
