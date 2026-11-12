@@ -914,6 +914,35 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         1.0,
         size.height,
       );
+      var topPx = size.height * t.top;
+      final addressLineCount = isAddress
+          ? painter.computeLineMetrics().length
+          : 0;
+      if (addressLineCount == 1) {
+        const addressIconField = VisitingCardOverlayField.addressIcon;
+        final iconSeed = VisitingCardContactIconLayout.positionFor(
+          iconField: addressIconField,
+          side: side,
+          templateId: vm.templateId,
+          isFront: isFront,
+        );
+        if (iconSeed != null &&
+            !vm.isContactIconHidden(addressIconField, isFront: isFront)) {
+          final iconTransform = vm.resolvedTransform(
+            addressIconField,
+            isFront: isFront,
+          );
+          final baseTop =
+              vm.defaultTransformFor(field, isFront: isFront)?.top ?? t.top;
+          final iconCenterY =
+              size.height * iconTransform.top +
+              size.width * iconTransform.size / 2;
+          final baseTextCenterY = size.height * baseTop + painter.height / 2;
+          topPx += iconCenterY - baseTextCenterY;
+        }
+      } else if (addressLineCount == 2) {
+        topPx += 2;
+      }
 
       final fill = Text(
         display,
@@ -957,7 +986,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         addLayer(
           Positioned(
             left: size.width * t.left,
-            top: size.height * t.top,
+            top: topPx,
             width: boxW,
             height: boxH,
             child: Transform.rotate(
@@ -977,7 +1006,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       trackHit(
         VisitingCardFieldTransform.keyOf(field),
         size.width * t.left,
-        size.height * t.top,
+        topPx,
         boxW,
         boxH,
       );
@@ -985,7 +1014,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         VisitingCardTransformOverlay(
           cardSize: size,
           left: size.width * t.left,
-          top: size.height * t.top,
+          top: topPx,
           boxWidth: boxW,
           boxHeight: boxH,
           rotation: t.rotation,
