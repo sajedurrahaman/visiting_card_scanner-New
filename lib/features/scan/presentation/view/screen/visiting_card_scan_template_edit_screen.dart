@@ -66,8 +66,7 @@ class _VisitingCardScanTemplateEditScreenState
   void _syncFromScan() {
     // Only apply saved transforms if the template matches; otherwise use
     // the new template's default positions.
-    final sameTemplate =
-        _scanVm.selectedTemplateId == widget.template.id;
+    final sameTemplate = _scanVm.selectedTemplateId == widget.template.id;
     _editVm.applyContactLists(
       names: _scanVm.names,
       designations: _scanVm.designations,
@@ -164,6 +163,13 @@ class _VisitingCardScanTemplateEditScreenState
     ui.AppToast.success(context, 'Logo uploaded successfully');
   }
 
+  Future<void> _onPrevious() async {
+    FocusScope.of(context).unfocus();
+    _editVm.clearOverlaySelection();
+    if (!_editVm.isBack) return;
+    _editVm.showFront();
+  }
+
   Future<void> _onDone() async {
     FocusScope.of(context).unfocus();
     _editVm.clearOverlaySelection();
@@ -241,151 +247,239 @@ class _VisitingCardScanTemplateEditScreenState
           body: OverlayScrollLockToast(
             locked: _editVm.selectedOverlay != null,
             isOverlayGestureActive: () => _editVm.overlayGestureActive,
-            child: ListView(
-              physics: _editVm.selectedOverlay != null
-                  ? const NeverScrollableScrollPhysics()
-                  : const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 24.h),
+            child: Column(
               children: [
-              Container(
-                padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 8.h),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12.r),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: VisitingCardLivePreview(
-                  vm: _editVm,
-                  enableFieldTransform: true,
-                  eightPointSelection: true,
-                  onShowFront: _editVm.showFront,
-                  onShowBack: _editVm.showBack,
-                ),
-              ),
-              SizedBox(height: 14.h),
-              if (_editVm.isBack) ...[
-                if (_editVm.hasQr)
-                  VisitingSelectActionCard(
-                    label: 'QR Code',
-                    buttonLabel: 'Choose QR Code',
-                    enabled: _editVm.canEditQr,
-                    onTap: _onChooseQr,
+                Expanded(
+                  child: ListView(
+                    physics: _editVm.selectedOverlay != null
+                        ? const NeverScrollableScrollPhysics()
+                        : const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),
+                    children: [
+                      Container(
+                        padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 8.h),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12.r),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 14,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: VisitingCardLivePreview(
+                          vm: _editVm,
+                          enableFieldTransform: true,
+                          eightPointSelection: true,
+                          onShowFront: _editVm.showFront,
+                          onShowBack: _editVm.showBack,
+                        ),
+                      ),
+                      SizedBox(height: 14.h),
+                      if (_editVm.isBack) ...[
+                        if (_editVm.canEditQr)
+                          VisitingSelectActionCard(
+                            label: 'QR Code',
+                            buttonLabel: 'Choose QR Code',
+                            enabled: _editVm.canEditQr,
+                            onTap: _onChooseQr,
+                          ),
+                        if (_editVm.canEditLogo)
+                          VisitingSelectActionCard(
+                            label: 'Image Selected',
+                            buttonLabel: 'Choose logo',
+                            enabled: _editVm.canEditLogo,
+                            onTap: _onChooseLogo,
+                          ),
+                      ],
+                      if (_editVm.isFront) ...[
+                        if (_editVm.canEditQr)
+                          VisitingSelectActionCard(
+                            label: 'QR Code',
+                            buttonLabel: 'Choose QR Code',
+                            enabled: _editVm.canEditQr,
+                            onTap: _onChooseQr,
+                          ),
+                        if (_editVm.canEditLogo)
+                          VisitingSelectActionCard(
+                            label: 'Logo',
+                            buttonLabel: 'Choose logo',
+                            enabled: _editVm.canEditLogo,
+                            onTap: _onChooseLogo,
+                          ),
+                        VisitingSimpleFieldCard(
+                          title: 'Name',
+                          entries: _editVm.names,
+                          showAddIcon: false,
+                          maxLength: _editVm.maxDisplayNameLength,
+                          hasError: _editVm.isFieldInvalid(
+                            ContactValidationField.name,
+                          ),
+                          onChanged: (i, v) =>
+                              _editVm.updateSimpleField(_editVm.names, i, v),
+                          onClear: (i) => _editVm.clearField(_editVm.names, i),
+                        ),
+                        VisitingSimpleFieldCard(
+                          title: 'Designation',
+                          entries: _editVm.designations,
+                          showAddIcon: false,
+                          hasError: _editVm.isFieldInvalid(
+                            ContactValidationField.designation,
+                          ),
+                          onChanged: (i, v) => _editVm.updateSimpleField(
+                            _editVm.designations,
+                            i,
+                            v,
+                          ),
+                          onClear: (i) =>
+                              _editVm.clearField(_editVm.designations, i),
+                        ),
+                        VisitingSimpleFieldCard(
+                          title: 'Company',
+                          entries: _editVm.companies,
+                          showAddIcon: false,
+                          hasError: _editVm.isFieldInvalid(
+                            ContactValidationField.company,
+                          ),
+                          onChanged: (i, v) => _editVm.updateSimpleField(
+                            _editVm.companies,
+                            i,
+                            v,
+                          ),
+                          onClear: (i) =>
+                              _editVm.clearField(_editVm.companies, i),
+                        ),
+                        VisitingSimpleFieldCard(
+                          title: 'Tagline',
+                          entries: _editVm.taglines,
+                          showAddIcon: false,
+                          onChanged: (i, v) =>
+                              _editVm.updateSimpleField(_editVm.taglines, i, v),
+                          onClear: (i) =>
+                              _editVm.clearField(_editVm.taglines, i),
+                        ),
+                        VisitingTypedFieldCard(
+                          title: 'Tell',
+                          entries: _editVm.phones,
+                          typeOptions:
+                              VisitingCardEditContactViewModel.telTypes,
+                          hasError: _editVm.isFieldInvalid(
+                            ContactValidationField.phone,
+                          ),
+                          onValueChanged: (i, v) => _editVm.updateTypedField(
+                            _editVm.phones,
+                            i,
+                            value: v,
+                          ),
+                          onTypeChanged: (i, t) => _editVm.updateTypedField(
+                            _editVm.phones,
+                            i,
+                            type: t,
+                          ),
+                          onClear: (i) =>
+                              _editVm.removeField(_editVm.phones, i),
+                          onAdd: () => _editVm.addField(
+                            _editVm.phones,
+                            defaultType: 'Work',
+                          ),
+                        ),
+                        VisitingTypedFieldCard(
+                          title: 'Email',
+                          entries: _editVm.emails,
+                          typeOptions: VisitingCardEditContactViewModel
+                              .emailWebsiteTypes,
+                          hasError: _editVm.isFieldInvalid(
+                            ContactValidationField.email,
+                          ),
+                          onValueChanged: (i, v) => _editVm.updateTypedField(
+                            _editVm.emails,
+                            i,
+                            value: v,
+                          ),
+                          onTypeChanged: (i, t) => _editVm.updateTypedField(
+                            _editVm.emails,
+                            i,
+                            type: t,
+                          ),
+                          onClear: (i) =>
+                              _editVm.removeField(_editVm.emails, i),
+                          onAdd: () => _editVm.addField(
+                            _editVm.emails,
+                            defaultType: 'Company',
+                          ),
+                        ),
+                        VisitingTypedFieldCard(
+                          title: 'Website',
+                          entries: _editVm.websites,
+                          typeOptions: VisitingCardEditContactViewModel
+                              .emailWebsiteTypes,
+                          onValueChanged: (i, v) => _editVm.updateTypedField(
+                            _editVm.websites,
+                            i,
+                            value: v,
+                          ),
+                          onTypeChanged: (i, t) => _editVm.updateTypedField(
+                            _editVm.websites,
+                            i,
+                            type: t,
+                          ),
+                          onClear: (i) =>
+                              _editVm.removeField(_editVm.websites, i),
+                          onAdd: () => _editVm.addField(
+                            _editVm.websites,
+                            defaultType: 'Company',
+                          ),
+                        ),
+                        VisitingSimpleFieldCard(
+                          title: 'Address',
+                          entries: _editVm.addresses,
+                          hasError: _editVm.isFieldInvalid(
+                            ContactValidationField.address,
+                          ),
+                          onChanged: (i, v) => _editVm.updateSimpleField(
+                            _editVm.addresses,
+                            i,
+                            v,
+                          ),
+                          onClear: (i) =>
+                              _editVm.removeField(_editVm.addresses, i),
+                          onAdd: () => _editVm.addField(
+                            _editVm.addresses,
+                            defaultType: '',
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                VisitingSelectActionCard(
-                  label: 'Image Selected',
-                  buttonLabel: 'Choose logo',
-                  enabled: _editVm.canEditLogo,
-                  onTap: _onChooseLogo,
+                ),
+                SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 12.h),
+                    child: _editVm.isBack
+                        ? Row(
+                            children: [
+                              Expanded(
+                                child: VisitingOutlinedButton(
+                                  label: 'Previous',
+                                  onTap: _onPrevious,
+                                ),
+                              ),
+                              SizedBox(width: 12.w),
+                              Expanded(
+                                child: VisitingGradientButton(
+                                  label: 'Submit',
+                                  onTap: _onDone,
+                                ),
+                              ),
+                            ],
+                          )
+                        : VisitingGradientButton(label: 'Next', onTap: _onDone),
+                  ),
                 ),
               ],
-              if (_editVm.isFront) ...[
-                VisitingSimpleFieldCard(
-                  title: 'Name',
-                  entries: _editVm.names,
-                  showAddIcon: false,
-                  maxLength: _editVm.maxDisplayNameLength,
-                  hasError:
-                      _editVm.isFieldInvalid(ContactValidationField.name),
-                  onChanged: (i, v) =>
-                      _editVm.updateSimpleField(_editVm.names, i, v),
-                  onClear: (i) => _editVm.clearField(_editVm.names, i),
-                ),
-                VisitingSimpleFieldCard(
-                  title: 'Designation',
-                  entries: _editVm.designations,
-                  showAddIcon: false,
-                  hasError: _editVm
-                      .isFieldInvalid(ContactValidationField.designation),
-                  onChanged: (i, v) =>
-                      _editVm.updateSimpleField(_editVm.designations, i, v),
-                  onClear: (i) => _editVm.clearField(_editVm.designations, i),
-                ),
-                VisitingSimpleFieldCard(
-                  title: 'Company',
-                  entries: _editVm.companies,
-                  showAddIcon: false,
-                  hasError:
-                      _editVm.isFieldInvalid(ContactValidationField.company),
-                  onChanged: (i, v) =>
-                      _editVm.updateSimpleField(_editVm.companies, i, v),
-                  onClear: (i) => _editVm.clearField(_editVm.companies, i),
-                ),
-                VisitingSimpleFieldCard(
-                  title: 'Tagline',
-                  entries: _editVm.taglines,
-                  showAddIcon: false,
-                  onChanged: (i, v) =>
-                      _editVm.updateSimpleField(_editVm.taglines, i, v),
-                  onClear: (i) => _editVm.clearField(_editVm.taglines, i),
-                ),
-                VisitingTypedFieldCard(
-                  title: 'Tell',
-                  entries: _editVm.phones,
-                  typeOptions: VisitingCardEditContactViewModel.telTypes,
-                  hasError:
-                      _editVm.isFieldInvalid(ContactValidationField.phone),
-                  onValueChanged: (i, v) =>
-                      _editVm.updateTypedField(_editVm.phones, i, value: v),
-                  onTypeChanged: (i, t) =>
-                      _editVm.updateTypedField(_editVm.phones, i, type: t),
-                  onClear: (i) => _editVm.removeField(_editVm.phones, i),
-                  onAdd: () =>
-                      _editVm.addField(_editVm.phones, defaultType: 'Work'),
-                ),
-                VisitingTypedFieldCard(
-                  title: 'Email',
-                  entries: _editVm.emails,
-                  typeOptions:
-                      VisitingCardEditContactViewModel.emailWebsiteTypes,
-                  hasError:
-                      _editVm.isFieldInvalid(ContactValidationField.email),
-                  onValueChanged: (i, v) =>
-                      _editVm.updateTypedField(_editVm.emails, i, value: v),
-                  onTypeChanged: (i, t) =>
-                      _editVm.updateTypedField(_editVm.emails, i, type: t),
-                  onClear: (i) => _editVm.removeField(_editVm.emails, i),
-                  onAdd: () =>
-                      _editVm.addField(_editVm.emails, defaultType: 'Company'),
-                ),
-                VisitingTypedFieldCard(
-                  title: 'Website',
-                  entries: _editVm.websites,
-                  typeOptions:
-                      VisitingCardEditContactViewModel.emailWebsiteTypes,
-                  onValueChanged: (i, v) =>
-                      _editVm.updateTypedField(_editVm.websites, i, value: v),
-                  onTypeChanged: (i, t) =>
-                      _editVm.updateTypedField(_editVm.websites, i, type: t),
-                  onClear: (i) => _editVm.removeField(_editVm.websites, i),
-                  onAdd: () => _editVm.addField(
-                    _editVm.websites,
-                    defaultType: 'Company',
-                  ),
-                ),
-                VisitingSimpleFieldCard(
-                  title: 'Address',
-                  entries: _editVm.addresses,
-                  hasError:
-                      _editVm.isFieldInvalid(ContactValidationField.address),
-                  onChanged: (i, v) =>
-                      _editVm.updateSimpleField(_editVm.addresses, i, v),
-                  onClear: (i) => _editVm.removeField(_editVm.addresses, i),
-                  onAdd: () =>
-                      _editVm.addField(_editVm.addresses, defaultType: ''),
-                ),
-              ],
-              SizedBox(height: 8.h),
-              VisitingGradientButton(
-                label: 'Next',
-                onTap: _onDone,
-              ),
-            ],
             ),
           ),
         );

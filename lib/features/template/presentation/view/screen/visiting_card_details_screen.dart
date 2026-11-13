@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
+import 'package:visiting_card/app/storage/app_storage_service.dart';
 import 'package:visiting_card/features/folder/presentation/view_model/folder_viewmodel.dart';
 import 'package:visiting_card/features/home/presentation/view_model/home_view_model.dart';
 import 'package:visiting_card/features/parent/presentation/view_model/parent_view_model.dart';
@@ -51,6 +52,14 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
     } finally {
       vm.jumpSideForCapture = previousCaptureMode;
       if (mounted) setState(() {});
+    }
+  }
+
+  void _openDesignEditor(VisitingCardEditContactViewModel vm) {
+    if (vm.isHorizontal) {
+      VisitingCardLandscapeEditScreen.open(context, vm: vm);
+    } else {
+      VisitingCardVerticalEditScreen.open(context, vm: vm);
     }
   }
 
@@ -169,10 +178,10 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
       );
       await frontFile.writeAsBytes(frontBytes, flush: true);
       await backFile.writeAsBytes(backBytes, flush: true);
-      await Share.shareXFiles(
-        [XFile(frontFile.path), XFile(backFile.path)],
-        text: 'Visiting Card',
-      );
+      await Share.shareXFiles([
+        XFile(frontFile.path),
+        XFile(backFile.path),
+      ], text: 'Visiting Card');
     } catch (_) {
       if (!mounted) return;
       vm.setSide(previous);
@@ -274,261 +283,245 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
                 child: ListView(
                   padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),
                   children: [
-                Container(
-                  padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 8.h),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
+                    Container(
+                      padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 8.h),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      // Capture target only — corner icons stay outside so they
-                      // are not baked into saved front/back images.
-                      Stack(
-                        clipBehavior: Clip.none,
+                      child: Column(
                         children: [
-                          RepaintBoundary(
-                            key: _cardCaptureKey,
-                            child: VisitingCardLivePreview(
-                              vm: vm,
-                              showPager: false,
-                              singleLineText: true,
-                              matchEditorText: true,
-                            ),
+                          _DesignCustomizeChip(
+                            onTap: () => _openDesignEditor(vm),
                           ),
-                          Positioned(
-                            top: 6.h,
-                            left: 6.w,
-                            child: _CornerActionButton(
-                              onTap: _isSharingCard || _isDownloading
-                                  ? null
-                                  : _onShareNewCard,
-                              child: SvgPicture.asset(
-                                ui.AppAssets.visitingTemplateShareIcon,
-                                width: 15.w,
-                                height: 15.w,
+                          SizedBox(height: 10.h),
+                          // Capture target only — corner icons stay outside so they
+                          // are not baked into saved front/back images.
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              RepaintBoundary(
+                                key: _cardCaptureKey,
+                                child: VisitingCardLivePreview(
+                                  vm: vm,
+                                  showPager: false,
+                                  singleLineText: true,
+                                  matchEditorText: true,
+                                ),
                               ),
-                            ),
-                          ),
-                          Positioned(
-                            top: 6.h,
-                            right: 6.w,
-                            child: _CornerActionButton(
-                              onTap: _isDownloading ||
-                                      _isSharingCard ||
-                                      vm.isSaving
-                                  ? null
-                                  : _onDownload,
-                              child: Icon(
-                                Icons.download_outlined,
-                                size: 15.sp,
-                                color: ui.Colors.parentIconSelectTextColor,
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 6.h,
-                            right: 6.w,
-                            child: _CornerActionButton(
-                              onTap: () {
-                                if (vm.isHorizontal) {
-                                  VisitingCardLandscapeEditScreen.open(
-                                    context,
-                                    vm: vm,
-                                  );
-                                } else {
-                                  VisitingCardVerticalEditScreen.open(
-                                    context,
-                                    vm: vm,
-                                  );
-                                }
-                              },
-                              child: SvgPicture.asset(
-                                ui.AppAssets.visitingTemplateEditIconOne,
-                                width: 15.w,
-                                height: 15.w,
-                              ),
-                            ),
-                          ),
-                          if (_isDownloading || _isSharingCard)
-                            Positioned.fill(
-                              child: ColoredBox(
-                                color: Colors.black.withValues(alpha: 0.18),
-                                child: Center(
-                                  child: SizedBox(
-                                    width: 22.w,
-                                    height: 22.w,
-                                    child: const CircularProgressIndicator(
-                                      color:
-                                          ui.Colors.parentIconSelectTextColor,
-                                      strokeWidth: 2.5,
-                                    ),
+                              Positioned(
+                                top: 6.h,
+                                left: 6.w,
+                                child: _CornerActionButton(
+                                  onTap: _isSharingCard || _isDownloading
+                                      ? null
+                                      : _onShareNewCard,
+                                  child: SvgPicture.asset(
+                                    ui.AppAssets.visitingTemplateShareIcon,
+                                    width: 15.w,
+                                    height: 15.w,
                                   ),
                                 ),
                               ),
-                            ),
+                              Positioned(
+                                top: 6.h,
+                                right: 6.w,
+                                child: _CornerActionButton(
+                                  onTap:
+                                      _isDownloading ||
+                                          _isSharingCard ||
+                                          vm.isSaving
+                                      ? null
+                                      : _onDownload,
+                                  child: Icon(
+                                    Icons.download_outlined,
+                                    size: 15.sp,
+                                    color: ui.Colors.parentIconSelectTextColor,
+                                  ),
+                                ),
+                              ),
+                              if (_isDownloading || _isSharingCard)
+                                Positioned.fill(
+                                  child: ColoredBox(
+                                    color: Colors.black.withValues(alpha: 0.18),
+                                    child: Center(
+                                      child: SizedBox(
+                                        width: 22.w,
+                                        height: 22.w,
+                                        child: const CircularProgressIndicator(
+                                          color: ui
+                                              .Colors
+                                              .parentIconSelectTextColor,
+                                          strokeWidth: 2.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          SizedBox(height: 8.h),
+                          VisitingCardLivePreview(vm: vm, pagerOnly: true),
                         ],
                       ),
-                      SizedBox(height: 8.h),
-                      VisitingCardLivePreview(
-                        vm: vm,
-                        pagerOnly: true,
+                    ),
+                    SizedBox(height: 12.h),
+                    Container(
+                      padding: EdgeInsets.symmetric(vertical: 14.h),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _ActionItem(
+                            asset: ui.AppAssets.visitingTemplatePhoneIcon,
+                            label: 'Tel',
+                            onTap: firstPhone == null
+                                ? null
+                                : () => _onCall(firstPhone),
+                          ),
+                          _ActionItem(
+                            asset: ui.AppAssets.visitingTemplateLocationIcon,
+                            label: 'Location',
+                            onTap: firstAddress == null
+                                ? null
+                                : () => _onOpenMap(firstAddress),
+                          ),
+                          _ActionItem(
+                            asset: ui.AppAssets.visitingTemplateEditIcon,
+                            label: 'Contact',
+                            onTap: () => Navigator.pop(context),
+                          ),
+                          _ActionItem(
+                            asset: ui.AppAssets.visitingTemplateShareIcon,
+                            label: 'Share',
+                            onTap: _onShare,
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 12.h),
+                    Container(
+                      padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 10.h),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Contact Information',
+                            style:
+                                ui.AppTextStyles.helperText(
+                                  color: const Color(0xFF1A1A1A),
+                                ).copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15.sp,
+                                ),
+                          ),
+                          SizedBox(height: 4.h),
+                          Container(
+                            width: 72.w,
+                            height: 2.h,
+                            color: ui.Colors.parentIconSelectTextColor,
+                          ),
+                          SizedBox(height: 12.h),
+                          ...vm.phones
+                              .where((e) => e.value.trim().isNotEmpty)
+                              .map(
+                                (e) => _ContactRow(
+                                  icon: ui.AppAssets.visitingTemplatePhoneIcon,
+                                  value: e.value,
+                                  subtitle: e.type.isEmpty ? 'Phone' : e.type,
+                                  onTap: () => _onCall(e.value),
+                                ),
+                              ),
+                          ...vm.emails
+                              .where((e) => e.value.trim().isNotEmpty)
+                              .map(
+                                (e) => _ContactRow(
+                                  icon: ui.AppAssets.visitingTemplateMailIcon,
+                                  value: e.value,
+                                  subtitle: e.type.isEmpty ? 'Email' : e.type,
+                                  onTap: () => _onOpenEmail(e.value),
+                                ),
+                              ),
+                          ...vm.websites
+                              .where((e) => e.value.trim().isNotEmpty)
+                              .map(
+                                (e) => _ContactRow(
+                                  icon:
+                                      ui.AppAssets.visitingTemplateWebsiteIcon,
+                                  value: e.value,
+                                  subtitle: e.type.isEmpty ? 'Website' : e.type,
+                                  onTap: () => _onOpenWebsite(e.value),
+                                ),
+                              ),
+                          ...vm.addresses
+                              .where((e) => e.value.trim().isNotEmpty)
+                              .map(
+                                (e) => _ContactRow(
+                                  icon:
+                                      ui.AppAssets.visitingTemplateLocationIcon,
+                                  value: e.value,
+                                  subtitle: 'Address',
+                                  onTap: () => _onOpenMap(e.value),
+                                ),
+                              ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 12.h),
-                Container(
-                  padding: EdgeInsets.symmetric(vertical: 14.h),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _ActionItem(
-                        asset: ui.AppAssets.visitingTemplatePhoneIcon,
-                        label: 'Tel',
-                        onTap: firstPhone == null
-                            ? null
-                            : () => _onCall(firstPhone),
-                      ),
-                      _ActionItem(
-                        asset: ui.AppAssets.visitingTemplateLocationIcon,
-                        label: 'Location',
-                        onTap: firstAddress == null
-                            ? null
-                            : () => _onOpenMap(firstAddress),
-                      ),
-                      _ActionItem(
-                        asset: ui.AppAssets.visitingTemplateEditIcon,
-                        label: 'Edit',
-                        onTap: () => Navigator.pop(context),
-                      ),
-                      _ActionItem(
-                        asset: ui.AppAssets.visitingTemplateShareIcon,
-                        label: 'Share',
-                        onTap: _onShare,
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 12.h),
-                Container(
-                  padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 10.h),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Contact Information',
-                        style: ui.AppTextStyles.helperText(
-                          color: const Color(0xFF1A1A1A),
-                        ).copyWith(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15.sp,
-                        ),
-                      ),
-                      SizedBox(height: 4.h),
-                      Container(
-                        width: 72.w,
-                        height: 2.h,
-                        color: ui.Colors.parentIconSelectTextColor,
-                      ),
-                      SizedBox(height: 12.h),
-                      ...vm.phones
-                          .where((e) => e.value.trim().isNotEmpty)
-                          .map(
-                            (e) => _ContactRow(
-                              icon: ui.AppAssets.visitingTemplatePhoneIcon,
-                              value: e.value,
-                              subtitle: e.type.isEmpty ? 'Phone' : e.type,
-                              onTap: () => _onCall(e.value),
-                            ),
-                          ),
-                      ...vm.emails
-                          .where((e) => e.value.trim().isNotEmpty)
-                          .map(
-                            (e) => _ContactRow(
-                              icon: ui.AppAssets.visitingTemplateMailIcon,
-                              value: e.value,
-                              subtitle: e.type.isEmpty ? 'Email' : e.type,
-                              onTap: () => _onOpenEmail(e.value),
-                            ),
-                          ),
-                      ...vm.websites
-                          .where((e) => e.value.trim().isNotEmpty)
-                          .map(
-                            (e) => _ContactRow(
-                              icon: ui.AppAssets.visitingTemplateWebsiteIcon,
-                              value: e.value,
-                              subtitle: e.type.isEmpty ? 'Website' : e.type,
-                              onTap: () => _onOpenWebsite(e.value),
-                            ),
-                          ),
-                      ...vm.addresses
-                          .where((e) => e.value.trim().isNotEmpty)
-                          .map(
-                            (e) => _ContactRow(
-                              icon: ui.AppAssets.visitingTemplateLocationIcon,
-                              value: e.value,
-                              subtitle: 'Address',
-                              onTap: () => _onOpenMap(e.value),
-                            ),
-                          ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 12.h),
-              child: Column(
-                children: [
-                  VisitingGradientButton(
-                    label: vm.isSaving
-                        ? (vm.isUpdatingExisting ? 'Updating...' : 'Saving...')
-                        : (vm.isUpdatingExisting ? 'Update' : 'Save'),
-                    enabled: !vm.isSaving,
-                    onTap: _onSave,
-                  ),
-                  SizedBox(height: 10.h),
-                  VisitingOutlinedButton(
-                    label: 'Back to Home',
-                    onTap: _backToHome,
-                  ),
-                ],
               ),
-            ),
-          ),
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 12.h),
+                  child: Column(
+                    children: [
+                      VisitingGradientButton(
+                        label: vm.isSaving
+                            ? (vm.isUpdatingExisting
+                                  ? 'Updating...'
+                                  : 'Saving...')
+                            : (vm.isUpdatingExisting ? 'Update' : 'Save'),
+                        enabled: !vm.isSaving,
+                        onTap: _onSave,
+                      ),
+                      SizedBox(height: 10.h),
+                      VisitingOutlinedButton(
+                        label: 'Back to Home',
+                        onTap: _backToHome,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
           if (vm.isSaving)
@@ -550,10 +543,7 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
 }
 
 class _CornerActionButton extends StatelessWidget {
-  const _CornerActionButton({
-    required this.child,
-    this.onTap,
-  });
+  const _CornerActionButton({required this.child, this.onTap});
 
   final Widget child;
   final VoidCallback? onTap;
@@ -569,8 +559,8 @@ class _CornerActionButton extends StatelessWidget {
         customBorder: const CircleBorder(),
         onTap: onTap,
         child: SizedBox(
-          width: 22.w,
-          height: 22.w,
+          width: 28.w,
+          height: 28.w,
           child: Center(child: child),
         ),
       ),
@@ -578,12 +568,158 @@ class _CornerActionButton extends StatelessWidget {
   }
 }
 
+/// Top-of-preview design entry — replaces the old corner pencil.
+class _DesignCustomizeChip extends StatefulWidget {
+  const _DesignCustomizeChip({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  State<_DesignCustomizeChip> createState() => _DesignCustomizeChipState();
+}
+
+class _DesignCustomizeChipState extends State<_DesignCustomizeChip>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse;
+  bool _showHint = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    );
+    final seen = AppStorageService.instance.hasSeenDesignCustomizeTip;
+    _showHint = !seen;
+    if (_showHint) {
+      _pulse.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleTap() async {
+    if (_showHint) {
+      _pulse.stop();
+      setState(() => _showHint = false);
+      await AppStorageService.instance.markDesignCustomizeTipSeen();
+    }
+    widget.onTap();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bar = Material(
+      color: ui.Colors.cardBgColor,
+      borderRadius: BorderRadius.circular(10.r),
+      child: InkWell(
+        onTap: _handleTap,
+        borderRadius: BorderRadius.circular(10.r),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10.r),
+            border: Border.all(
+              color: ui.Colors.parentIconSelectTextColor.withValues(
+                alpha: 0.45,
+              ),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Customize design',
+                      style: TextStyle(
+                        color: const Color(0xFF1A1A1A),
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      _showHint
+                          ? 'Tap to edit layout, text & icons'
+                          : 'Layout, text, icons & more',
+                      style: TextStyle(
+                        color: const Color(0xFF5C5C5C),
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 68.w,
+                height: 32.w,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [Color(0xFF3DCB6A), Color(0xFF0B5D2A)],
+                  ),
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                alignment: Alignment.center,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Edit",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SvgPicture.asset(
+                      ui.AppAssets.visitingTemplateEditIconOne,
+                      width: 16.w,
+                      height: 16.w,
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (!_showHint) return bar;
+
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (context, child) {
+        final t = Curves.easeInOut.transform(_pulse.value);
+        final scale = 1.0 + (0.015 * t);
+        return Transform.scale(
+          scale: scale,
+          alignment: Alignment.center,
+          child: child,
+        );
+      },
+      child: bar,
+    );
+  }
+}
+
 class _ActionItem extends StatelessWidget {
-  const _ActionItem({
-    required this.asset,
-    required this.label,
-    this.onTap,
-  });
+  const _ActionItem({required this.asset, required this.label, this.onTap});
 
   final String asset;
   final String label;
