@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class AppAssets {
-  static const splashLogo = 'assets/icons/nav_center.svg';
+  static const splashLogo = 'assets/icons/logo.svg';
   static const parentNavLogoOne = 'assets/icons/home.svg';
   static const parentNavLogoTwo = 'assets/icons/my_card.svg';
   static const parentNavLogoThree = 'assets/icons/folder.svg';
