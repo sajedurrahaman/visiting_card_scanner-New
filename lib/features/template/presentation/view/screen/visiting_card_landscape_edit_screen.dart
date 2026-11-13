@@ -8,6 +8,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gal/gal.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:visiting_card/app/helper/image_picker_helper.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/folder/presentation/view_model/folder_viewmodel.dart';
 import 'package:visiting_card/features/home/presentation/view_model/home_view_model.dart';
@@ -35,16 +36,19 @@ class VisitingCardLandscapeEditScreen extends StatefulWidget {
   const VisitingCardLandscapeEditScreen({
     super.key,
     this.persistToRecent = true,
+    this.offerSaveToPhone = true,
   });
 
   /// When false (scan create flow), Save only applies name + pops — parent
   /// screen owns the final folder/recent save.
   final bool persistToRecent;
+  final bool offerSaveToPhone;
 
   static Future<bool?> open(
     BuildContext context, {
     required VisitingCardEditContactViewModel vm,
     bool persistToRecent = true,
+    bool offerSaveToPhone = true,
   }) {
     return Navigator.push<bool>(
       context,
@@ -55,6 +59,7 @@ class VisitingCardLandscapeEditScreen extends StatefulWidget {
           value: vm,
           child: VisitingCardLandscapeEditScreen(
             persistToRecent: persistToRecent,
+            offerSaveToPhone: offerSaveToPhone,
           ),
         ),
         transitionsBuilder: (_, animation, _, child) {
@@ -96,7 +101,7 @@ class _VisitingCardLandscapeEditScreenState
         vm.selectedDuplicateId ?? vm.selectedOverlay?.name ?? '';
     if (selection == _panelSelection) return;
     _panelSelection = selection;
-    _panel = '';
+    _panel = vm.selectedIsShape ? 'Size' : '';
   }
 
   @override
@@ -209,7 +214,7 @@ class _VisitingCardLandscapeEditScreenState
       return;
     }
 
-    if (vm.names.isNotEmpty) {
+    if (vm.names.isNotEmpty && widget.offerSaveToPhone) {
       vm.updateSimpleField(vm.names, 0, trimmed);
     }
 
@@ -231,6 +236,7 @@ class _VisitingCardLandscapeEditScreenState
       homeViewModel: home,
       folderViewModel: folder,
       captureSide: (side) => _captureSide(vm, side),
+      cardTitle: widget.offerSaveToPhone ? null : trimmed,
     );
     vm.jumpSideForCapture = false;
     if (!mounted) return;
@@ -253,8 +259,10 @@ class _VisitingCardLandscapeEditScreenState
       return;
     }
 
-    await VisitingCardShareHelper.saveContactToPhone(context, phoneContact);
-    if (!mounted) return;
+    if (widget.offerSaveToPhone) {
+      await VisitingCardShareHelper.saveContactToPhone(context, phoneContact);
+      if (!mounted) return;
+    }
     context.read<ParentViewModel>().changeIndex(0);
     await _leaveToPortrait(toRoot: true);
   }
@@ -361,9 +369,8 @@ class _VisitingCardLandscapeEditScreenState
   }
 
   Future<void> _onPickImage() async {
-    final picked = await ImagePicker().pickImage(
+    final picked = await ImagePickerHelper.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 90,
     );
     if (picked == null || !mounted) return;
     final vm = context.read<VisitingCardEditContactViewModel>();
@@ -674,6 +681,7 @@ class _VisitingCardLandscapeEditScreenState
                             if (!_previewing &&
                                 _panel == 'Color' &&
                                 vm.hasSelection &&
+                                !vm.hasMultiSelection &&
                                 (!vm.selectedIsImage || vm.selectedIsShape))
                               _TextColorBar(
                                 selected: vm.activeTransform?.textColor,
@@ -683,7 +691,8 @@ class _VisitingCardLandscapeEditScreenState
                               )
                             else if (!_previewing &&
                                 _panel == 'Size' &&
-                                vm.hasSelection)
+                                vm.hasSelection &&
+                                !vm.hasMultiSelection)
                               _TextSizeBar(
                                 fraction: vm.selectedOverlaySizeFraction(),
                                 onClose: () => setState(() => _panel = ''),
@@ -692,6 +701,7 @@ class _VisitingCardLandscapeEditScreenState
                             else if (!_previewing &&
                                 _isAdjustPanel &&
                                 vm.hasSelection &&
+                                !vm.hasMultiSelection &&
                                 !(vm.selectedIsImage &&
                                     (_panel == 'Spacing' ||
                                         _panel == 'Stroke' ||
@@ -819,7 +829,17 @@ class _VisitingCardLandscapeEditScreenState
                                       ),
                                     ],
                                   )
-                                : _SelectedFieldRail(
+                                : vm.hasMultiSelection
+                                    ? _MultiSelectRail(
+                                        count: vm.multiSelectedKeys.length,
+                                        onDelete: _onDelete,
+                                        onNudge: vm.nudgeSelectedOverlay,
+                                        onClose: () {
+                                          setState(() => _panel = '');
+                                          vm.clearOverlaySelection();
+                                        },
+                                      )
+                                    : _SelectedFieldRail(
                                     showTextTools: !vm.selectedIsImage,
                                     showColor:
                                         !vm.selectedIsImage || vm.selectedIsShape,
@@ -828,6 +848,11 @@ class _VisitingCardLandscapeEditScreenState
                                         : null,
                                     onReplaceQr:
                                         vm.selectedIsQr ? _onPickQr : null,
+                                    onReplaceIcon:
+                                        vm.selectedIsIcon ? _onAddIcon : null,
+                                    onReplaceShape: vm.selectedIsShape
+                                        ? _onAddShape
+                                        : null,
                                     onEditText: _onEditText,
                                     onColor: _onColor,
                                     colorActive: _panel == 'Color',
@@ -1125,6 +1150,56 @@ class _RailItem extends StatelessWidget {
 
 const _selectIconDir = 'assets/visiting_card_select_text_icon';
 
+/// Right rail while multiple fields are selected via marquee drag.
+class _MultiSelectRail extends StatelessWidget {
+  const _MultiSelectRail({
+    required this.count,
+    required this.onDelete,
+    required this.onNudge,
+    required this.onClose,
+  });
+
+  final int count;
+  final VoidCallback onDelete;
+  final void Function(double dxFraction, double dyFraction) onNudge;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            '$count selected',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        _MoveAndFlipCard(
+          onNudge: onNudge,
+          onFlip: (_) {},
+        ),
+        _SelectRailItem(
+          asset: '$_selectIconDir/delete_icon.svg',
+          label: 'Delete',
+          onTap: onDelete,
+        ),
+        _SelectRailItem(
+          asset: '$_selectIconDir/close_icon.svg',
+          label: 'Close',
+          onTap: onClose,
+        ),
+      ],
+    );
+  }
+}
+
 /// Right rail shown while a card field is selected (Figma text tools).
 class _SelectedFieldRail extends StatelessWidget {
   const _SelectedFieldRail({
@@ -1132,6 +1207,8 @@ class _SelectedFieldRail extends StatelessWidget {
     required this.showColor,
     required this.onReplaceLogo,
     required this.onReplaceQr,
+    this.onReplaceIcon,
+    this.onReplaceShape,
     required this.onEditText,
     required this.onColor,
     required this.colorActive,
@@ -1155,6 +1232,8 @@ class _SelectedFieldRail extends StatelessWidget {
   final bool showColor;
   final VoidCallback? onReplaceLogo;
   final VoidCallback? onReplaceQr;
+  final VoidCallback? onReplaceIcon;
+  final VoidCallback? onReplaceShape;
   final VoidCallback onEditText;
   final VoidCallback onColor;
   final bool colorActive;
@@ -1189,6 +1268,18 @@ class _SelectedFieldRail extends StatelessWidget {
             asset: 'assets/visiting_card_option_icon/qrcode_option_icon.svg',
             label: 'Replace QRCode',
             onTap: onReplaceQr!,
+          ),
+        if (onReplaceIcon != null)
+          _SelectRailItem(
+            asset: 'assets/visiting_card_option_icon/icon_option_icon.svg',
+            label: 'Replace Icon',
+            onTap: onReplaceIcon!,
+          ),
+        if (onReplaceShape != null)
+          _SelectRailItem(
+            asset: 'assets/visiting_card_option_icon/shape_option-icon.svg',
+            label: 'Replace Shape',
+            onTap: onReplaceShape!,
           ),
         if (showTextTools)
           _SelectRailItem(
@@ -1343,7 +1434,7 @@ class _SelectRailItem extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 12,
+                      fontSize: 13,
                       fontWeight: FontWeight.w500,
                       height: 1.1,
                     ),

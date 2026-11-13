@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:visiting_card/app/helper/image_picker_helper.dart';
 import 'package:lottie/lottie.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
@@ -175,7 +176,9 @@ class _QrBarcodeCameraScanScreenState extends State<QrBarcodeCameraScanScreen>
 
     await _stopCamera();
     try {
-      final image = await ImagePicker().pickImage(source: ImageSource.gallery);
+      final image = await ImagePickerHelper.pickImage(
+        source: ImageSource.gallery,
+      );
       if (image == null || !mounted) return;
 
       final capture = await _controller.analyzeImage(image.path);

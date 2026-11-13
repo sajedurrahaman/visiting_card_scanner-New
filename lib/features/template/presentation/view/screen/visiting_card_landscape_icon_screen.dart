@@ -38,7 +38,9 @@ class _VisitingCardLandscapeIconScreenState
   static const _bg = Color(0xFF003303);
 
   void _place(String assetPath) {
-    context.read<VisitingCardEditContactViewModel>().addCustomIcon(assetPath);
+    // Replaces the selected contact/custom icon when one is selected;
+    // otherwise places a new free icon on the card.
+    context.read<VisitingCardEditContactViewModel>().placeIcon(assetPath);
     Navigator.pop(context);
   }
 

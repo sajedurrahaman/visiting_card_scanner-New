@@ -5,7 +5,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
-import 'package:visiting_card/features/scan/presentation/helper/visiting_card_share_helper.dart';
 
 /// Share via QR Code — same flow as PDF Scanner `QrCodePage`.
 class VisitingCardShareQrScreen extends StatefulWidget {
@@ -71,10 +70,7 @@ class _VisitingCardShareQrScreenState extends State<VisitingCardShareQrScreen> {
                     directory.path,
                   );
                   if (imagePath != null) {
-                    await VisitingCardShareHelper.shareXFiles(
-                      context,
-                      [XFile(imagePath)],
-                    );
+                    await Share.shareXFiles([XFile(imagePath)]);
                   }
                 } catch (e) {
                   if (context.mounted) {

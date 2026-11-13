@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.2+1    # current version: 1.0.2+1 date: 29.09.2026
+version: 1.0.3+1      
 
 environment:
   sdk: ^3.12.1
@@ -31,9 +31,6 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
   provider: ^6.1.5+1
   flutter_screenutil: ^5.9.3
   flutter_svg: ^2.3.0
@@ -47,7 +44,6 @@ dependencies:
   share_plus: ^10.1.4
   camera: ^0.10.5
   image_picker: ^1.2.1
-  photo_manager: ^3.6.4
   image: ^4.5.4
   permission_handler: ^12.0.1
   google_mlkit_text_recognition: ^0.15.0
@@ -62,9 +58,11 @@ dependencies:
   mobile_scanner: ^7.4.0
   lottie: ^3.5.1
   flutter_colorpicker: ^1.1.0
+  # Keep 1.3.x on ipad-iphone (known-good for this iOS branch).
   isar_plus: ^1.3.7
   isar_plus_flutter_libs: ^1.3.7
   google_fonts: ^6.3.1
+  upgrader: ^11.4.0
   firebase_core: ^4.13.0
   firebase_crashlytics: ^5.2.7
   firebase_messaging: ^16.5.0
@@ -99,6 +97,7 @@ flutter:
      - assets/images/
      - assets/images/visiting_card_template/horizontal/
      - assets/images/visiting_card_template/vertical/
+     - assets/images/visiting_card_contact_icons/
      - assets/images/visiting_card_template_without_data/horizontal/
      - assets/images/visiting_card_template_without_data/vertical/
      - assets/qrcode/
@@ -118,7 +117,6 @@ flutter:
      - assets/svg/
      - assets/svg/genertor/
      - assets/svg/genertor/qrcode/
-     - assets/barcode_stack/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

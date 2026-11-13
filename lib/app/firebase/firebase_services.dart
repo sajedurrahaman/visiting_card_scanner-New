@@ -35,14 +35,44 @@ Future<void> initializeFirebase() async {
   unawaited(setupFirebaseMessaging());
 }
 
+bool _isOfflineGoogleFontFailure(Object error) {
+  final text = error.toString();
+  return text.contains('fonts.gstatic.com') ||
+      text.contains('Failed to load font with url');
+}
+
+/// UI / plugin noise that should not count as fatal app crashes.
+bool _isNonFatalFlutterNoise(Object error) {
+  final text = error.toString();
+  if (_isOfflineGoogleFontFailure(error)) return true;
+  // Yellow-black stripes — layout bug, not a process crash.
+  if (text.contains('A RenderFlex overflowed by')) return true;
+  // Missing asset is handled by errorBuilder in most places; still not fatal.
+  if (text.contains('Unable to load asset')) return true;
+  // Double-open ImagePicker on Android.
+  if (text.contains('already_active')) return true;
+  return false;
+}
+
 Future<void> setupCrashlytics() async {
   await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
 
   FlutterError.onError = (details) {
+    if (_isNonFatalFlutterNoise(details.exception)) {
+      debugPrint('Non-fatal Flutter error: ${details.exception}');
+      // Keep visibility in Crashlytics without marking the session as crashed.
+      FirebaseCrashlytics.instance.recordFlutterError(details);
+      return;
+    }
     FirebaseCrashlytics.instance.recordFlutterFatalError(details);
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
+    if (_isNonFatalFlutterNoise(error)) {
+      debugPrint('Non-fatal platform error: $error');
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: false);
+      return true;
+    }
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
     return true;
   };

@@ -61,17 +61,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       _ScanAction(
                         icon: ui.AppAssets.homeQrCode,
                         label: 'QR Code',
-                        onTap: () => HomeScreenQrcodeBottomSheet.show(context),
+                        onTap: () =>
+                            HomeScreenQrcodeBottomSheet.show(context),
                       ),
                       _ScanAction(
                         icon: ui.AppAssets.homeBarCode,
                         label: 'Barcode',
-                        onTap: () => HomeScreenBarcodeBottomSheet.show(context),
+                        onTap: () =>
+                            HomeScreenBarcodeBottomSheet.show(context),
                       ),
                     ],
                   ),
                   SizedBox(height: 28.h),
-
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,7 +84,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             GestureDetector(
                               onTap: () {
-                                Navigator.pushNamed(context, RouteNames.recent);
+                                Navigator.pushNamed(
+                                  context,
+                                  RouteNames.recent,
+                                );
                               },
                               child: Text(
                                 'View All',
@@ -95,7 +99,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         SizedBox(height: 12.h),
                         Expanded(
                           child: ListView.builder(
-                            padding: EdgeInsets.fromLTRB(6.w, 8.h, 6.w, 120.h),
+                            padding:
+                                EdgeInsets.fromLTRB(6.w, 8.h, 6.w, 120.h),
                             itemCount: viewModel.recentCards.length,
                             itemBuilder: (context, index) {
                               final item = viewModel.recentCards[index];
@@ -191,12 +196,14 @@ class _EmptyRecentState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Center between Scan section and bottom nav bar.
-    return Container(
-      padding: EdgeInsets.only(bottom: 190, left: 60),
-      child: Image.asset(
-        ui.AppAssets.homeScreenRecentEmpty,
-        width: 200.w,
-        fit: BoxFit.contain,
+    return Padding(
+      padding: EdgeInsets.only(bottom: 180.h),
+      child: Center(
+        child: Image.asset(
+          ui.AppAssets.homeScreenRecentEmpty,
+          width: 200.w,
+          fit: BoxFit.contain,
+        ),
       ),
     );
   }

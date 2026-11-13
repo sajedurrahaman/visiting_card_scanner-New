@@ -1,13 +1,18 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image/image.dart' as img;
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
+import 'package:visiting_card/features/template/domain/visiting_card_contact_icon_layout.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_font_style.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_position_config.dart';
+import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_multi_select_chrome.dart';
 import 'package:visiting_card/features/template/presentation/view/widget/visiting_card_transform_overlay.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
 
@@ -283,8 +288,9 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
     // finger swipe does not construct the other face mid-gesture.
     final pager = PageView(
       controller: _pageController,
-      physics: widget.vm.jumpSideForCapture ||
-              (widget.enableFieldTransform && widget.vm.hasSelection)
+      // Editor mode locks paging so marquee-drag select is not stolen by
+      // the front/back PageView; use the side pager buttons instead.
+      physics: widget.vm.jumpSideForCapture || widget.enableFieldTransform
           ? const NeverScrollableScrollPhysics()
           : const BouncingScrollPhysics(
               parent: AlwaysScrollableScrollPhysics(),
@@ -326,31 +332,61 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         final size = Size(constraints.maxWidth, constraints.maxHeight);
         final interactive =
             widget.enableFieldTransform && sideIndex == widget.vm.sideIndex;
+        final hitTargets = <({String key, Rect rect})>[];
+        final overlays = _buildOverlayChildren(
+          size: size,
+          side: side,
+          backgroundAsset: backgroundAsset,
+          fontFamily: layout.fontFamily,
+          isFront: isFront,
+          interactive: interactive,
+          hitTargets: hitTargets,
+        );
+        final vm = widget.vm;
+        Rect? groupBounds;
+        if (interactive && vm.hasMultiSelection) {
+          Rect? union;
+          for (final t in hitTargets) {
+            if (!vm.multiSelectedKeys.contains(t.key)) continue;
+            union = union == null ? t.rect : union.expandToInclude(t.rect);
+          }
+          groupBounds = union;
+        }
+        final cardBackground = backgroundAsset.toLowerCase().endsWith('.svg')
+            ? SvgPicture.asset(backgroundAsset, fit: BoxFit.cover)
+            : Image.asset(
+                backgroundAsset,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const ColoredBox(
+                  color: Color(0xFFF5F5F5),
+                  child: Center(child: Icon(Icons.broken_image_outlined)),
+                ),
+              );
         return Stack(
           fit: StackFit.expand,
           children: [
-            Image.asset(
-              backgroundAsset,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => const ColoredBox(
-                color: Color(0xFFF5F5F5),
-                child: Center(child: Icon(Icons.broken_image_outlined)),
-              ),
-            ),
+            cardBackground,
             if (interactive)
-              Positioned.fill(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: widget.vm.clearOverlaySelection,
-                ),
+              VisitingCardMarqueeLayer(
+                cardSize: size,
+                hitTargets: hitTargets,
+                onTapClear: vm.clearOverlaySelection,
+                onMarqueeStart: vm.beginMarquee,
+                onMarqueeUpdate: (local) => vm.updateMarquee(local, hitTargets),
+                onMarqueeEnd: vm.endMarquee,
               ),
-            ..._buildOverlayChildren(
-              size: size,
-              side: side,
-              fontFamily: layout.fontFamily,
-              isFront: isFront,
-              interactive: interactive,
-            ),
+            ...overlays,
+            if (interactive && vm.marqueeActive && vm.marqueeRect != null)
+              VisitingCardMarqueePaint(rect: vm.marqueeRect!),
+            if (interactive && vm.showMoveGrid) const VisitingCardMoveGrid(),
+            if (interactive && groupBounds != null)
+              VisitingCardGroupSelectionBox(
+                bounds: groupBounds,
+                cardSize: size,
+                onMove: (dx, dy) => vm.moveMultiSelection(dx, dy, size),
+                onGestureStart: vm.beginOverlayGesture,
+                onGestureEnd: vm.endOverlayGesture,
+              ),
           ],
         );
       },
@@ -360,12 +396,22 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
   List<Widget> _buildOverlayChildren({
     required Size size,
     required VisitingCardSidePositions side,
+    required String backgroundAsset,
     required String fontFamily,
     required bool isFront,
     required bool interactive,
+    required List<({String key, Rect rect})> hitTargets,
   }) {
     final vm = widget.vm;
     final layers = <(int, int, Widget)>[];
+    final multi = vm.hasMultiSelection;
+
+    void trackHit(String key, double left, double top, double w, double h) {
+      if (!interactive) return;
+      hitTargets.add((key: key, rect: Rect.fromLTWH(left, top, w, h)));
+    }
+
+    bool keySelected(String key) => vm.isOverlayKeySelected(key);
     var layerSeq = 0;
     // Every editable preview uses the same card-relative typography. Using
     // ScreenUtil in Contact Info and a clamped scale in the landscape editor
@@ -655,6 +701,13 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         return;
       }
 
+      trackHit(
+        VisitingCardFieldTransform.keyOf(field),
+        size.width * t.left,
+        size.height * t.top,
+        boxW,
+        boxH,
+      );
       addOverlay(
         VisitingCardTransformOverlay(
           cardSize: size,
@@ -663,13 +716,16 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           boxWidth: boxW,
           boxHeight: boxH,
           rotation: t.rotation,
-          selected: vm.selectedOverlay == field,
+          selected: keySelected(VisitingCardFieldTransform.keyOf(field)),
           tightBorder: true,
           borderOnlyWhenSelected: landscape,
-          showHandles: !t.locked,
+          showHandles: !t.locked && !multi,
           onSelect: () => vm.selectOverlay(field),
-          onDeselect: vm.clearOverlaySelection,
-          onMove: (dx, dy) => vm.moveOverlay(field, dx, dy, size),
+          onDeselect: () =>
+              multi ? vm.selectOverlay(field) : vm.clearOverlaySelection(),
+          onMove: multi
+              ? (dx, dy) => vm.moveMultiSelection(dx, dy, size)
+              : (dx, dy) => vm.moveOverlay(field, dx, dy, size),
           onResize: (d) => vm.resizeOverlay(field, d, size),
           onUniformScale: landscape
               ? (d, {required fixRight, required fixBottom}) =>
@@ -858,12 +914,45 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         1.0,
         size.height,
       );
+      var topPx = size.height * t.top;
+      final addressLineCount = isAddress
+          ? painter.computeLineMetrics().length
+          : 0;
+      if (addressLineCount == 1) {
+        const addressIconField = VisitingCardOverlayField.addressIcon;
+        final iconSeed = VisitingCardContactIconLayout.positionFor(
+          iconField: addressIconField,
+          side: side,
+          templateId: vm.templateId,
+          isFront: isFront,
+        );
+        if (iconSeed != null &&
+            !vm.isContactIconHidden(addressIconField, isFront: isFront)) {
+          final iconTransform = vm.resolvedTransform(
+            addressIconField,
+            isFront: isFront,
+          );
+          final baseTop =
+              vm.defaultTransformFor(field, isFront: isFront)?.top ?? t.top;
+          final iconCenterY =
+              size.height * iconTransform.top +
+              size.width * iconTransform.size / 2;
+          final baseTextCenterY = size.height * baseTop + painter.height / 2;
+          topPx += iconCenterY - baseTextCenterY;
+        }
+      } else if (addressLineCount == 2) {
+        topPx += 2;
+      }
 
       final fill = Text(
         display,
-        maxLines: isAddress ? 2 : (hugLine ? (landscapeWrap ? null : 1) : maxLines),
+        maxLines: isAddress
+            ? 2
+            : (hugLine ? (landscapeWrap ? null : 1) : maxLines),
         softWrap: isAddress || (hugLine ? landscapeWrap : isTagline),
-        overflow: isAddress ? TextOverflow.ellipsis : hugLine
+        overflow: isAddress
+            ? TextOverflow.ellipsis
+            : hugLine
             ? TextOverflow.visible
             : (isTagline ? TextOverflow.visible : TextOverflow.ellipsis),
         textAlign: configPos.textAlign,
@@ -878,9 +967,13 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           text: display,
           style: measureStyle,
           transform: t,
-          maxLines: isAddress ? 2 : (hugLine ? (landscapeWrap ? null : 1) : maxLines),
+          maxLines: isAddress
+              ? 2
+              : (hugLine ? (landscapeWrap ? null : 1) : maxLines),
           softWrap: isAddress || (hugLine ? landscapeWrap : isTagline),
-          overflow: isAddress ? TextOverflow.ellipsis : hugLine
+          overflow: isAddress
+              ? TextOverflow.ellipsis
+              : hugLine
               ? TextOverflow.visible
               : (isTagline ? TextOverflow.visible : TextOverflow.ellipsis),
           textAlign: configPos.textAlign,
@@ -893,7 +986,7 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         addLayer(
           Positioned(
             left: size.width * t.left,
-            top: size.height * t.top,
+            top: topPx,
             width: boxW,
             height: boxH,
             child: Transform.rotate(
@@ -910,21 +1003,31 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         return;
       }
 
+      trackHit(
+        VisitingCardFieldTransform.keyOf(field),
+        size.width * t.left,
+        topPx,
+        boxW,
+        boxH,
+      );
       addOverlay(
         VisitingCardTransformOverlay(
           cardSize: size,
           left: size.width * t.left,
-          top: size.height * t.top,
+          top: topPx,
           boxWidth: boxW,
           boxHeight: boxH,
           rotation: t.rotation,
-          selected: vm.selectedOverlay == field,
+          selected: keySelected(VisitingCardFieldTransform.keyOf(field)),
           tightBorder: true,
           borderOnlyWhenSelected: landscape,
-          showHandles: !t.locked,
+          showHandles: !t.locked && !multi,
           onSelect: () => vm.selectOverlay(field),
-          onDeselect: vm.clearOverlaySelection,
-          onMove: (dx, dy) => vm.moveOverlay(field, dx, dy, size),
+          onDeselect: () =>
+              multi ? vm.selectOverlay(field) : vm.clearOverlaySelection(),
+          onMove: multi
+              ? (dx, dy) => vm.moveMultiSelection(dx, dy, size)
+              : (dx, dy) => vm.moveOverlay(field, dx, dy, size),
           onResize: (d) => vm.resizeOverlay(field, d, size),
           onUniformScale: landscape
               ? (d, {required fixRight, required fixBottom}) =>
@@ -977,6 +1080,14 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       if (!isAsset && !File(assetPath).existsSync()) return;
 
       final t = vm.resolvedTransform(field, isFront: isFront);
+      final imgBox = size.width * t.size;
+      trackHit(
+        VisitingCardFieldTransform.keyOf(field),
+        size.width * t.left,
+        size.height * t.top,
+        imgBox,
+        imgBox,
+      );
       addOverlay(
         _AspectFitTransformImage(
           key: ValueKey('transform-$field-$assetPath-$isFront'),
@@ -985,11 +1096,15 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           assetPath: assetPath,
           isAsset: isAsset,
           interactive: interactive,
-          selected: vm.selectedOverlay == field,
+          selected: keySelected(VisitingCardFieldTransform.keyOf(field)),
           borderOnlyWhenSelected: landscape,
+          showHandles: !t.locked && !multi,
           onSelect: () => vm.selectOverlay(field),
-          onDeselect: vm.clearOverlaySelection,
-          onMove: (dx, dy) => vm.moveOverlay(field, dx, dy, size),
+          onDeselect: () =>
+              multi ? vm.selectOverlay(field) : vm.clearOverlaySelection(),
+          onMove: multi
+              ? (dx, dy) => vm.moveMultiSelection(dx, dy, size)
+              : (dx, dy) => vm.moveOverlay(field, dx, dy, size),
           onResize: (d) => vm.resizeOverlay(field, d, size),
           onUniformScale: landscape
               ? (d, {required fixRight, required fixBottom}) =>
@@ -1086,7 +1201,244 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
       );
     }
 
+    void addContactIcon(VisitingCardOverlayField field) {
+      final seed = VisitingCardContactIconLayout.positionFor(
+        iconField: field,
+        side: side,
+        templateId: vm.templateId,
+        isFront: isFront,
+      );
+      if (seed == null) return;
+
+      final hidden = vm.isContactIconHidden(field, isFront: isFront);
+      final t = vm.resolvedTransform(field, isFront: isFront);
+      final customPath = vm.contactIconAsset(field, isFront: isFront);
+      final hasSeparateTemplateIcons =
+          VisitingCardContactIconLayout.hasSeparateTemplateIcons(
+            vm.templateId,
+            isFront: isFront,
+          );
+      final templateIconPath =
+          VisitingCardContactIconLayout.templateIconAssetFor(
+            vm.templateId,
+            field,
+            isFront: isFront,
+          );
+      final seedLeftFrac = seed.left ?? 0;
+      final seedTopFrac = seed.top ?? 0;
+      final seedSize = seed.size ?? VisitingCardContactIconLayout.defaultSize;
+      final artwork = hasSeparateTemplateIcons
+          ? null
+          : _ContactIconArtworkCache.forIcon(
+              assetPath: backgroundAsset,
+              cardAspectRatio: size.width / size.height,
+              left: seedLeftFrac,
+              top: seedTopFrac,
+              size: seedSize,
+            );
+      // New backgrounds have no baked icons, so their individual PNG assets
+      // are always rendered as independent, movable overlays.
+      final needsDrawnIcon =
+          hasSeparateTemplateIcons ||
+          customPath != null ||
+          (t.left - seedLeftFrac).abs() > 0.004 ||
+          (t.top - seedTopFrac).abs() > 0.004 ||
+          (t.size - seedSize).abs() > 0.004 ||
+          t.rotation.abs() > 0.01 ||
+          hidden;
+
+      if (needsDrawnIcon && !hasSeparateTemplateIcons) {
+        final seedLeft = size.width * seedLeftFrac;
+        final seedTop = size.height * seedTopFrac;
+        final seedBox = size.width * seedSize;
+        final coverBox = seedBox * VisitingCardContactIconLayout.coverScale;
+        final coverPad = (coverBox - seedBox) / 2;
+        addLayer(
+          Positioned(
+            left: seedLeft - coverPad,
+            top: seedTop - coverPad,
+            width: coverBox,
+            height: coverBox,
+            child: _TemplateBackgroundCover(artwork: artwork!),
+          ),
+          // Keep the source patch below every movable overlay. Otherwise a
+          // moved icon with a lower/custom z-index can be painted underneath
+          // this square patch.
+          -0x7FFFFFFF,
+        );
+      }
+
+      if (hidden) return;
+
+      final box = size.width * t.size;
+      final accent = seed.color;
+      final Widget drawn;
+      if (hasSeparateTemplateIcons) {
+        drawn = customPath != null
+            ? _ContactIconVisual(
+                field: field,
+                accent: accent,
+                customAssetPath: customPath,
+              )
+            : _TemplateContactIconAsset(
+                assetPath: templateIconPath!,
+                tint: VisitingCardContactIconLayout.templateIconTintFor(
+                  vm.templateId,
+                  isFront: isFront,
+                ),
+              );
+      } else if (needsDrawnIcon) {
+        drawn = _TemplateContactIconVisual(
+          field: field,
+          fallbackAccent: accent,
+          customAssetPath: customPath,
+          artwork: artwork!,
+        );
+      } else {
+        drawn = const SizedBox.expand();
+      }
+      final iconChild = _fadeField(drawn, t);
+
+      if (!interactive) {
+        addLayer(
+          Positioned(
+            left: size.width * t.left,
+            top: size.height * t.top,
+            width: box,
+            height: box,
+            child: Transform.rotate(
+              alignment: landscape ? Alignment.topLeft : Alignment.center,
+              angle: t.rotation,
+              child: _flipField(iconChild, t),
+            ),
+          ),
+          VisitingCardFieldTransform.stackZ(
+            VisitingCardFieldTransform.keyOf(field),
+            t,
+          ),
+        );
+        return;
+      }
+
+      trackHit(
+        VisitingCardFieldTransform.keyOf(field),
+        size.width * t.left,
+        size.height * t.top,
+        box,
+        box,
+      );
+      addOverlay(
+        VisitingCardTransformOverlay(
+          cardSize: size,
+          left: size.width * t.left,
+          top: size.height * t.top,
+          boxWidth: box,
+          boxHeight: box,
+          rotation: t.rotation,
+          selected: keySelected(VisitingCardFieldTransform.keyOf(field)),
+          tightBorder: true,
+          borderOnlyWhenSelected: landscape,
+          showHandles: !t.locked && !multi,
+          onSelect: () => vm.selectOverlay(field),
+          onDeselect: () =>
+              multi ? vm.selectOverlay(field) : vm.clearOverlaySelection(),
+          onMove: multi
+              ? (dx, dy) => vm.moveMultiSelection(dx, dy, size)
+              : (dx, dy) => vm.moveOverlay(field, dx, dy, size),
+          onResize: (d) => vm.resizeOverlay(field, d, size),
+          onUniformScale: landscape
+              ? (d, {required fixRight, required fixBottom}) =>
+                    vm.scaleOverlayUniform(
+                      field,
+                      d,
+                      size,
+                      fixRight: fixRight,
+                      fixBottom: fixBottom,
+                    )
+              : null,
+          onStretchHorizontal: landscape
+              ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
+                  field,
+                  horizontal: true,
+                  pixelDelta: d,
+                  cardSize: size,
+                  fixOpposite: fixOpposite,
+                )
+              : null,
+          onStretchVertical: landscape
+              ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
+                  field,
+                  horizontal: false,
+                  pixelDelta: d,
+                  cardSize: size,
+                  fixOpposite: fixOpposite,
+                )
+              : null,
+          onRotate: (r) => vm.rotateOverlay(field, r),
+          onGestureStart: vm.beginOverlayGesture,
+          onGestureEnd: vm.endOverlayGesture,
+          child: _flipField(iconChild, t),
+        ),
+        field,
+      );
+    }
+
+    if (isFront && vm.templateId == 'h6') {
+      const connectorFields = [
+        VisitingCardOverlayField.phoneIcon,
+        VisitingCardOverlayField.emailIcon,
+        VisitingCardOverlayField.addressIcon,
+        VisitingCardOverlayField.websiteIcon,
+      ];
+      final iconPositions = connectorFields
+          .map(
+            (field) => VisitingCardContactIconLayout.positionFor(
+              iconField: field,
+              side: side,
+              templateId: vm.templateId,
+              isFront: true,
+            ),
+          )
+          .whereType<VisitingCardFieldPosition>()
+          .toList(growable: false);
+      final lineWidth = math.max(1.0, size.width * 0.0025).toDouble();
+      final reach = size.width * 0.004;
+      for (var i = 0; i < iconPositions.length - 1; i++) {
+        final current = iconPositions[i];
+        final next = iconPositions[i + 1];
+        final currentBottom =
+            size.height * current.top! + size.width * current.size!;
+        final nextTop = size.height * next.top!;
+        final segmentHeight = nextTop - currentBottom + reach * 2;
+        if (segmentHeight <= 0) continue;
+
+        final centerX = size.width * (current.left! + current.size! / 2);
+        addLayer(
+          Positioned(
+            left: centerX - lineWidth / 2,
+            top: currentBottom - reach,
+            width: lineWidth,
+            height: segmentHeight,
+            child: const ColoredBox(color: Color(0xFFFF9D00)),
+          ),
+          -0x7FFFFFFE,
+        );
+      }
+    }
+
+    for (final iconField in VisitingCardContactIconLayout.contactIconFields) {
+      addContactIcon(iconField);
+    }
+
     VisitingCardFieldPosition? posFor(VisitingCardOverlayField field) {
+      if (field.isContactIcon) {
+        return VisitingCardContactIconLayout.positionFor(
+          iconField: field,
+          side: side,
+          templateId: vm.templateId,
+          isFront: isFront,
+        );
+      }
       return switch (field) {
         VisitingCardOverlayField.name => side.name,
         VisitingCardOverlayField.designation => side.designation,
@@ -1098,6 +1450,10 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         VisitingCardOverlayField.address => side.address,
         VisitingCardOverlayField.logo => side.logo,
         VisitingCardOverlayField.qr => side.qr,
+        VisitingCardOverlayField.phoneIcon ||
+        VisitingCardOverlayField.emailIcon ||
+        VisitingCardOverlayField.websiteIcon ||
+        VisitingCardOverlayField.addressIcon => null,
       };
     }
 
@@ -1126,7 +1482,6 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
             )
           : posFor(source!);
       final gestureField = source ?? VisitingCardOverlayField.name;
-      final selected = vm.selectedDuplicateId == id;
       void place(Widget overlay) {
         addLayer(
           overlay,
@@ -1137,6 +1492,110 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         );
       }
 
+      final isContactIconDup = source?.isContactIcon ?? false;
+      if (isContactIconDup) {
+        final box = size.width * t.size;
+        final accent = VisitingCardContactIconLayout.accentFor(side);
+        final path = t.duplicateImagePath;
+        final iconChild = _fadeField(
+          _ContactIconVisual(
+            field: source!,
+            accent: accent,
+            customAssetPath: (path == null || path.isEmpty) ? null : path,
+          ),
+          t,
+        );
+        if (!interactive) {
+          place(
+            Positioned(
+              left: size.width * t.left,
+              top: size.height * t.top,
+              width: box,
+              height: box,
+              child: Transform.rotate(
+                alignment: landscape ? Alignment.topLeft : Alignment.center,
+                angle: t.rotation,
+                child: _flipField(iconChild, t),
+              ),
+            ),
+          );
+          return;
+        }
+        trackHit(
+          VisitingCardEditContactViewModel.duplicateKey(id),
+          size.width * t.left,
+          size.height * t.top,
+          box,
+          box,
+        );
+        place(
+          VisitingCardTransformOverlay(
+            cardSize: size,
+            left: size.width * t.left,
+            top: size.height * t.top,
+            boxWidth: box,
+            boxHeight: box,
+            rotation: t.rotation,
+            selected: keySelected(
+              VisitingCardEditContactViewModel.duplicateKey(id),
+            ),
+            tightBorder: true,
+            borderOnlyWhenSelected: landscape,
+            showHandles: !t.locked && !multi,
+            onSelect: () => vm.selectDuplicate(id),
+            onDeselect: () =>
+                multi ? vm.selectDuplicate(id) : vm.clearOverlaySelection(),
+            onMove: multi
+                ? (dx, dy) => vm.moveMultiSelection(dx, dy, size)
+                : (dx, dy) => vm.moveOverlay(
+                    gestureField,
+                    dx,
+                    dy,
+                    size,
+                    duplicateId: id,
+                  ),
+            onResize: (d) =>
+                vm.resizeOverlay(gestureField, d, size, duplicateId: id),
+            onUniformScale: landscape
+                ? (d, {required fixRight, required fixBottom}) =>
+                      vm.scaleOverlayUniform(
+                        gestureField,
+                        d,
+                        size,
+                        fixRight: fixRight,
+                        fixBottom: fixBottom,
+                        duplicateId: id,
+                      )
+                : null,
+            onStretchHorizontal: landscape
+                ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
+                    gestureField,
+                    horizontal: true,
+                    pixelDelta: d,
+                    cardSize: size,
+                    fixOpposite: fixOpposite,
+                    duplicateId: id,
+                  )
+                : null,
+            onStretchVertical: landscape
+                ? (d, {required fixOpposite}) => vm.stretchOverlayAxis(
+                    gestureField,
+                    horizontal: false,
+                    pixelDelta: d,
+                    cardSize: size,
+                    fixOpposite: fixOpposite,
+                    duplicateId: id,
+                  )
+                : null,
+            onRotate: (r) => vm.rotateOverlay(gestureField, r, duplicateId: id),
+            onGestureStart: vm.beginOverlayGesture,
+            onGestureEnd: vm.endOverlayGesture,
+            child: _flipField(iconChild, t),
+          ),
+        );
+        return;
+      }
+
       if (isIcon ||
           isShape ||
           isPhoto ||
@@ -1145,6 +1604,14 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         if (path == null || path.isEmpty) return;
         final isAsset = path.startsWith('assets/');
         if (!isAsset && !File(path).existsSync()) return;
+        final dupImgBox = size.width * t.size;
+        trackHit(
+          VisitingCardEditContactViewModel.duplicateKey(id),
+          size.width * t.left,
+          size.height * t.top,
+          dupImgBox,
+          dupImgBox,
+        );
         place(
           _AspectFitTransformImage(
             key: ValueKey('dup-$id-$path'),
@@ -1153,20 +1620,43 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
             assetPath: path,
             isAsset: isAsset,
             interactive: interactive,
-            selected: selected,
+            selected: keySelected(
+              VisitingCardEditContactViewModel.duplicateKey(id),
+            ),
             borderOnlyWhenSelected: landscape,
+            showHandles: !t.locked && !multi,
             onResizeShape: isShape
-                ? (delta, box, {required horizontal, required fixRight, required fixBottom}) {
-                    vm.stretchOverlayAxis(gestureField,
-                      horizontal: horizontal, pixelDelta: delta, cardSize: size,
-                      duplicateId: id, fixOpposite: horizontal ? fixRight : fixBottom,
-                      seedWidthFraction: box.width / size.width, seedHeightPx: box.height);
+                ? (
+                    delta,
+                    box, {
+                    required horizontal,
+                    required fixRight,
+                    required fixBottom,
+                  }) {
+                    vm.stretchOverlayAxis(
+                      gestureField,
+                      horizontal: horizontal,
+                      pixelDelta: delta,
+                      cardSize: size,
+                      duplicateId: id,
+                      fixOpposite: horizontal ? fixRight : fixBottom,
+                      seedWidthFraction: box.width / size.width,
+                      seedHeightPx: box.height,
+                    );
                   }
                 : null,
             onSelect: () => vm.selectDuplicate(id),
-            onDeselect: vm.clearOverlaySelection,
-            onMove: (dx, dy) =>
-                vm.moveOverlay(gestureField, dx, dy, size, duplicateId: id),
+            onDeselect: () =>
+                multi ? vm.selectDuplicate(id) : vm.clearOverlaySelection(),
+            onMove: multi
+                ? (dx, dy) => vm.moveMultiSelection(dx, dy, size)
+                : (dx, dy) => vm.moveOverlay(
+                    gestureField,
+                    dx,
+                    dy,
+                    size,
+                    duplicateId: id,
+                  ),
             onResize: (d) =>
                 vm.resizeOverlay(gestureField, d, size, duplicateId: id),
             onUniformScale: landscape
@@ -1336,6 +1826,13 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
         );
         return;
       }
+      trackHit(
+        VisitingCardEditContactViewModel.duplicateKey(id),
+        size.width * t.left,
+        size.height * t.top,
+        boxW,
+        boxH,
+      );
       place(
         VisitingCardTransformOverlay(
           key: ValueKey('dup-text-$id'),
@@ -1345,14 +1842,19 @@ class _VisitingCardLivePreviewState extends State<VisitingCardLivePreview> {
           boxWidth: boxW,
           boxHeight: boxH,
           rotation: t.rotation,
-          selected: selected,
+          selected: keySelected(
+            VisitingCardEditContactViewModel.duplicateKey(id),
+          ),
           tightBorder: true,
           borderOnlyWhenSelected: landscape,
-          showHandles: !t.locked,
+          showHandles: !t.locked && !multi,
           onSelect: () => vm.selectDuplicate(id),
-          onDeselect: vm.clearOverlaySelection,
-          onMove: (dx, dy) =>
-              vm.moveOverlay(gestureField, dx, dy, size, duplicateId: id),
+          onDeselect: () =>
+              multi ? vm.selectDuplicate(id) : vm.clearOverlaySelection(),
+          onMove: multi
+              ? (dx, dy) => vm.moveMultiSelection(dx, dy, size)
+              : (dx, dy) =>
+                    vm.moveOverlay(gestureField, dx, dy, size, duplicateId: id),
           onResize: (d) =>
               vm.resizeOverlay(gestureField, d, size, duplicateId: id),
           onUniformScale: landscape
@@ -1438,13 +1940,17 @@ class _AspectFitTransformImage extends StatefulWidget {
     this.onGestureStart,
     this.onGestureEnd,
     this.borderOnlyWhenSelected = false,
+    this.showHandles = true,
   });
 
-  final void Function(double delta, Size box, {
+  final void Function(
+    double delta,
+    Size box, {
     required bool horizontal,
     required bool fixRight,
     required bool fixBottom,
-  })? onResizeShape;
+  })?
+  onResizeShape;
 
   final Size cardSize;
   final VisitingCardFieldTransform transform;
@@ -1452,6 +1958,7 @@ class _AspectFitTransformImage extends StatefulWidget {
   final bool isAsset;
   final bool interactive;
   final bool selected;
+  final bool showHandles;
   final VoidCallback onSelect;
   final VoidCallback onDeselect;
   final void Function(double dx, double dy) onMove;
@@ -1485,11 +1992,7 @@ class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
   @override
   void initState() {
     super.initState();
-    if (_isSvg) {
-      _aspect = 1;
-    } else {
-      _resolveAspect();
-    }
+    _resolveAspect();
   }
 
   @override
@@ -1502,6 +2005,48 @@ class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
   }
 
   void _resolveAspect() {
+    if (_isSvg && widget.isAsset) {
+      rootBundle
+          .loadString(widget.assetPath)
+          .then((source) {
+            final viewBox = RegExp(
+              r'\bviewBox="([^"]+)"',
+            ).firstMatch(source)?.group(1);
+            double? aspect;
+            if (viewBox != null) {
+              final values = viewBox
+                  .trim()
+                  .split(RegExp(r'[\s,]+'))
+                  .map(double.tryParse)
+                  .toList();
+              if (values.length == 4 &&
+                  values[2] != null &&
+                  values[3] != null &&
+                  values[3]! > 0) {
+                aspect = values[2]! / values[3]!;
+              }
+            }
+            if (aspect == null || aspect <= 0) {
+              final width = RegExp(r'\bwidth="([\d.]+)').firstMatch(source);
+              final height = RegExp(r'\bheight="([\d.]+)').firstMatch(source);
+              final widthValue = double.tryParse(width?.group(1) ?? '');
+              final heightValue = double.tryParse(height?.group(1) ?? '');
+              if (widthValue != null &&
+                  heightValue != null &&
+                  heightValue > 0) {
+                aspect = widthValue / heightValue;
+              }
+            }
+            if (!mounted) return;
+            setState(() => _aspect = aspect != null && aspect > 0 ? aspect : 1);
+          })
+          .catchError((_) {
+            if (!mounted) return;
+            setState(() => _aspect = 1);
+          });
+      return;
+    }
+
     final ImageProvider provider = widget.isAsset
         ? AssetImage(widget.assetPath)
         : FileImage(File(widget.assetPath));
@@ -1524,7 +2069,8 @@ class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
     stream.addListener(listener);
   }
 
-  bool get _isShape => widget.transform.duplicateOf ==
+  bool get _isShape =>
+      widget.transform.duplicateOf ==
       VisitingCardEditContactViewModel.customShapeSource;
 
   (double, double) _boxFor(double aspect) {
@@ -1614,7 +2160,7 @@ class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
       selected: widget.selected,
       tightBorder: true,
       borderOnlyWhenSelected: widget.borderOnlyWhenSelected,
-      showHandles: !widget.transform.locked,
+      showHandles: widget.showHandles && !widget.transform.locked,
       onSelect: widget.onSelect,
       onDeselect: widget.onDeselect,
       onMove: widget.onMove,
@@ -1622,14 +2168,22 @@ class _AspectFitTransformImageState extends State<_AspectFitTransformImage> {
       onUniformScale: widget.onUniformScale,
       onStretchHorizontal: widget.onResizeShape == null
           ? widget.onStretchHorizontal
-          : (delta, {required fixOpposite}) =>
-              widget.onResizeShape!(delta, Size(boxW, boxH), horizontal: true,
-                fixRight: fixOpposite, fixBottom: false),
+          : (delta, {required fixOpposite}) => widget.onResizeShape!(
+              delta,
+              Size(boxW, boxH),
+              horizontal: true,
+              fixRight: fixOpposite,
+              fixBottom: false,
+            ),
       onStretchVertical: widget.onResizeShape == null
           ? widget.onStretchVertical
-          : (delta, {required fixOpposite}) =>
-              widget.onResizeShape!(delta, Size(boxW, boxH), horizontal: false,
-                fixRight: false, fixBottom: fixOpposite),
+          : (delta, {required fixOpposite}) => widget.onResizeShape!(
+              delta,
+              Size(boxW, boxH),
+              horizontal: false,
+              fixRight: false,
+              fixBottom: fixOpposite,
+            ),
       onRotate: widget.onRotate,
       onGestureStart: widget.onGestureStart,
       onGestureEnd: widget.onGestureEnd,
@@ -1703,6 +2257,569 @@ class VisitingCardSidePager extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Generated duplicate contact icon or a replaced SVG/image.
+class _ContactIconVisual extends StatelessWidget {
+  const _ContactIconVisual({
+    required this.field,
+    required this.accent,
+    this.customAssetPath,
+  });
+
+  final VisitingCardOverlayField field;
+  final Color accent;
+  final String? customAssetPath;
+
+  @override
+  Widget build(BuildContext context) {
+    final path = customAssetPath?.trim();
+    if (path != null && path.isNotEmpty) {
+      final isAsset = path.startsWith('assets/');
+      final isSvg = path.toLowerCase().endsWith('.svg');
+      if (isSvg && isAsset) {
+        return SvgPicture.asset(path, fit: BoxFit.contain);
+      }
+      if (isAsset) {
+        return Image.asset(path, fit: BoxFit.contain);
+      }
+      if (File(path).existsSync()) {
+        return Image.file(File(path), fit: BoxFit.contain);
+      }
+    }
+
+    final icon = Icon(
+      VisitingCardContactIconLayout.materialIcon(field),
+      color: Colors.white,
+    );
+
+    return DecoratedBox(
+      decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+      child: Center(
+        child: FractionallySizedBox(
+          widthFactor: 0.58,
+          heightFactor: 0.58,
+          child: FittedBox(child: icon),
+        ),
+      ),
+    );
+  }
+}
+
+class _ContactIconArtwork {
+  const _ContactIconArtwork({this.backgroundColor, this.iconPng});
+
+  final Color? backgroundColor;
+  final Uint8List? iconPng;
+}
+
+/// Extracts each template's baked icon so moving it preserves the exact
+/// artwork, while sampling the source background to clear its old position.
+class _ContactIconArtworkCache {
+  static final Map<String, Future<_ContactIconArtwork>> _artwork = {};
+  static final Map<String, Future<img.Image?>> _images = {};
+
+  static Future<_ContactIconArtwork> forIcon({
+    required String assetPath,
+    required double cardAspectRatio,
+    required double left,
+    required double top,
+    required double size,
+  }) {
+    final key = [
+      assetPath,
+      cardAspectRatio.toStringAsFixed(4),
+      left.toStringAsFixed(4),
+      top.toStringAsFixed(4),
+      size.toStringAsFixed(4),
+    ].join('|');
+    return _artwork.putIfAbsent(
+      key,
+      () => _readArtwork(
+        assetPath: assetPath,
+        cardAspectRatio: cardAspectRatio,
+        left: left,
+        top: top,
+        size: size,
+      ),
+    );
+  }
+
+  static Future<_ContactIconArtwork> _readArtwork({
+    required String assetPath,
+    required double cardAspectRatio,
+    required double left,
+    required double top,
+    required double size,
+  }) async {
+    const fallback = _ContactIconArtwork();
+    if (!assetPath.toLowerCase().endsWith('.png')) return fallback;
+
+    final image = await _imageFor(assetPath);
+    if (image == null || image.width == 0 || image.height == 0) {
+      return fallback;
+    }
+
+    final centerX = image.width * (left + size / 2);
+    final centerY = image.height * (top + size * cardAspectRatio / 2);
+    final radiusX = image.width * size * 0.70;
+    final radiusY = image.height * size * cardAspectRatio * 0.70;
+    final outsidePixels = <(int, int, int)>[];
+    for (var i = 0; i < 8; i++) {
+      final angle = i * math.pi / 4;
+      final x = (centerX + math.cos(angle) * radiusX).round();
+      final y = (centerY + math.sin(angle) * radiusY).round();
+      final pixel = image.getPixel(
+        x.clamp(0, image.width - 1).toInt(),
+        y.clamp(0, image.height - 1).toInt(),
+      );
+      outsidePixels.add((
+        _channel8(pixel.rNormalized),
+        _channel8(pixel.gNormalized),
+        _channel8(pixel.bNormalized),
+      ));
+    }
+
+    final backgroundColor = _dominantColor(outsidePixels) ?? Colors.white;
+    return _ContactIconArtwork(
+      backgroundColor: backgroundColor,
+      iconPng: _extractIcon(
+        image,
+        centerX: centerX,
+        centerY: centerY,
+        size: size,
+        backgroundSamples: outsidePixels,
+      ),
+    );
+  }
+
+  /// Copies the original icon box and makes only the connected background
+  /// pixels transparent. This keeps badge shapes and even glyphs that use the
+  /// same color as the surrounding template intact (for example, green glyphs
+  /// inside a white diamond on a green card).
+  static Uint8List? _extractIcon(
+    img.Image source, {
+    required double centerX,
+    required double centerY,
+    required double size,
+    required List<(int, int, int)> backgroundSamples,
+  }) {
+    final cropSide = (source.width * size).round().clamp(1, source.width);
+    final sourceLeft = (centerX - cropSide / 2).round();
+    final sourceTop = (centerY - cropSide / 2).round();
+    final sourceCrop = img.Image(
+      width: cropSide,
+      height: cropSide,
+      numChannels: 4,
+    );
+    final transparentBackground = List<bool>.filled(cropSide * cropSide, false);
+    final queue = <int>[];
+
+    bool inBounds(int x, int y) =>
+        x >= 0 && y >= 0 && x < source.width && y < source.height;
+
+    int pixelIndex(int x, int y) => y * cropSide + x;
+
+    void markBackground(int x, int y) {
+      final index = pixelIndex(x, y);
+      if (transparentBackground[index]) return;
+      transparentBackground[index] = true;
+      queue.add(index);
+    }
+
+    // Pixels outside the source image are already transparent and act as
+    // background seeds for icons close to a card edge.
+    for (var y = 0; y < cropSide; y++) {
+      for (var x = 0; x < cropSide; x++) {
+        final sourceX = sourceLeft + x;
+        final sourceY = sourceTop + y;
+        if (!inBounds(sourceX, sourceY)) {
+          markBackground(x, y);
+          sourceCrop.setPixelRgba(x, y, 0, 0, 0, 0);
+        } else {
+          final pixel = source.getPixel(sourceX, sourceY);
+          sourceCrop.setPixelRgba(
+            x,
+            y,
+            _channel8(pixel.rNormalized),
+            _channel8(pixel.gNormalized),
+            _channel8(pixel.bNormalized),
+            _channel8(pixel.aNormalized),
+          );
+        }
+      }
+    }
+
+    void seedBackground(int x, int y) {
+      final sourceX = sourceLeft + x;
+      final sourceY = sourceTop + y;
+      if (!inBounds(sourceX, sourceY)) {
+        markBackground(x, y);
+        return;
+      }
+      final pixel = source.getPixel(sourceX, sourceY);
+      final isTransparent = pixel.aNormalized < 0.04;
+      final isSampledBackground = backgroundSamples.any((sample) {
+        final (r, g, b) = sample;
+        return (pixel.r - r).abs() +
+                (pixel.g - g).abs() +
+                (pixel.b - b).abs() <=
+            50;
+      });
+      if (isTransparent || isSampledBackground) markBackground(x, y);
+    }
+
+    for (var x = 0; x < cropSide; x++) {
+      seedBackground(x, 0);
+      seedBackground(x, cropSide - 1);
+    }
+    for (var y = 0; y < cropSide; y++) {
+      seedBackground(0, y);
+      seedBackground(cropSide - 1, y);
+    }
+
+    bool isBackgroundStep(int fromX, int fromY, int toX, int toY) {
+      final fromSourceX = sourceLeft + fromX;
+      final fromSourceY = sourceTop + fromY;
+      final toSourceX = sourceLeft + toX;
+      final toSourceY = sourceTop + toY;
+      if (!inBounds(fromSourceX, fromSourceY) ||
+          !inBounds(toSourceX, toSourceY)) {
+        return true;
+      }
+      final from = source.getPixel(fromSourceX, fromSourceY);
+      final to = source.getPixel(toSourceX, toSourceY);
+      if (to.aNormalized < 0.04) return true;
+      // Follow smooth color changes in gradients, but stop at the hard edges
+      // of icon artwork so its interior remains connected and untouched.
+      return (from.r - to.r).abs() <= 24 &&
+          (from.g - to.g).abs() <= 24 &&
+          (from.b - to.b).abs() <= 24;
+    }
+
+    const neighbors = <(int, int)>[(1, 0), (-1, 0), (0, 1), (0, -1)];
+    for (var head = 0; head < queue.length; head++) {
+      final index = queue[head];
+      final x = index % cropSide;
+      final y = index ~/ cropSide;
+      for (final (dx, dy) in neighbors) {
+        final nextX = x + dx;
+        final nextY = y + dy;
+        if (nextX < 0 || nextY < 0 || nextX >= cropSide || nextY >= cropSide) {
+          continue;
+        }
+        final nextIndex = pixelIndex(nextX, nextY);
+        if (transparentBackground[nextIndex] ||
+            !isBackgroundStep(x, y, nextX, nextY)) {
+          continue;
+        }
+        transparentBackground[nextIndex] = true;
+        queue.add(nextIndex);
+      }
+    }
+
+    var artworkPixels = 0;
+    for (var y = 0; y < cropSide; y++) {
+      for (var x = 0; x < cropSide; x++) {
+        final index = pixelIndex(x, y);
+        if (transparentBackground[index]) {
+          sourceCrop.setPixelRgba(x, y, 0, 0, 0, 0);
+        } else if (sourceCrop.getPixel(x, y).aNormalized > 0.04) {
+          artworkPixels++;
+        }
+      }
+    }
+
+    if (artworkPixels < 8 || artworkPixels > cropSide * cropSide * 0.94) {
+      return null;
+    }
+    return Uint8List.fromList(img.encodePng(sourceCrop));
+  }
+
+  static Future<img.Image?> _imageFor(String assetPath) {
+    final cached = _images[assetPath];
+    if (cached != null) return cached;
+
+    final pending = _loadImage(assetPath);
+    _images[assetPath] = pending;
+    while (_images.length > 4) {
+      _images.remove(_images.keys.first);
+    }
+    return pending;
+  }
+
+  static Future<img.Image?> _loadImage(String assetPath) async {
+    try {
+      final data = await rootBundle.load(assetPath);
+      return img.decodeImage(
+        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static int _colorKey(int r, int g, int b) =>
+      ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+
+  static int _channel8(num value) =>
+      (value * 255).round().clamp(0, 255).toInt();
+
+  static Color? _dominantColor(List<(int, int, int)> pixels) {
+    final buckets = <int, _ArtworkColorBucket>{};
+    for (final (r, g, b) in pixels) {
+      (buckets[_colorKey(r, g, b)] ??= _ArtworkColorBucket()).add(r, g, b);
+    }
+    if (buckets.isEmpty) return null;
+    return buckets.values.reduce((a, b) => a.count >= b.count ? a : b).color;
+  }
+}
+
+class _ArtworkColorBucket {
+  int count = 0;
+  int red = 0;
+  int green = 0;
+  int blue = 0;
+
+  void add(int r, int g, int b) {
+    count++;
+    red += r;
+    green += g;
+    blue += b;
+  }
+
+  Color get color => Color.fromARGB(
+    255,
+    (red / count).round(),
+    (green / count).round(),
+    (blue / count).round(),
+  );
+}
+
+class _TemplateBackgroundCover extends StatelessWidget {
+  const _TemplateBackgroundCover({required this.artwork});
+
+  final Future<_ContactIconArtwork> artwork;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<_ContactIconArtwork>(
+      future: artwork,
+      builder: (context, snapshot) => ColoredBox(
+        // Keep the original baked icon visible until its matching background
+        // color is ready; a white fallback flashes as a square on dark cards.
+        color: snapshot.data?.backgroundColor ?? Colors.transparent,
+      ),
+    );
+  }
+}
+
+class _TemplateContactIconAsset extends StatelessWidget {
+  const _TemplateContactIconAsset({required this.assetPath, this.tint});
+
+  final String assetPath;
+  final Color? tint;
+
+  @override
+  Widget build(BuildContext context) {
+    if (assetPath == VisitingCardContactIconLayout.orangeDiamondWebWidget) {
+      return const _OrangeDiamondWebsiteIcon();
+    }
+    if (assetPath == VisitingCardContactIconLayout.limeEmailWidget) {
+      return const _TemplateEmailGlyph(color: Color(0xFF59BA47));
+    }
+    if (assetPath == VisitingCardContactIconLayout.orangeEmailWidget) {
+      return const _TemplateEmailGlyph(color: Color(0xFFFBAA19));
+    }
+    if (assetPath == VisitingCardContactIconLayout.blueEmailWidget) {
+      return const _TemplateEmailGlyph(color: Color(0xFF20438D));
+    }
+    if (assetPath == VisitingCardContactIconLayout.navyOutlineEmailWidget) {
+      return const _TemplateEmailOutlineGlyph(color: Color(0xFF032C40));
+    }
+    if (assetPath == VisitingCardContactIconLayout.greenOutlineEmailWidget) {
+      return const _TemplateOutlinedEmailGlyph(color: Color(0xFF3A9808));
+    }
+
+    Widget image = Image.asset(
+      assetPath,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
+    );
+    if (tint != null) {
+      image = ColorFiltered(
+        colorFilter: ColorFilter.mode(tint!, BlendMode.srcIn),
+        child: image,
+      );
+    }
+    return image;
+  }
+}
+
+class _TemplateEmailGlyph extends StatelessWidget {
+  const _TemplateEmailGlyph({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final side = math.min(constraints.maxWidth, constraints.maxHeight);
+        return Center(
+          child: Icon(Icons.email_rounded, color: color, size: side * 0.84),
+        );
+      },
+    );
+  }
+}
+
+class _TemplateOutlinedEmailGlyph extends StatelessWidget {
+  const _TemplateOutlinedEmailGlyph({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final side = math.min(constraints.maxWidth, constraints.maxHeight);
+        return Center(
+          child: SizedBox.square(
+            dimension: side,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: color, width: side * 0.065),
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.email_outlined,
+                  color: color,
+                  size: side * 0.66,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TemplateEmailOutlineGlyph extends StatelessWidget {
+  const _TemplateEmailOutlineGlyph({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final side = math.min(constraints.maxWidth, constraints.maxHeight);
+        return Center(
+          child: Icon(Icons.email_outlined, color: color, size: side * 0.84),
+        );
+      },
+    );
+  }
+}
+
+class _OrangeDiamondWebsiteIcon extends StatelessWidget {
+  const _OrangeDiamondWebsiteIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    const orange = Color(0xFFFF8A00);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final side = math.min(constraints.maxWidth, constraints.maxHeight);
+        return Center(
+          child: SizedBox.square(
+            dimension: side,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Transform.rotate(
+                  angle: math.pi / 4,
+                  child: SizedBox.square(
+                    dimension: side * 0.67,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: orange,
+                          width: math.max(1, side * 0.035).toDouble(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                FractionallySizedBox(
+                  widthFactor: 0.48,
+                  heightFactor: 0.48,
+                  child: ColorFiltered(
+                    colorFilter: const ColorFilter.mode(
+                      orange,
+                      BlendMode.srcIn,
+                    ),
+                    child: Image.asset(
+                      'assets/images/visiting_card_contact_icons/black_web.png',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TemplateContactIconVisual extends StatelessWidget {
+  const _TemplateContactIconVisual({
+    required this.field,
+    required this.fallbackAccent,
+    required this.customAssetPath,
+    required this.artwork,
+  });
+
+  final VisitingCardOverlayField field;
+  final Color fallbackAccent;
+  final String? customAssetPath;
+  final Future<_ContactIconArtwork> artwork;
+
+  @override
+  Widget build(BuildContext context) {
+    if (customAssetPath != null && customAssetPath!.trim().isNotEmpty) {
+      return _ContactIconVisual(
+        field: field,
+        accent: fallbackAccent,
+        customAssetPath: customAssetPath,
+      );
+    }
+
+    return FutureBuilder<_ContactIconArtwork>(
+      future: artwork,
+      builder: (context, snapshot) {
+        final sampled = snapshot.data;
+        if (sampled == null) {
+          return const SizedBox.expand();
+        }
+        final iconPng = sampled.iconPng;
+        if (iconPng != null) {
+          return Image.memory(
+            iconPng,
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.high,
+            gaplessPlayback: true,
+          );
+        }
+        return _ContactIconVisual(field: field, accent: fallbackAccent);
+      },
     );
   }
 }

@@ -30,24 +30,18 @@ class AppStorageService {
   static const String _contactBackupMigratedKey =
       'isar_contact_json_from_prefs_v1';
   static const String _legacyContactBackupPrefix = 'vc_contact_backup_v1_';
+  static const String _onboardingCompleteKey = 'onboarding_complete_v1';
+  static const String _designCustomizeTipSeenKey =
+      'card_details_design_customize_tip_seen_v1';
 
   List<SavedFileModel> _cache = const [];
   List<FolderRecord> _folderCache = const [];
 
-  static Future<void>? _initFuture;
-
-  static Future<void> init() {
-    return _initFuture ??= _initOnce();
-  }
-
-  static Future<void> _initOnce() async {
+  static Future<void> init() async {
     _prefs ??= await SharedPreferences.getInstance();
 
     final directory = await getApplicationDocumentsDirectory();
-    // openAsync spawns a background isolate; on iOS devices that can hang
-    // indefinitely when native libs load via SPM. open() on the main isolate
-    // is reliable and fast enough for splash.
-    _isar ??= Isar.open(
+    _isar = await Isar.openAsync(
       schemas: [SavedFileEntitySchema, FolderEntitySchema],
       directory: directory.path,
       name: 'visiting_card',
@@ -82,6 +76,21 @@ class AppStorageService {
 
   List<SavedFileModel> getAllFiles() =>
       List<SavedFileModel>.unmodifiable(_cache);
+
+  bool get hasCompletedOnboarding =>
+      _storage.getBool(_onboardingCompleteKey) ?? false;
+
+  Future<void> markOnboardingComplete() async {
+    await _storage.setBool(_onboardingCompleteKey, true);
+  }
+
+  /// Card Details: first-time pulse on the design Customize control.
+  bool get hasSeenDesignCustomizeTip =>
+      _storage.getBool(_designCustomizeTipSeenKey) ?? false;
+
+  Future<void> markDesignCustomizeTipSeen() async {
+    await _storage.setBool(_designCustomizeTipSeenKey, true);
+  }
 
   SavedFileModel? getFileById(String fileId) {
     for (final file in _cache) {

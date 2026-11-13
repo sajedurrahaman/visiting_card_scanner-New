@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:visiting_card/app/helper/image_picker_helper.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
@@ -43,7 +44,6 @@ class _VisitingCardLandscapeProfileScreenState
   static const _bg = Color(0xFF003303);
   static const _green = Color(0xFF149944);
   static const _label = Color(0xFF1A1A1A);
-  static final _picker = ImagePicker();
 
   bool _uploading = false;
   bool _orienting = false;
@@ -155,9 +155,8 @@ class _VisitingCardLandscapeProfileScreenState
     if (_uploading) return;
     setState(() => _uploading = true);
     try {
-      final picked = await _picker.pickImage(
+      final picked = await ImagePickerHelper.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 90,
       );
       if (picked == null || !mounted) return;
       final vm = context.read<VisitingCardEditContactViewModel>();

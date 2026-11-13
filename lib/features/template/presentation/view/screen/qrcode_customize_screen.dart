@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:visiting_card/app/helper/image_picker_helper.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:screenshot/screenshot.dart';
@@ -209,7 +210,7 @@ class _PreviewCard extends StatelessWidget {
                       width: 200.w,
                       height: 200.w,
                       child: Padding(
-                        padding: EdgeInsets.all(5.w),
+                        padding: EdgeInsets.all(10.w),
                         child: _GradientQrPreview(
                           fontWeightFor: _fontWeightFor,
                           fontStyleFor: _fontStyleFor,
@@ -219,7 +220,7 @@ class _PreviewCard extends StatelessWidget {
                     if (vm.overlayText.isNotEmpty)
                       Padding(
                         padding: EdgeInsets.only(
-                          bottom: 0.h,
+                          bottom: 16.h,
                           left: 10.w,
                           right: 10.w,
                         ),
@@ -325,13 +326,10 @@ class _EditorPanel extends StatelessWidget {
     final contentHeight = selectedTab == null
         ? 0.0
         : switch (selectedTab) {
-            // The input has Flutter's 48 px minimum touch height.  Leave
-            // enough room for it after the panel's vertical padding when the
-            // keyboard is visible (64.h could be about one pixel too short).
-            QrCustomizeTab.text => keyboardVisible ? 72.h : 256.h,
+            QrCustomizeTab.text => keyboardVisible ? 64.h : 256.h,
             QrCustomizeTab.template => 256.h,
             QrCustomizeTab.color => 256.h,
-            QrCustomizeTab.logo => keyboardVisible ? 72.h : 256.h,
+            QrCustomizeTab.logo => keyboardVisible ? 64.h : 256.h,
             _ => 160.h,
           };
 
@@ -348,7 +346,15 @@ class _EditorPanel extends StatelessWidget {
               SizedBox(
                 height: contentHeight,
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 12.h),
+                  // A TextField has a 48px minimum interactive height. When the
+                  // keyboard is open, the compact panel must reserve enough of
+                  // its fixed height for that field after padding is applied.
+                  padding: EdgeInsets.fromLTRB(
+                    16.w,
+                    keyboardVisible ? 8.h : 12.h,
+                    16.w,
+                    keyboardVisible ? 8.h : 12.h,
+                  ),
                   child: _TabContent(
                     vm: vm,
                     overlayController: overlayController,
@@ -1585,7 +1591,7 @@ class _LogoTab extends StatelessWidget {
                         final selected = vm.hasPickedLogo;
                         return GestureDetector(
                           onTap: () async {
-                            final image = await ImagePicker().pickImage(
+                            final image = await ImagePickerHelper.pickImage(
                               source: ImageSource.gallery,
                             );
                             if (image != null) {

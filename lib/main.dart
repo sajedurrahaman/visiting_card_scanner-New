@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/app/firebase/firebase_services.dart';
+import 'package:visiting_card/app/helper/force_update_upgrader.dart';
+import 'package:visiting_card/app/navigator/app_navigator_key.dart';
 
 import 'app/routes/app_routes.dart';
 import 'app/view_models/app_viewmodels.dart';
@@ -39,8 +41,15 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           title: 'Visiting Card Scanner',
           debugShowCheckedModeBanner: false,
+          navigatorKey: appNavigatorKey,
           initialRoute: AppRoutes.initialRoute,
           routes: AppRoutes.routes,
+          // Soft update (Skip Now) + App Store [:mav:] / Play min-version force.
+          builder: (context, child) {
+            return wrapWithForceUpdateAlert(
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
         );
       },
     );

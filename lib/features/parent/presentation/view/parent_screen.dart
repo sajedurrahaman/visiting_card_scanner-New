@@ -50,25 +50,6 @@ class ParentScreen extends StatelessWidget {
   }
 }
 
-class _PlaceholderTab extends StatelessWidget {
-  const _PlaceholderTab({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      bottom: false,
-      child: Center(
-        child: Text(
-          title,
-          style: ui.AppTextStyles.mainText(),
-        ),
-      ),
-    );
-  }
-}
-
 class ParentCenterNavButton extends StatelessWidget {
   const ParentCenterNavButton({super.key});
 

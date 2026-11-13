@@ -63,7 +63,6 @@ class _VisitingCardContactDetailsScreenState
   bool _loading = true;
   bool _isDownloadingTemplate = false;
   bool _isDownloadingScan = false;
-  int _imagePageIndex = 0;
   int _imageEpoch = 0;
   bool _handledInitialAction = false;
 
@@ -202,7 +201,6 @@ class _VisitingCardContactDetailsScreenState
       _images = images;
       _imageBytes = bytesList;
       _imageEpoch++;
-      _imagePageIndex = 0;
       _loading = false;
     });
     if (_scanImagePageController.hasClients) {
@@ -820,8 +818,6 @@ class _VisitingCardContactDetailsScreenState
                                 key: ValueKey('scan-images-$_imageEpoch'),
                                 controller: _scanImagePageController,
                                 itemCount: _imageBytes.length,
-                                onPageChanged: (i) =>
-                                    setState(() => _imagePageIndex = i),
                                 physics: const BouncingScrollPhysics(
                                   parent: AlwaysScrollableScrollPhysics(),
                                 ),

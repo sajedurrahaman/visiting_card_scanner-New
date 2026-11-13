@@ -23,7 +23,7 @@ class VisitingCardQrImageHelper {
         child: Directionality(
           textDirection: TextDirection.ltr,
           child: ColoredBox(
-            color: Colors.white,
+            color: Colors.transparent,
             child: QrTemplateStackBuilder(
               templateIndex: templateIndex,
               qrData: qrData,

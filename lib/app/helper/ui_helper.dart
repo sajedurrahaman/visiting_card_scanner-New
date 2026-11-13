@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class AppAssets {
-  static const splashLogo = 'assets/icons/splash_logo.svg';
+  static const splashLogo = 'assets/icons/logo.svg';
   static const parentNavLogoOne = 'assets/icons/home.svg';
   static const parentNavLogoTwo = 'assets/icons/my_card.svg';
   static const parentNavLogoThree = 'assets/icons/folder.svg';
@@ -252,15 +252,6 @@ class AppAssets {
   static const barTemplateRowColor = 'assets/barcode/template_row_barcode_color_icon.svg';
   static const barTemplateRowHeight = 'assets/barcode/template_row_barcode_height_icon.svg';
 
-  // QR stack frames (from PDF-Scanner generator)
-  static const qrStackDotEyeDir = 'assets/qr_code_template/dot_and_eye/';
-  static const qrStackNewDir = 'assets/qr_code_template/new/';
-  static const qrStackSocialDir = 'assets/qr_code_template/social/';
-  static const qrStackWifiDir = 'assets/qr_code_template/wifi/';
-  static const qrStackEventDir = 'assets/qr_code_template/event/';
-  static const qrStackLoveDir = 'assets/qr_code_template/love/';
-  static const qrStackHotDir = 'assets/svg/genertor/qrcode/';
-
   // Barcode stack frames (indices 1,3,5,10,12,21)
   static const barStackGeneralTypes =
       'assets/svg/genertor/general_types_frame_bar_code.svg';
@@ -277,7 +268,6 @@ class AppAssets {
 
 
   // visiting template card icon
-  static const pickerCameraIcon = 'assets/icons/camera_icon.svg';
   static const flashOnIcon = 'assets/icons/flash_on.svg';
   static const flashOffIcon = 'assets/icons/flash_off.svg';
   static const autoCameraIcon = 'assets/icons/Auto.svg';
@@ -296,7 +286,6 @@ class AppAssets {
   static const visitingTemplateMailIcon = 'assets/icons/green_mail.svg';
   static const visitingTemplatePhoneIcon = 'assets/icons/green_phone.svg';
   static const visitingTemplateShareIcon = 'assets/icons/green_share.svg';
-  static const visitingTemplateIcon = 'assets/icons/green_template.svg';
   static const visitingTemplateWebsiteIcon = 'assets/icons/green_website.svg';
   static const visitingTemplateQrcodeCustomizeIcon = 'assets/icons/visiting_qr_customize_icon.svg';
   static const visitingTemplateQrcodePlaceIcon = 'assets/icons/visiting_qr_place_icon.svg';

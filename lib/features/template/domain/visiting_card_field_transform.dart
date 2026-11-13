@@ -12,14 +12,45 @@ enum VisitingCardOverlayField {
   email,
   website,
   address,
+  phoneIcon,
+  emailIcon,
+  websiteIcon,
+  addressIcon,
   logo,
   qr,
 }
 
 extension VisitingCardOverlayFieldX on VisitingCardOverlayField {
+  bool get isContactIcon =>
+      this == VisitingCardOverlayField.phoneIcon ||
+      this == VisitingCardOverlayField.emailIcon ||
+      this == VisitingCardOverlayField.websiteIcon ||
+      this == VisitingCardOverlayField.addressIcon;
+
   bool get isImageOverlay =>
       this == VisitingCardOverlayField.logo ||
-      this == VisitingCardOverlayField.qr;
+      this == VisitingCardOverlayField.qr ||
+      isContactIcon;
+
+  /// Text field that this contact icon belongs to (phone/email/…).
+  VisitingCardOverlayField? get contactTextField => switch (this) {
+        VisitingCardOverlayField.phoneIcon => VisitingCardOverlayField.phone,
+        VisitingCardOverlayField.emailIcon => VisitingCardOverlayField.email,
+        VisitingCardOverlayField.websiteIcon => VisitingCardOverlayField.website,
+        VisitingCardOverlayField.addressIcon => VisitingCardOverlayField.address,
+        _ => null,
+      };
+
+  static VisitingCardOverlayField? iconForTextField(
+    VisitingCardOverlayField textField,
+  ) =>
+      switch (textField) {
+        VisitingCardOverlayField.phone => VisitingCardOverlayField.phoneIcon,
+        VisitingCardOverlayField.email => VisitingCardOverlayField.emailIcon,
+        VisitingCardOverlayField.website => VisitingCardOverlayField.websiteIcon,
+        VisitingCardOverlayField.address => VisitingCardOverlayField.addressIcon,
+        _ => null,
+      };
 }
 
 /// Runtime placement override for one overlay field.
@@ -112,6 +143,10 @@ class VisitingCardFieldTransform {
         VisitingCardOverlayField.email => 50,
         VisitingCardOverlayField.website => 60,
         VisitingCardOverlayField.address => 70,
+        VisitingCardOverlayField.phoneIcon => 41,
+        VisitingCardOverlayField.emailIcon => 51,
+        VisitingCardOverlayField.websiteIcon => 61,
+        VisitingCardOverlayField.addressIcon => 71,
         VisitingCardOverlayField.logo => 80,
         VisitingCardOverlayField.qr => 90,
       };

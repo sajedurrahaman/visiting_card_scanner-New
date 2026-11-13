@@ -30,7 +30,11 @@ class _SplashScreenState extends State<SplashScreen> {
 
     await minSplash;
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, RouteNames.parent);
+
+    final destination = AppStorageService.instance.hasCompletedOnboarding
+        ? RouteNames.parent
+        : RouteNames.onboarding;
+    Navigator.pushReplacementNamed(context, destination);
   }
 
   @override
