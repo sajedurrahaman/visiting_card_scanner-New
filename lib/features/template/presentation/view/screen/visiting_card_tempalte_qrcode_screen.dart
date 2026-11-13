@@ -76,12 +76,10 @@ class _VisitingCardTempalteQrcodeScreenState
     ),
   ];
 
-  int? _selectedIndex;
   bool _busy = false;
 
   Future<void> _onItemTap(int index) async {
     if (_busy) return;
-    setState(() => _selectedIndex = index);
 
     final item = _items[index];
 
@@ -177,7 +175,6 @@ class _VisitingCardTempalteQrcodeScreenState
             itemCount: _items.length,
             itemBuilder: (context, index) {
               final item = _items[index];
-              final selected = _selectedIndex == index;
               return GestureDetector(
                 onTap: () => _onItemTap(index),
                 child: DecoratedBox(

@@ -515,7 +515,6 @@ class QrBarCodeHelper {
   }
 
   static validateWiFiName(value) {
-    String lang = 'en';
     if (value.isEmpty) {
       return 'WiFi name is required';
     }
@@ -541,7 +540,6 @@ class QrBarCodeHelper {
   }
 
   static validateWiFiPassword(String? value) {
-    String lang = 'en';
     if (value == null || value.isEmpty) {
       return 'WiFi password is required';
     }
