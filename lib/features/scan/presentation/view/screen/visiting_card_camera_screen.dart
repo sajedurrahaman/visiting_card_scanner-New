@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
+import 'package:visiting_card/app/helper/image_picker_helper.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
@@ -303,8 +304,7 @@ class _VisitingCardCameraScreenState extends State<VisitingCardCameraScreen> {
     if (!vm.canCaptureMore) return;
 
     final remaining = vm.maxShots - vm.images.length;
-    final picked = await ImagePicker().pickMultiImage(
-      imageQuality: 90,
+    final picked = await ImagePickerHelper.pickMultiImage(
       limit: remaining,
     );
     if (picked.isEmpty || !mounted) return;

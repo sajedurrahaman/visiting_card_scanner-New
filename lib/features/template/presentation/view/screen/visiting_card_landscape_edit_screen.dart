@@ -8,6 +8,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gal/gal.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:visiting_card/app/helper/image_picker_helper.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/folder/presentation/view_model/folder_viewmodel.dart';
 import 'package:visiting_card/features/home/presentation/view_model/home_view_model.dart';
@@ -368,9 +369,8 @@ class _VisitingCardLandscapeEditScreenState
   }
 
   Future<void> _onPickImage() async {
-    final picked = await ImagePicker().pickImage(
+    final picked = await ImagePickerHelper.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 90,
     );
     if (picked == null || !mounted) return;
     final vm = context.read<VisitingCardEditContactViewModel>();

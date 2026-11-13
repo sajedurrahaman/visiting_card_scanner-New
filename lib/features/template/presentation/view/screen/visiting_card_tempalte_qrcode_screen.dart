@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:visiting_card/app/helper/image_picker_helper.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 import 'package:visiting_card/features/template/presentation/helper/visiting_card_qr_image_helper.dart';
 import 'package:visiting_card/features/template/presentation/view/screen/qrcode_customize_screen.dart';
@@ -87,13 +87,11 @@ class _VisitingCardTempalteQrcodeScreenState
     if (item.isLocalUpload) {
       setState(() => _busy = true);
       try {
-        final picked = await ImagePicker().pickImage(
+        final picked = await ImagePickerHelper.pickImage(
           source: ImageSource.gallery,
         );
         if (picked == null || !mounted) return;
         Navigator.pop(context, picked.path);
-      } on PlatformException catch (e) {
-        if (e.code != 'already_active') rethrow;
       } finally {
         if (mounted) setState(() => _busy = false);
       }

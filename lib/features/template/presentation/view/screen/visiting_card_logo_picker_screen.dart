@@ -4,14 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:visiting_card/app/helper/image_picker_helper.dart';
 import 'package:visiting_card/app/helper/ui_helper.dart' as ui;
 
 /// Picks a logo via the Android/iOS system photo picker or camera.
 /// Does **not** request READ_MEDIA_IMAGES / broad gallery access.
 class VisitingCardLogoPickerScreen {
   VisitingCardLogoPickerScreen._();
-
-  static final ImagePicker _imagePicker = ImagePicker();
 
   static Future<File?> open(BuildContext context) async {
     final source = await showModalBottomSheet<ImageSource>(
@@ -80,10 +79,7 @@ class VisitingCardLogoPickerScreen {
 
   static Future<File?> _pick(ImageSource source) async {
     try {
-      final x = await _imagePicker.pickImage(
-        source: source,
-        imageQuality: 90,
-      );
+      final x = await ImagePickerHelper.pickImage(source: source);
       if (x == null) return null;
       final bytes = await x.readAsBytes();
       final dir = await getTemporaryDirectory();

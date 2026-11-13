@@ -302,10 +302,9 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
                             onTap: () => _openDesignEditor(vm),
                           ),
                           SizedBox(height: 10.h),
-                          // Capture target only — corner icons stay outside so they
+                          // Capture target only — share/download stay outside so they
                           // are not baked into saved front/back images.
                           Stack(
-                            clipBehavior: Clip.none,
                             children: [
                               RepaintBoundary(
                                 key: _cardCaptureKey,
@@ -314,37 +313,6 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
                                   showPager: false,
                                   singleLineText: true,
                                   matchEditorText: true,
-                                ),
-                              ),
-                              Positioned(
-                                top: 6.h,
-                                left: 6.w,
-                                child: _CornerActionButton(
-                                  onTap: _isSharingCard || _isDownloading
-                                      ? null
-                                      : _onShareNewCard,
-                                  child: SvgPicture.asset(
-                                    ui.AppAssets.visitingTemplateShareIcon,
-                                    width: 15.w,
-                                    height: 15.w,
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                top: 6.h,
-                                right: 6.w,
-                                child: _CornerActionButton(
-                                  onTap:
-                                      _isDownloading ||
-                                          _isSharingCard ||
-                                          vm.isSaving
-                                      ? null
-                                      : _onDownload,
-                                  child: Icon(
-                                    Icons.download_outlined,
-                                    size: 15.sp,
-                                    color: ui.Colors.parentIconSelectTextColor,
-                                  ),
                                 ),
                               ),
                               if (_isDownloading || _isSharingCard)
@@ -369,6 +337,42 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
                           ),
                           SizedBox(height: 8.h),
                           VisitingCardLivePreview(vm: vm, pagerOnly: true),
+                          SizedBox(height: 10.h),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _CornerActionButton(
+                                title: "Share",
+                                onTap: _isSharingCard || _isDownloading
+                                    ? null
+                                    : _onShareNewCard,
+                                child: SvgPicture.asset(
+                                  ui.AppAssets.visitingTemplateShareIcon,
+                                  width: 16.w,
+                                  height: 16.w,
+                                  colorFilter: const ColorFilter.mode(
+                                    Colors.white,
+                                    BlendMode.srcIn,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 16.w),
+                              _CornerActionButton(
+                                title: "Download",
+                                onTap:
+                                    _isDownloading ||
+                                        _isSharingCard ||
+                                        vm.isSaving
+                                    ? null
+                                    : _onDownload,
+                                child: Icon(
+                                  Icons.download_outlined,
+                                  size: 16.sp,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -405,7 +409,7 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
                           ),
                           _ActionItem(
                             asset: ui.AppAssets.visitingTemplateEditIcon,
-                            label: 'Contact',
+                            label: 'Edit',
                             onTap: () => Navigator.pop(context),
                           ),
                           _ActionItem(
@@ -543,25 +547,63 @@ class _VisitingCardDetailsScreenState extends State<VisitingCardDetailsScreen> {
 }
 
 class _CornerActionButton extends StatelessWidget {
-  const _CornerActionButton({required this.child, this.onTap});
+  const _CornerActionButton({
+    required this.child,
+    this.onTap,
+    required this.title,
+  });
 
   final Widget child;
+  final String title;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(8.r);
     return Material(
-      color: Colors.white.withValues(alpha: 0.92),
-      shape: const CircleBorder(),
+      color: Colors.transparent,
       elevation: 2,
       shadowColor: Colors.black26,
+      borderRadius: radius,
       child: InkWell(
-        customBorder: const CircleBorder(),
         onTap: onTap,
-        child: SizedBox(
-          width: 28.w,
+        borderRadius: radius,
+        child: Ink(
+          width: 110.w,
           height: 28.w,
-          child: Center(child: child),
+          decoration: BoxDecoration(
+            borderRadius: radius,
+            // Material.color-এ gradient হয় না — BoxDecoration/Ink দিয়ে দাও
+            gradient: const LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [Color(0xFF3DCB6A), Color(0xFF0B5D2A)],
+            ),
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8.w),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: ui.AppTextStyles.helperText(color: Colors.white)
+                        .copyWith(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w700,
+                          height: 1.1,
+                        ),
+                  ),
+                ),
+                SizedBox(width: 6.w),
+                child,
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -622,7 +664,7 @@ class _DesignCustomizeChipState extends State<_DesignCustomizeChip>
         borderRadius: BorderRadius.circular(10.r),
         child: Container(
           width: double.infinity,
-          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.h),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10.r),
             border: Border.all(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:visiting_card/app/helper/image_picker_helper.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:screenshot/screenshot.dart';
@@ -1590,7 +1591,7 @@ class _LogoTab extends StatelessWidget {
                         final selected = vm.hasPickedLogo;
                         return GestureDetector(
                           onTap: () async {
-                            final image = await ImagePicker().pickImage(
+                            final image = await ImagePickerHelper.pickImage(
                               source: ImageSource.gallery,
                             );
                             if (image != null) {

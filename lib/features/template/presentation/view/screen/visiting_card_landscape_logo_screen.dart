@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:visiting_card/app/helper/image_picker_helper.dart';
 import 'package:provider/provider.dart';
 import 'package:visiting_card/features/template/domain/visiting_card_field_transform.dart';
 import 'package:visiting_card/features/template/presentation/view_model/visiting_card_edit_contact_viewmodel.dart';
@@ -60,7 +61,6 @@ class VisitingCardLandscapeLogoScreen extends StatefulWidget {
 class _VisitingCardLandscapeLogoScreenState
     extends State<VisitingCardLandscapeLogoScreen> {
   static const _bg = Color(0xFF003303);
-  static final _picker = ImagePicker();
 
   bool _library = true;
   bool _picking = false;
@@ -80,9 +80,8 @@ class _VisitingCardLandscapeLogoScreenState
     if (_picking) return;
     setState(() => _picking = true);
     try {
-      final picked = await _picker.pickImage(
+      final picked = await ImagePickerHelper.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 90,
       );
       if (picked == null || !mounted) return;
       final vm = context.read<VisitingCardEditContactViewModel>();
